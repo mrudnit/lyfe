@@ -7,6 +7,9 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# No apt-get here on purpose. Every dependency ships prebuilt wheels for
+# linux/amd64 and linux/arm64, so the image needs no compiler and the build
+# never touches the Debian package servers.
 COPY requirements.txt .
 RUN pip install --only-binary=:all: -r requirements.txt
 

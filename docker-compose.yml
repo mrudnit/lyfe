@@ -22,11 +22,11 @@ services:
     command: ["redis-server", "--save", "60", "1", "--appendonly", "no"]
     volumes:
       - redisdata:/data
+    ports:
+      - "127.0.0.1:6379:6379"   # local access only, never exposed to the internet
 
   bot:
-    build:
-      context: .
-      network: host
+    build: .
     restart: unless-stopped
     env_file: .env
     depends_on:

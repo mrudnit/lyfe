@@ -4,8 +4,14 @@ Run once:  docker compose run --rm bot python scripts/seed.py
 Edit the values below to match your real event before running.
 """
 import asyncio
+import sys
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from zoneinfo import ZoneInfo
+
+# Make the project root importable when this file is run directly
+# (python scripts/seed.py), not only as a module.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sqlalchemy import select
 

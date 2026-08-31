@@ -164,6 +164,58 @@ docker compose exec postgres psql -U lyfe -d lyfe -c "select lyfe_id, first_name
 
 ---
 
+## 3b. Запуск без Docker (когда Docker не пускает в интернет)
+
+Docker нужен для базы, но бота можно держать прямо на Mac. Так даже удобнее:
+логи идут в терминал, перезапуск быстрее.
+
+База по-прежнему в Docker:
+
+```bash
+docker compose up -d postgres redis
+```
+
+В `.env` поменяй одну строку — теперь бот обращается к базе не по имени
+контейнера, а по локальному адресу:
+
+```
+POSTGRES_HOST=localhost
+```
+
+Дальше один раз создаёшь окружение:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+Миграции и запуск — уже без `docker compose run`:
+
+```bash
+alembic upgrade head
+alembic revision --autogenerate -m "phase1 baseline"
+alembic upgrade head
+python scripts/seed.py
+python -m lyfe.bot.main
+```
+
+Останавливать бота — `Ctrl+C`, запускать заново — той же последней командой.
+
+**В каждом новом окне терминала не забывай:**
+
+```bash
+source .venv/bin/activate
+```
+
+Без этого Python не увидит установленные пакеты и напишет `ModuleNotFoundError`.
+
+Когда дело дойдёт до сервера, вернём `POSTGRES_HOST=postgres` и всё поедет
+в Docker как задумано.
+
+---
+
 ## 4. Ежедневный цикл разработки
 
 Код примонтирован в контейнер (файл `docker-compose.override.yml`), поэтому
@@ -332,6 +384,13 @@ where user_id = 1 order by id;
 | `Conflict: terminated by other getUpdates` | Бот запущен в двух местах | `docker compose down`, потом заново. Один токен — один процесс |
 | Бот молчит, в логах пусто | Контейнер не запущен | `docker compose ps`, потом `docker compose up -d bot` |
 | Правка кода не применилась | Не перезапустил | `docker compose restart bot` |
+| `ResolutionImpossible` при установке | Версии пакетов конфликтуют между собой | Не подбирай вручную — присылай вывод, поправлю `requirements.txt` |
+| `Network is unreachable` внутри контейнера | У контейнеров нет выхода в интернет | Смени сеть или работай по разделу 3b |
+| `ModuleNotFoundError` при локальном запуске | Не активировано окружение | `source .venv/bin/activate` |
+| `ModuleNotFoundError: No module named 'lyfe'` в скрипте | Python считает корнем папку скрипта | `PYTHONPATH=. .venv/bin/python scripts/seed.py` |
+| `alembic` берётся из Anaconda | Её `PATH` перекрывает `.venv` | Запускай через `.venv/bin/python -m alembic ...` |
+| `Unable to locate package build-essential` | Сборка образа лезет в интернет за системными пакетами | Их не должно быть в Dockerfile. Проверь, что там нет `apt-get` |
+| `failed to solve: process /bin/sh -c ...` | Упал какой-то шаг сборки образа | Смотри строку выше `ERROR` — там настоящая причина |
 
 Посмотреть последние 100 строк логов:
 
@@ -425,6 +484,88 @@ Revoke.
 **Прогон DJ-экрана нужен обязательно, до ивента.** Посади человека, который
 будет жать PLAYED, за экран на десять минут и попроси отметить двадцать треков.
 Если ему неудобно — переделываем, пока есть время.
+
+---
+
+## 12b. Приёмка шага 2 — LYFE REQUEST
+
+Сначала проверь сам резолвер, без Telegram. Это занимает пять секунд и сразу
+показывает, работает ли каталог:
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/check_resolver.py "travis scott fein"
+PYTHONPATH=. .venv/bin/python scripts/check_resolver.py "монатик кружит"
+PYTHONPATH=. .venv/bin/python scripts/check_resolver.py "https://open.spotify.com/track/..."
+```
+
+Должны напечататься найденные треки с артистом, альбомом и обложкой. Если
+печатает `No results` — бот предложит вписать трек вручную, это штатное
+поведение, а не поломка.
+
+Дальше в Telegram:
+
+| # | Что делаешь | Что должно быть |
+|---|---|---|
+| 1 | **🎵 Добавить трек** | Приглашение написать трек + кнопка отмены |
+| 2 | Пишешь `travis scott fein` | Список кнопок с найденными треками |
+| 3 | Жмёшь нужный | «🔥 Трек принят», название, дата, «Ты первый, кто его попросил» |
+| 4 | Добавляешь тот же трек снова | «Ты его уже просил 😄», счётчик не растёт |
+| 5 | Добавляешь ещё три разных | На четвёртом — «На сегодня хватит» |
+| 6 | Пишешь бессмыслицу вроде `йцукен` | Предложение вписать вручную |
+| 7 | Вписываешь `Артист — Название` | Трек принят, в базе `provider = manual` |
+| 8 | Жмёшь **Отмена** | «Ок, отменил», возврат в меню |
+| 9 | Кидаешь ссылку на YouTube | Находит трек по названию из ссылки |
+
+Главная проверка — с другого аккаунта. Попроси кого-то добавить **тот же самый**
+трек. В базе должна появиться одна строка со счётчиком 2, а не две строки:
+
+```bash
+docker compose exec postgres psql -U lyfe -d lyfe -c "
+select t.artist_name, t.title, et.requests_count, t.provider
+from event_tracks et join tracks t on t.id = et.track_id
+order by et.requests_count desc;"
+```
+
+И проверь, что за реквесты начислились баллы:
+
+```bash
+docker compose exec postgres psql -U lyfe -d lyfe -c "
+select u.lyfe_id, sum(pt.delta) as points
+from point_transactions pt join users u on u.id = pt.user_id
+group by u.lyfe_id;"
+```
+
+**Известное ограничение.** Если два человека впишут трек вручную по-разному —
+латиницей и кириллицей, или с опечаткой, — получатся две строки. Каталожный
+поиск это закрывает, ручной ввод нет. Объединение дублей руками появится
+в админке во второй фазе.
+
+---
+
+## 12c. Приёмка шага 3 — TOP REQUESTS
+
+| # | Что делаешь | Что должно быть |
+|---|---|---|
+| 1 | **🔥 TOP REQUESTS** на пустой базе | «Пока пусто. Будь первым» |
+| 2 | Добавляешь трек, открываешь TOP | Трек в списке, рядом 🎵 — это твой |
+| 3 | Жмёшь номер своего трека | Всплывает «Это твой трек — он уже посчитан» |
+| 4 | Со второго аккаунта жмёшь номер | «Голос засчитан 🔥», счётчик +1, появляется ❤️ |
+| 5 | Тот же аккаунт жмёт ещё раз | «Ты уже голосовал за него», счётчик не растёт |
+| 6 | Обновляешь TOP | Порядок пересортирован по сумме заявок и голосов |
+
+Проверка в базе — заявки и голоса считаются отдельно, а сортировка идёт по сумме:
+
+```bash
+docker compose exec postgres psql -U lyfe -d lyfe -c "
+select t.artist_name, t.title, et.requests_count, et.votes_count,
+       et.requests_count + et.votes_count as score
+from event_tracks et join tracks t on t.id = et.track_id
+order by score desc;"
+```
+
+**Почему заявка и лайк не складываются у одного человека.** Тот, кто предложил
+трек, уже отдал свой голос — поэтому лайкнуть его повторно нельзя. Иначе один
+человек считался бы дважды и цифры у DJ перестали бы отражать реальный спрос.
 
 ---
 

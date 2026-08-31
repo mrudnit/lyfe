@@ -16,6 +16,11 @@ PLURALS = {
     "uk": uk.DAYS_FORMS,
 }
 
+PEOPLE_PLURALS = {
+    "ru": ru.PEOPLE_FORMS,
+    "uk": uk.PEOPLE_FORMS,
+}
+
 DEFAULT_LANGUAGE = "ru"
 SUPPORTED = tuple(CATALOGS.keys())
 
@@ -47,6 +52,12 @@ def plural(n: int, forms: tuple[str, str, str]) -> str:
 
 def days_word(n: int, lang: str = DEFAULT_LANGUAGE) -> str:
     return plural(n, PLURALS.get(lang, PLURALS[DEFAULT_LANGUAGE]))
+
+
+def people_phrase(n: int, lang: str = DEFAULT_LANGUAGE) -> str:
+    """'23 человека' / '1 человек'."""
+    word = plural(n, PEOPLE_PLURALS.get(lang, PEOPLE_PLURALS[DEFAULT_LANGUAGE]))
+    return f"{n} {word}"
 
 
 def t(key: str, lang: str = DEFAULT_LANGUAGE, **kwargs) -> str:

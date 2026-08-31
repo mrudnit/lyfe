@@ -10,6 +10,7 @@ from aiogram.enums import ParseMode
 from lyfe.bot.handlers import router
 from lyfe.bot.middlewares import DatabaseMiddleware
 from lyfe.config import get_settings
+from lyfe.core import track_resolver
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,11 @@ async def main() -> None:
     logger.info("LYFE bot starting as @%s", me.username)
 
     await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+    try:
+        await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+    finally:
+        await track_resolver.close()
+        await bot.session.close()
 
 
 if __name__ == "__main__":
