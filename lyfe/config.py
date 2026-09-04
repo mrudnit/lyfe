@@ -1,6 +1,13 @@
-"""Application configuration, loaded from environment variables."""
+"""Application configuration, loaded from environment variables.
+
+Works both with a self-managed Postgres (POSTGRES_* variables) and with hosting
+platforms that inject a single DATABASE_URL, such as Railway, Render or Heroku.
+If DATABASE_URL is present it wins.
+"""
+import re
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,7 +18,10 @@ class Settings(BaseSettings):
     bot_token: str
     bot_username: str = "LYFE_REQUEST_BOT"
 
-    # Postgres
+    # Postgres. Either a full URL from the platform...
+    database_url_raw: str = Field("", validation_alias="DATABASE_URL")
+
+    # ...or the individual parts, for docker-compose and local runs.
     postgres_user: str = "lyfe"
     postgres_password: str = "lyfe"
     postgres_db: str = "lyfe"
@@ -46,10 +56,30 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
+        if self.database_url_raw:
+            return _to_asyncpg_url(self.database_url_raw)
         return (
             f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
+
+
+def _to_asyncpg_url(url: str) -> str:
+    """Normalise a platform-provided connection string for asyncpg.
+
+    Platforms hand out URLs in the psycopg dialect and often append query
+    parameters that asyncpg refuses to parse, so both are fixed here rather
+    than asking anyone to edit the value by hand.
+    """
+    for prefix in ("postgresql+psycopg2://", "postgresql+psycopg://", "postgresql://", "postgres://"):
+        if url.startswith(prefix):
+            url = "postgresql+asyncpg://" + url[len(prefix):]
+            break
+
+    # asyncpg configures TLS through connect_args, not the query string.
+    url = re.sub(r"[?&]sslmode=[^&]*", "", url)
+    url = re.sub(r"[?&]channel_binding=[^&]*", "", url)
+    return url.rstrip("?&")
 
 
 @lru_cache
