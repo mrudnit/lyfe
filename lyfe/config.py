@@ -31,8 +31,16 @@ class Settings(BaseSettings):
 
     # Points
     points_music_request: int = 1
-    points_vote: int = 1
+    # Zero on purpose: liking is free and pleasant, and paying for it let a
+    # person on their sofa out-earn someone who actually turned up.
+    points_vote: int = 0
     points_attendance: int = 10
+    cost_priority_track: int = 40
+
+    # Web admin / DJ screen
+    admin_secret_key: str = "change-me"
+    web_host: str = "0.0.0.0"
+    web_port: int = 8000
 
     sentry_dsn: str = ""
 

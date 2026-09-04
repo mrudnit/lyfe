@@ -152,6 +152,86 @@ TEXTS = {
     "vote_own": "Це твій трек — він уже порахований",
     "vote_closed": "Голосування закрито",
 
+
+    # ---------- the moment everything exists for ----------
+    "track_played": (
+        "🔥 ТВІЙ ТРЕК ЗАРАЗ ГРАЄ.\n"
+        "\n"
+        "{track}\n"
+        "\n"
+        "Ти його обрав.\n"
+        "Ми його поставили.\n"
+        "\n"
+        "FEEL THE LYFE"
+    ),
+
+
+    # ---------- lyfe pass ----------
+    "btn_pass": "🎟 LYFE PASS",
+    "lyfe_pass": (
+        "🎟 LYFE PASS\n"
+        "\n"
+        "{name}\n"
+        "LYFE #{lyfe_id}\n"
+        "\n"
+        "Ночей: {nights}\n"
+        "LYFE POINTS: {points}\n"
+        "\n"
+        "Покажи цей код на вході."
+    ),
+    "checked_in": (
+        "✓ Ти на LYFEPARTY.\n"
+        "\n"
+        "+{points} LYFE POINTS\n"
+        "\n"
+        "Гарної ночі."
+    ),
+
+
+    # ---------- rewards ----------
+    "btn_rewards": "⭐ НАГОРОДИ",
+    "rewards_header": "⭐ НАГОРОДИ\n\nУ тебе {points} LYFE POINTS.",
+    "rewards_empty": (
+        "⭐ НАГОРОДИ\n"
+        "\n"
+        "У тебе {points} LYFE POINTS.\n"
+        "\n"
+        "Поки нема на що витрачати.\n"
+        "Збирай — скоро відкриємо."
+    ),
+    "rewards_no_event": "Поки тиша. Нагороди відкриються до наступної ночі.",
+    "rewards_held": "Вже твоє:",
+    "reward_bought": (
+        "⭐ {name}\n"
+        "\n"
+        "Код: {code}\n"
+        "\n"
+        "Покажи його на вході разом з LYFE PASS.\n"
+        "\n"
+        "Залишилось {points} LYFE POINTS."
+    ),
+    "reward_not_enough": "Потрібно {need} LYFE POINTS, у тебе {have}.",
+    "reward_sold_out": "Розібрали. Спробуй наступного разу.",
+    "reward_limit": "Це можна взяти лише раз за ніч.",
+    "reward_unavailable": "Зараз недоступно.",
+    "priority_pick": (
+        "🎯 ГАРАНТІЯ ТРЕКА — {cost} LYFE POINTS\n"
+        "\n"
+        "Обери свій трек. Він прозвучить — без «якщо»."
+    ),
+    "priority_done": (
+        "🎯 Готово.\n"
+        "\n"
+        "Твій трек закріплено у DJ.\n"
+        "Він прозвучить цієї ночі.\n"
+        "\n"
+        "Залишилось {points} LYFE POINTS.\n"
+        "\n"
+        "FEEL THE LYFE"
+    ),
+    "priority_no_tracks": "Спершу запропонуй трек — гарантія ставиться на свій.",
+    "priority_full": "На цю ніч гарантії розібрали. Їх лише дві.",
+
     # ---------- generic ----------
     "unknown_input": (
         "Не зрозумів.\n"

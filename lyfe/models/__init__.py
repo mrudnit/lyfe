@@ -13,6 +13,12 @@ from lyfe.models.music import (
     TrackVote,
 )
 from lyfe.models.points import PointsReason, PointTransaction
+from lyfe.models.reward import (
+    RedemptionStatus,
+    Reward,
+    RewardKind,
+    RewardRedemption,
+)
 from lyfe.models.user import User
 
 __all__ = [
@@ -28,6 +34,10 @@ __all__ = [
     "EventTrack",
     "PointTransaction",
     "PointsReason",
+    "RedemptionStatus",
+    "Reward",
+    "RewardKind",
+    "RewardRedemption",
     "RequestSource",
     "Track",
     "TrackRequest",

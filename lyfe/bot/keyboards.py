@@ -13,6 +13,10 @@ def main_menu(lang: str) -> ReplyKeyboardMarkup:
                 KeyboardButton(text=t("btn_my_lyfe", lang)),
                 KeyboardButton(text=t("btn_next_event", lang)),
             ],
+            [
+                KeyboardButton(text=t("btn_pass", lang)),
+                KeyboardButton(text=t("btn_rewards", lang)),
+            ],
         ],
         resize_keyboard=True,
         is_persistent=True,

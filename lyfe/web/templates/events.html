@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LYFE · Ивенты</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #0a0a0b; color: #f4f4f5;
+    font: 400 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding-bottom: 60px;
+  }
+  header {
+    padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
+    border-bottom: 1px solid #1f1f23; display: flex; align-items: center; gap: 14px;
+  }
+  h1 { font-size: 12px; letter-spacing: .28em; margin: 0; font-weight: 600; }
+  a { color: #71717a; font-size: 12px; text-decoration: none; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px; }
+
+  .saved { background: #14532d; padding: 11px 14px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; }
+  .denied { background: #7f1d1d; padding: 14px; border-radius: 10px; }
+
+  .event {
+    background: #131316; border: 1px solid #232327; border-radius: 14px;
+    padding: 14px; margin-bottom: 10px;
+  }
+  .event.live { border-color: #22c55e; }
+  .event h2 { margin: 0 0 4px; font-size: 17px; }
+  .event .meta { color: #71717a; font-size: 13px; }
+  .tag {
+    display: inline-block; font-size: 10px; letter-spacing: .1em; padding: 3px 8px;
+    border-radius: 5px; background: #27272a; color: #a1a1aa; margin-left: 8px;
+  }
+  .tag.LIVE { background: #14532d; color: #4ade80; }
+  .tag.UPCOMING { background: #1e3a5f; color: #93c5fd; }
+  .tag.ENDED { background: #27272a; color: #71717a; }
+  .actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+  form.inline { display: inline; }
+  button, select, input {
+    font: inherit; border-radius: 10px; padding: 11px 14px; font-size: 15px;
+  }
+  input, select { background: #18181b; color: #f4f4f5; border: 1px solid #27272a; width: 100%; }
+  button { border: 0; background: #27272a; color: #f4f4f5; cursor: pointer; font-weight: 600; }
+  button.primary { background: #f4f4f5; color: #0a0a0b; }
+  button.small { padding: 8px 12px; font-size: 13px; font-weight: 500; }
+
+  fieldset { border: 1px solid #232327; border-radius: 14px; padding: 16px; margin: 24px 0 0; }
+  legend { padding: 0 8px; font-size: 12px; letter-spacing: .2em; color: #71717a; }
+  label { display: block; margin-bottom: 14px; }
+  label span { display: block; font-size: 12px; color: #a1a1aa; margin-bottom: 6px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+  .hint { color: #52525b; font-size: 12px; margin: -8px 0 16px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ИВЕНТЫ</h1>
+  <a href="/">DJ</a>
+  <a href="/scan">СКАН</a>
+  <a href="/logout" style="margin-left:auto">выйти</a>
+</header>
+
+<div class="wrap">
+{% if denied %}
+  <div class="denied">Нужна роль ADMIN или SUPER_ADMIN.</div>
+{% else %}
+  {% if saved %}<div class="saved">Сохранено.</div>{% endif %}
+
+  {% for event in events %}
+  <div class="event {{ 'live' if event.status == 'LIVE' else '' }}">
+    <h2>{{ event.title }}<span class="tag {{ event.status }}">{{ event.status }}</span></h2>
+    <div class="meta">{{ local(event.starts_at, event.city_id)|replace('T', ' ') }}</div>
+    <div class="actions">
+      <a href="/events?edit={{ event.id }}"><button class="small">Изменить</button></a>
+      {% for status in ['UPCOMING', 'LIVE', 'ENDED'] %}
+      {% if status != event.status %}
+      <form class="inline" method="post" action="/events/{{ event.id }}/status">
+        <input type="hidden" name="status" value="{{ status }}">
+        <button class="small" type="submit">→ {{ status }}</button>
+      </form>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <form method="post" action="/events/save">
+    <fieldset>
+      <legend>{{ 'РЕДАКТИРОВАНИЕ' if editing else 'НОВЫЙ ИВЕНТ' }}</legend>
+      <input type="hidden" name="event_id" value="{{ editing.id if editing else 0 }}">
+
+      <label><span>Название</span>
+        <input name="title" required value="{{ editing.title if editing else '' }}"></label>
+
+      <div class="grid">
+        <label><span>Начало (местное время)</span>
+          <input type="datetime-local" name="starts_at_local" required
+                 value="{{ local(editing.starts_at, editing.city_id) if editing else '' }}"></label>
+        <label><span>Статус</span>
+          <select name="status">
+            {% for status in statuses %}
+            <option value="{{ status }}" {{ 'selected' if editing and editing.status == status else '' }}>{{ status }}</option>
+            {% endfor %}
+          </select></label>
+      </div>
+
+      <label><span>Площадка</span>
+        <select name="venue_id">
+          {% for venue in venues %}
+          <option value="{{ venue.id }}" {{ 'selected' if editing and editing.venue_id == venue.id else '' }}>{{ venue.name }}</option>
+          {% endfor %}
+        </select></label>
+
+      <label><span>Ссылка на билеты</span>
+        <input name="ticket_url" value="{{ editing.ticket_url or '' if editing else '' }}"></label>
+
+      <div class="grid">
+        <label><span>Заявки открыть за, часов</span>
+          <input type="number" name="request_hours_before" value="336"></label>
+        <label><span>Заявки закрыть через, часов</span>
+          <input type="number" name="request_hours_after" value="4"></label>
+        <label><span>Check-in открыть за, часов</span>
+          <input type="number" name="checkin_hours_before" value="2"></label>
+        <label><span>Check-in закрыть через, часов</span>
+          <input type="number" name="checkin_hours_after" value="8"></label>
+      </div>
+      <div class="hint">Часы считаются от начала ивента. 336 часов — это две недели.</div>
+
+      <button class="primary" type="submit">Сохранить</button>
+    </fieldset>
+  </form>
+{% endif %}
+</div>
+</body>
+</html>

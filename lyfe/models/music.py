@@ -85,6 +85,10 @@ class EventTrack(PKMixin, TimestampMixin, Base):
         ForeignKey("admin_users.id", ondelete="SET NULL")
     )
 
+    # Bought with points: pinned to the top of the DJ screen, guaranteed to play.
+    is_priority: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    priority_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
     track: Mapped["Track"] = relationship(lazy="joined")
 
     @property

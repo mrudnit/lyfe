@@ -1,0 +1,29 @@
+# Production overlay. Always start with BOTH files:
+#
+#   docker compose -f docker-compose.yml -f deploy/docker-compose.prod.yml up -d
+#
+# The base file publishes no application ports, so nothing is reachable from the
+# internet except through Caddy.
+services:
+  dj:
+    environment:
+      ENV: prod
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - dj
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    ports:
+      - "80:80"
+      - "443:443"
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -22,7 +22,10 @@ async def award(
     ref_id: int | None = None,
     admin_id: int | None = None,
 ) -> PointTransaction | None:
-    """Returns the new transaction, or None if this key was already used."""
+    """Returns the new transaction, or None if nothing was written."""
+    if delta == 0:
+        return None
+
     existing = await session.execute(
         select(PointTransaction).where(PointTransaction.idempotency_key == idempotency_key)
     )

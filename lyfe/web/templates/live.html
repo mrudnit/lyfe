@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>LYFE DJ</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; background: #0a0a0b; color: #f4f4f5;
+    padding: 0 0 env(safe-area-inset-bottom);
+    font: 400 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  header {
+    position: sticky; top: 0; z-index: 10; background: #0a0a0bfa;
+    backdrop-filter: blur(12px); border-bottom: 1px solid #1f1f23;
+    padding: 14px 16px calc(14px + env(safe-area-inset-top)) 16px;
+    padding-top: calc(14px + env(safe-area-inset-top));
+    display: flex; align-items: center; gap: 12px;
+  }
+  header h1 { font-size: 12px; letter-spacing: .28em; margin: 0; font-weight: 600; }
+  header .meta { color: #71717a; font-size: 12px; margin-top: 2px; }
+  header .right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+  .dot.off { background: #ef4444; }
+  .queued { font-size: 12px; color: #fbbf24; }
+  a.logout { color: #52525b; font-size: 12px; text-decoration: none; }
+
+  .list { padding: 12px 12px 96px; display: flex; flex-direction: column; gap: 10px; }
+
+  .card {
+    display: flex; align-items: stretch; gap: 12px;
+    background: #131316; border: 1px solid #232327; border-radius: 16px;
+    padding: 12px; transition: opacity .15s;
+  }
+  .card.priority { border-color: #a16207; background: #1a1509; }
+  .card.played { opacity: .35; }
+  .card.rejected { opacity: .3; }
+  .card.sending { border-color: #a16207; }
+
+  .rank {
+    min-width: 30px; font-size: 13px; color: #52525b;
+    font-variant-numeric: tabular-nums; padding-top: 3px;
+  }
+  .info { flex: 1; min-width: 0; }
+  .title { font-weight: 600; font-size: 16px; line-height: 1.25; }
+  .artist { color: #a1a1aa; font-size: 14px; margin-top: 2px; }
+  .stats { color: #52525b; font-size: 12px; margin-top: 6px; }
+  .badge.pri { background: #422006; color: #fbbf24; }
+  .badge {
+    display: inline-block; background: #1e3a2f; color: #4ade80;
+    font-size: 10px; letter-spacing: .1em; padding: 2px 7px;
+    border-radius: 5px; margin-left: 8px; vertical-align: 1px;
+  }
+  .score {
+    font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums;
+    display: grid; place-items: center; min-width: 44px;
+  }
+
+  .actions { display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+  button {
+    border: 0; border-radius: 12px; font: inherit; font-weight: 700;
+    cursor: pointer; min-height: 56px; min-width: 92px; font-size: 15px;
+  }
+  .play { background: #f4f4f5; color: #0a0a0b; }
+  .undo { background: #27272a; color: #d4d4d8; min-height: 44px; font-size: 13px; font-weight: 500; }
+  .rej  { background: transparent; color: #52525b; min-height: 44px; min-width: 44px;
+          border: 1px solid #27272a; font-size: 17px; }
+  button:active { transform: scale(.97); }
+
+  .empty { color: #52525b; text-align: center; padding: 80px 24px; font-size: 15px; }
+  .toast {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    background: #f4f4f5; color: #0a0a0b; padding: 13px 22px; border-radius: 999px;
+    font-size: 14px; font-weight: 600; opacity: 0; pointer-events: none;
+    transition: opacity .2s; z-index: 50;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>LYFE DJ</h1>
+    <div class="meta">
+      {% if event %}{{ event.title|upper }} · {{ event.status }}{% else %}Нет активного ивента{% endif %}
+    </div>
+  </div>
+  <div class="right">
+    <span class="queued" id="queued"></span>
+    <span class="dot" id="dot"></span>
+    <a class="logout" href="/scan">скан</a>
+    <a class="logout" href="/events">ивенты</a>
+    <a class="logout" href="/logout">выйти</a>
+  </div>
+</header>
+
+<div class="list" id="list"><div class="empty">Загружаю…</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const CAN_PLAY = {{ 'true' if can_play else 'false' }};
+const QUEUE_KEY = 'lyfe_dj_queue';
+const list = document.getElementById('list');
+const dot = document.getElementById('dot');
+const queuedEl = document.getElementById('queued');
+const toastEl = document.getElementById('toast');
+
+let tracks = [];
+let optimistic = {};                       // id -> status applied locally
+let queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+
+function saveQueue() {
+  localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+  queuedEl.textContent = queue.length ? '↑ ' + queue.length : '';
+}
+
+function toast(text) {
+  toastEl.textContent = text;
+  toastEl.classList.add('show');
+  setTimeout(() => toastEl.classList.remove('show'), 1800);
+}
+
+function online(ok) { dot.classList.toggle('off', !ok); }
+
+function render() {
+  if (!tracks.length) {
+    list.innerHTML = '<div class="empty">Пока ни одной заявки.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  tracks.forEach((track, i) => {
+    const status = optimistic[track.id] || track.status;
+    const card = document.createElement('div');
+    card.className = 'card'
+      + (track.is_priority ? ' priority' : '')
+      + (status === 'PLAYED' ? ' played' : '')
+      + (status === 'REJECTED' ? ' rejected' : '')
+      + (queue.some(a => a.id === track.id) ? ' sending' : '');
+
+    const badge = (track.is_priority ? '<span class="badge pri">ГАРАНТИЯ</span>' : '')
+      + (track.is_new ? '<span class="badge">NEW</span>' : '');
+    const actions = !CAN_PLAY ? '' : (status === 'PLAYED'
+      ? `<button class="undo" onclick="act(${track.id},'undo')">Отменить</button>`
+      : `<button class="play" onclick="act(${track.id},'played')">PLAYED</button>
+         <button class="rej" onclick="act(${track.id},'reject')">✕</button>`);
+
+    card.innerHTML = `
+      <div class="rank">${i + 1}</div>
+      <div class="info">
+        <div class="title">${esc(track.title)}${badge}</div>
+        <div class="artist">${esc(track.artist)}</div>
+        <div class="stats">${track.requests} заявок · ${track.votes} голосов</div>
+      </div>
+      <div class="score">${track.score}</div>
+      <div class="actions">${actions}</div>`;
+    list.appendChild(card);
+  });
+}
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+// A tap must never wait for the network. Apply it locally, queue it, move on.
+function act(id, action) {
+  if (action === 'played') { optimistic[id] = 'PLAYED'; toast('PLAYED · пуш через 15 сек'); }
+  if (action === 'undo')   { optimistic[id] = 'NEW'; toast('Отменено, пуш не уйдёт'); }
+  if (action === 'reject') { optimistic[id] = 'REJECTED'; }
+  queue.push({ id, action, at: Date.now() });
+  saveQueue();
+  render();
+  flush();
+}
+
+async function flush() {
+  while (queue.length) {
+    const action = queue[0];
+    try {
+      const response = await fetch(`/api/tracks/${action.id}/${action.action}`, { method: 'POST' });
+      if (response.status === 401) { location.href = '/login'; return; }
+      if (!response.ok) throw new Error(response.status);
+      queue.shift();
+      saveQueue();
+      online(true);
+    } catch (e) {
+      online(false);
+      return;                              // keep the queue, retry on next tick
+    }
+  }
+  refresh();
+}
+
+async function refresh() {
+  try {
+    const response = await fetch('/api/board', { cache: 'no-store' });
+    if (response.status === 401) { location.href = '/login'; return; }
+    const data = await response.json();
+    tracks = data.tracks || [];
+    if (!queue.length) optimistic = {};     // server is authoritative once we are in sync
+    online(true);
+    render();
+  } catch (e) {
+    online(false);
+  }
+}
+
+saveQueue();
+refresh();
+setInterval(() => (queue.length ? flush() : refresh()), 5000);
+window.addEventListener('online', flush);
+</script>
+</body>
+</html>

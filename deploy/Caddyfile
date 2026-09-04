@@ -1,0 +1,15 @@
+# TLS certificates are obtained and renewed automatically.
+# The camera in the door scanner only works over https, so this is not optional.
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Admin screens are not public content.
+	header {
+		X-Frame-Options DENY
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+
+	reverse_proxy dj:8000
+}
