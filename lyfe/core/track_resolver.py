@@ -207,37 +207,94 @@ def find_url(text: str) -> str | None:
 
 
 async def _text_from_link(url: str) -> str | None:
-    """Turn a music link into a searchable string. Never raises."""
+    """Turn any music link into a searchable string. Never raises.
+
+    Most platforms expose an oEmbed endpoint that returns the title without
+    authentication, so one generic path covers almost everything. Anything else
+    falls back to reading the page's og:title, which is what the link preview in
+    Telegram shows anyway.
+    """
     host = (urlparse(url).hostname or "").lower()
+    client = _get_client()
+
+    oembed = {
+        "youtube.com": "https://www.youtube.com/oembed?url={url}&format=json",
+        "youtu.be": "https://www.youtube.com/oembed?url={url}&format=json",
+        "music.youtube.com": "https://www.youtube.com/oembed?url={url}&format=json",
+        "spotify.com": "https://open.spotify.com/oembed?url={url}",
+        "open.spotify.com": "https://open.spotify.com/oembed?url={url}",
+        "tiktok.com": "https://www.tiktok.com/oembed?url={url}",
+        "vm.tiktok.com": "https://www.tiktok.com/oembed?url={url}",
+        "soundcloud.com": "https://soundcloud.com/oembed?format=json&url={url}",
+        "on.soundcloud.com": "https://soundcloud.com/oembed?format=json&url={url}",
+        "mixcloud.com": "https://www.mixcloud.com/oembed/?url={url}&format=json",
+    }
+
+    endpoint = None
+    for domain, template in oembed.items():
+        if host == domain or host.endswith("." + domain):
+            endpoint = template.format(url=quote(url, safe=""))
+            break
+
     try:
-        client = _get_client()
+        if endpoint:
+            response = await client.get(endpoint)
+            response.raise_for_status()
+            data = response.json()
+            title = (data.get("title") or "").strip()
+            author = (data.get("author_name") or "").strip().removesuffix(" - Topic")
 
-        if "youtube.com" in host or "youtu.be" in host:
-            r = await client.get(
-                f"https://www.youtube.com/oembed?url={quote(url, safe='')}&format=json"
-            )
-            r.raise_for_status()
-            data = r.json()
-            title = data.get("title") or ""
-            author = (data.get("author_name") or "").removesuffix(" - Topic")
-            return f"{author} {title}".strip() or None
+            # TikTok titles are captions, not track names; the useful part is
+            # whatever sits before the hashtags.
+            if "tiktok" in host:
+                title = title.split("#")[0].strip()
+                return title or None
 
-        if "spotify.com" in host:
-            r = await client.get(f"https://open.spotify.com/oembed?url={quote(url, safe='')}")
-            r.raise_for_status()
-            return (r.json().get("title") or "").strip() or None
+            if author and author.lower() not in title.lower():
+                return f"{author} {title}".strip()
+            return title or None
 
         if "music.apple.com" in host:
-            # .../album/never-gonna-give-you-up/12345?i=678  -> "never gonna give you up"
-            parts = [p for p in urlparse(url).path.split("/") if p]
-            for part in reversed(parts):
+            # .../album/never-gonna-give-you-up/12345?i=678
+            for part in reversed([p for p in urlparse(url).path.split("/") if p]):
                 if part.isdigit() or len(part) <= 2:
                     continue
                 return part.replace("-", " ")
             return None
+
+        # Anything else: read the page title the way a link preview would.
+        return await _title_from_page(url)
+
     except Exception as exc:  # noqa: BLE001 - links are best effort by design
         logger.info("Could not read link %s: %s", url, exc)
-    return None
+        return None
+
+
+_OG_TITLE = re.compile(
+    r'<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)', re.IGNORECASE
+)
+_HTML_TITLE = re.compile(r"<title[^>]*>([^<]+)</title>", re.IGNORECASE)
+_SITE_SUFFIX = re.compile(
+    r"\s*[|\-–—]\s*(youtube|spotify|soundcloud|tiktok|apple music|"
+    r"yandex\.?music|яндекс музыка|вконтакте|vk|music)\s*$",
+    re.IGNORECASE,
+)
+
+
+async def _title_from_page(url: str) -> str | None:
+    """Last resort: pull og:title out of the page. Works for Yandex Music, VK,
+    Bandcamp and most sites we have not special-cased."""
+    response = await _get_client().get(url, headers={"Accept": "text/html"})
+    response.raise_for_status()
+    html = response.text[:200_000]
+
+    match = _OG_TITLE.search(html) or _HTML_TITLE.search(html)
+    if not match:
+        return None
+
+    title = match.group(1).strip()
+    title = _SITE_SUFFIX.sub("", title)
+    return title or None
 
 
 # --------------------------------------------------------------------------

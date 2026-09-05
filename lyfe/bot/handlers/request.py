@@ -81,6 +81,42 @@ async def start_request(message: Message, user: User, session: AsyncSession, sta
     )
 
 
+@router.message(RequestFlow.waiting_for_query, F.audio)
+async def handle_audio(message: Message, user: User, session: AsyncSession, state: FSMContext):
+    """Someone forwarded a track from another chat. The tags are right there,
+    so there is nothing to search for."""
+    audio = message.audio
+    artist = (audio.performer or "").strip()
+    title = (audio.title or audio.file_name or "").strip()
+    if title.lower().endswith((".mp3", ".m4a", ".wav", ".flac", ".ogg")):
+        title = title.rsplit(".", 1)[0]
+
+    query = f"{artist} {title}".strip()
+    if not query:
+        await message.answer(t("request_not_found", user.language), reply_markup=_cancel_keyboard(user.language))
+        await state.set_state(RequestFlow.waiting_for_manual)
+        return
+
+    searching = await message.answer(t("request_searching", user.language))
+    results = await track_resolver.resolve(query)
+    try:
+        await searching.delete()
+    except Exception:  # noqa: BLE001
+        pass
+
+    if results:
+        await _offer_candidates(message, user, state, results, query)
+        return
+
+    resolved = track_resolver.ResolvedTrack(
+        artist_name=artist, title=title or query, provider="manual"
+    )
+    await _finish(
+        message, user=user, session=session, state=state,
+        resolved=resolved, source=RequestSource.LINK, raw_input=query,
+    )
+
+
 @router.message(RequestFlow.waiting_for_query, F.text)
 async def handle_query(message: Message, user: User, session: AsyncSession, state: FSMContext):
     lang = user.language
@@ -105,6 +141,12 @@ async def handle_query(message: Message, user: User, session: AsyncSession, stat
         await message.answer(t("request_not_found", lang), reply_markup=_cancel_keyboard(lang))
         return
 
+    await _offer_candidates(message, user, state, results, query)
+
+
+async def _offer_candidates(message, user, state, results, query) -> None:
+    lang = user.language
+    await state.set_state(RequestFlow.waiting_for_query)
     await state.update_data(
         candidates=[
             {
