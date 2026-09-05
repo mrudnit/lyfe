@@ -233,6 +233,11 @@ TEXTS = {
     "priority_no_tracks": "Спершу запропонуй трек - гарантія ставиться на свій.",
     "priority_full": "На цю ніч гарантії розібрали. Їх лише дві.",
 
+    "top_page": "Показано {shown} з {total}.",
+    "top_your_tracks": "Твої треки:",
+    "btn_more": "Ще ↓",
+    "btn_top_back": "↑ Вище",
+
     # ---------- generic ----------
     "unknown_input": (
         "Не зрозумів.\n"

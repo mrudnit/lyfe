@@ -57,7 +57,7 @@ async def current_event(session: AsyncSession) -> Event | None:
     )
 
 
-async def board(session: AsyncSession, *, event_id: int, limit: int = 60) -> list[TrackRow]:
+async def board(session: AsyncSession, *, event_id: int, limit: int = 200) -> list[TrackRow]:
     now = datetime.now(timezone.utc)
     fresh_after = now - timedelta(minutes=NEW_WINDOW_MINUTES)
 

@@ -200,21 +200,79 @@ async def add_request(
     )
 
 
-async def top_requests(session: AsyncSession, *, event_id: int, limit: int = 10):
-    """Ordered list of (EventTrack, Track) for an event."""
+def _top_ordering():
+    return (
+        (EventTrack.requests_count + EventTrack.votes_count).desc(),
+        EventTrack.id.asc(),
+    )
+
+
+async def top_requests(
+    session: AsyncSession, *, event_id: int, limit: int = 10, offset: int = 0
+):
+    """One page of the chart, ordered by demand."""
     rows = await session.execute(
         select(EventTrack)
         .where(
             EventTrack.event_id == event_id,
             EventTrack.status != TrackStatus.REJECTED,
         )
-        .order_by(
-            (EventTrack.requests_count + EventTrack.votes_count).desc(),
-            EventTrack.id.asc(),
-        )
+        .order_by(*_top_ordering())
+        .offset(offset)
         .limit(limit)
     )
     return list(rows.scalars().unique())
+
+
+async def top_count(session: AsyncSession, *, event_id: int) -> int:
+    return int(
+        await session.scalar(
+            select(func.count(EventTrack.id)).where(
+                EventTrack.event_id == event_id,
+                EventTrack.status != TrackStatus.REJECTED,
+            )
+        )
+        or 0
+    )
+
+
+async def user_track_positions(
+    session: AsyncSession, *, user_id: int, event_id: int
+) -> list[tuple[int, str]]:
+    """Where this person's own tracks sit in the chart.
+
+    Someone who added a track and cannot find it on the first page assumes it
+    was lost, so the position is shown explicitly however far down it is.
+    """
+    ranked = await session.execute(
+        select(
+            EventTrack.id,
+            func.row_number().over(order_by=_top_ordering()).label("position"),
+        ).where(
+            EventTrack.event_id == event_id,
+            EventTrack.status != TrackStatus.REJECTED,
+        )
+    )
+    positions = {row.id: row.position for row in ranked.all()}
+    if not positions:
+        return []
+
+    mine = await session.execute(
+        select(EventTrack.id, Track.artist_name, Track.title)
+        .join(Track, Track.id == EventTrack.track_id)
+        .join(TrackRequest, TrackRequest.event_track_id == EventTrack.id)
+        .where(
+            TrackRequest.user_id == user_id,
+            EventTrack.event_id == event_id,
+            EventTrack.status != TrackStatus.REJECTED,
+        )
+    )
+    result = [
+        (positions[row.id], f"{row.artist_name} - {row.title}")
+        for row in mine.all()
+        if row.id in positions
+    ]
+    return sorted(result)
 
 
 class VoteResult:
