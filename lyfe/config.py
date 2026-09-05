@@ -41,9 +41,11 @@ class Settings(BaseSettings):
 
     # Points
     points_music_request: int = 1
-    # Zero on purpose: liking is free and pleasant, and paying for it let a
-    # person on their sofa out-earn someone who actually turned up.
-    points_vote: int = 0
+    points_vote: int = 1
+    # Only the first N likes per event are paid. Without a cap a person could
+    # like all ten tracks in TOP from their sofa and out-earn someone who
+    # actually turned up.
+    max_paid_votes_per_event: int = 3
     points_attendance: int = 10
     cost_priority_track: int = 40
 

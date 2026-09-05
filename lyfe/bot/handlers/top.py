@@ -63,7 +63,7 @@ async def _render(
         else:
             mark = ""
         lines.append(
-            f"{index}. {event_track.track.display} — {event_track.score} {mark}".rstrip()
+            f"{index:02d}  {event_track.track.display}  {event_track.score} {mark}".rstrip()
         )
         buttons.append(
             InlineKeyboardButton(

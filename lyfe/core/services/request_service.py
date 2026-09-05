@@ -21,6 +21,7 @@ from lyfe.models import (
     Event,
     EventTrack,
     PointsReason,
+    PointTransaction,
     RequestSource,
     Track,
     TrackRequest,
@@ -263,16 +264,25 @@ async def add_vote(session: AsyncSession, *, user_id: int, event_track_id: int) 
         await session.rollback()
         return VoteResult.ALREADY_VOTED
 
-    await points_service.award(
-        session,
-        user_id=user_id,
-        delta=settings.points_vote,
-        reason_code=PointsReason.VOTE,
-        idempotency_key=f"vote:{vote.id}",
-        event_id=event.id,
-        ref_type="track_vote",
-        ref_id=vote.id,
+    # Points for the first few likes only.
+    paid_votes = await session.scalar(
+        select(func.count(PointTransaction.id)).where(
+            PointTransaction.user_id == user_id,
+            PointTransaction.event_id == event.id,
+            PointTransaction.reason_code == PointsReason.VOTE,
+        )
     )
+    if (paid_votes or 0) < settings.max_paid_votes_per_event:
+        await points_service.award(
+            session,
+            user_id=user_id,
+            delta=settings.points_vote,
+            reason_code=PointsReason.VOTE,
+            idempotency_key=f"vote:{vote.id}",
+            event_id=event.id,
+            ref_type="track_vote",
+            ref_id=vote.id,
+        )
     return VoteResult.VOTED
 
 

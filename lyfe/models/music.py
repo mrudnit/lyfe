@@ -62,7 +62,7 @@ class Track(PKMixin, TimestampMixin, Base):
 
     @property
     def display(self) -> str:
-        return f"{self.artist_name} — {self.title}"
+        return f"{self.artist_name} - {self.title}"
 
 
 class EventTrack(PKMixin, TimestampMixin, Base):

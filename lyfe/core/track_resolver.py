@@ -51,7 +51,7 @@ class ResolvedTrack:
 
     @property
     def display(self) -> str:
-        return f"{self.artist_name} — {self.title}"
+        return f"{self.artist_name} - {self.title}"
 
     @property
     def normalized_key(self) -> str:
