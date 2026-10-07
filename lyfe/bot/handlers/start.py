@@ -9,7 +9,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from lyfe.bot.keyboards import button_texts, main_menu
+from lyfe.bot.keyboards import button_texts, main_menu, open_app_inline
 from lyfe.core.services import event_service, user_service
 from lyfe.i18n import days_word, t
 from lyfe.models import Attendance, EventTrack, TrackRequest, TrackStatus, User
@@ -33,6 +33,10 @@ async def cmd_start(message: Message, user: User, is_new_user: bool, session: As
         )
 
     await _send_next_event(message, user, session)
+
+    app_button = open_app_inline(lang)
+    if app_button is not None:
+        await message.answer(t("open_app", lang), reply_markup=app_button)
 
 
 @router.message(F.text.in_(button_texts("btn_next_event")))
@@ -118,5 +122,9 @@ async def show_my_lyfe(message: Message, user: User, session: AsyncSession):
 
 @router.message(F.text)
 async def fallback(message: Message, user: User):
-    # In step 2 this becomes the track search entry point.
-    await message.answer(t("unknown_input", user.language), reply_markup=main_menu(user.language))
+    lang = user.language
+    app_button = open_app_inline(lang)
+    if app_button is not None:
+        await message.answer(t("open_app", lang), reply_markup=app_button)
+        return
+    await message.answer(t("unknown_input", lang), reply_markup=main_menu(lang))

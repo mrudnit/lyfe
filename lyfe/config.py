@@ -48,6 +48,15 @@ class Settings(BaseSettings):
     max_paid_votes_per_event: int = 3
     points_attendance: int = 10
     cost_priority_track: int = 40
+    # BOOST: spend points to lift a track in TOP REQUESTS, one point = one place
+    # of score. Capped per night so a full wallet cannot buy the whole chart.
+    cost_boost: int = 5
+    max_boosts_per_event: int = 3
+
+    # Mini App. The public https address of the web service, e.g.
+    # https://lyfe-web-production.up.railway.app — the bot opens <url>/app.
+    # Empty means the bot keeps working with chat buttons only.
+    webapp_url: str = ""
 
     # Web admin / DJ screen
     admin_secret_key: str = "change-me"

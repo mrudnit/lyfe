@@ -253,6 +253,43 @@ TEXTS = {
     "btn_more": "Ещё ↓",
     "btn_top_back": "↑ Выше",
 
+    # ---------- links and manual entry ----------
+    "request_link_unreadable": (
+        "Не смог открыть эту ссылку.\n"
+        "\n"
+        "Пришли другую (Spotify, YouTube, Apple Music)\n"
+        "или просто напиши: Артист - Название."
+    ),
+    "request_link_no_match": (
+        "По ссылке это «{text}».\n"
+        "\n"
+        "В каталоге такого не нашёл.\n"
+        "Напиши «Артист - Название», и я добавлю."
+    ),
+    "request_manual_format": (
+        "Нужно так: Артист - Название.\n"
+        "\n"
+        "Например: Travis Scott - FE!N"
+    ),
+
+    # ---------- mini app ----------
+    "btn_open_app": "✨ ОТКРЫТЬ LYFE",
+    "open_app": (
+        "Всё теперь здесь 👇\n"
+        "\n"
+        "Трек, TOP REQUESTS, LYFE PASS и LYFE POINTS."
+    ),
+    "gift_points": (
+        "⭐ +{points} LYFE POINTS\n"
+        "\n"
+        "Сканер на входе не успел за всеми.\n"
+        "Баллы за ночь всё равно твои.\n"
+        "\n"
+        "Подними ими свой трек в TOP REQUESTS.\n"
+        "\n"
+        "FEEL THE LYFE"
+    ),
+
     # ---------- generic ----------
     "unknown_input": (
         "Не понял.\n"

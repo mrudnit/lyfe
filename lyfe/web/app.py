@@ -28,7 +28,7 @@ from lyfe.core.services import (
 from lyfe.core.services.attendance_service import CheckinResult
 from lyfe.db import SessionFactory
 from lyfe.models import AdminRole, AdminUser, City, Event, EventStatus
-from lyfe.web import notifier
+from lyfe.web import miniapp, notifier
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -51,6 +51,7 @@ app.mount(
     StaticFiles(directory=str(Path(__file__).parent / "static")),
     name="static",
 )
+app.include_router(miniapp.router)
 
 
 async def get_session() -> AsyncSession:

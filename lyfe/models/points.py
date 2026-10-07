@@ -21,6 +21,8 @@ class PointsReason:
     ACTIVITY = "ACTIVITY"
     MANUAL_ADJUSTMENT = "MANUAL_ADJUSTMENT"
     REWARD_REDEMPTION = "REWARD_REDEMPTION"
+    BOOST = "BOOST"
+    GIFT = "GIFT"
 
 
 class PointTransaction(PKMixin, TimestampMixin, Base):

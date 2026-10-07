@@ -34,6 +34,7 @@ class TrackRow:
     title: str
     requests: int
     votes: int
+    boosts: int
     score: int
     status: str
     is_new: bool
@@ -68,7 +69,7 @@ async def board(session: AsyncSession, *, event_id: int, limit: int = 200) -> li
         .order_by(
             # Guaranteed plays sit on top — that is what was paid for.
             EventTrack.is_priority.desc(),
-            (EventTrack.requests_count + EventTrack.votes_count).desc(),
+            (EventTrack.requests_count + EventTrack.votes_count + EventTrack.boost_points).desc(),
             EventTrack.id.asc(),
         )
         .limit(limit)
@@ -83,7 +84,8 @@ async def board(session: AsyncSession, *, event_id: int, limit: int = 200) -> li
                 title=track.title,
                 requests=event_track.requests_count,
                 votes=event_track.votes_count,
-                score=event_track.requests_count + event_track.votes_count,
+                boosts=event_track.boost_points,
+                score=event_track.score,
                 status=event_track.status,
                 is_new=event_track.created_at > fresh_after,
                 is_priority=event_track.is_priority,
