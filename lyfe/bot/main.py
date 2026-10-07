@@ -7,7 +7,10 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
+from aiogram.types import MenuButtonWebApp, WebAppInfo
+
 from lyfe.bot.handlers import router
+from lyfe.bot.keyboards import webapp_url
 from lyfe.bot.middlewares import DatabaseMiddleware
 from lyfe.config import get_settings
 from lyfe.core import track_resolver
@@ -32,6 +35,14 @@ async def main() -> None:
 
     me = await bot.get_me()
     logger.info("LYFE bot starting as @%s", me.username)
+
+    url = webapp_url()
+    if url:
+        # The button left of the message field opens the Mini App in every chat.
+        await bot.set_chat_menu_button(
+            menu_button=MenuButtonWebApp(text="LYFE", web_app=WebAppInfo(url=url))
+        )
+        logger.info("Mini App at %s", url)
 
     await bot.delete_webhook(drop_pending_updates=True)
     try:

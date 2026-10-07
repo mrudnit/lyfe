@@ -4,7 +4,9 @@ All the rules live here, not in the bot handlers:
   - the event must be open for requests
   - one person cannot ask for the same track twice
   - a person is capped at N tracks per event
-  - identical tracks from different people collapse into one row for the DJ
+  - identical tracks from different people collapse into one row for the DJ,
+    and so do near-identical ones ("Макс Корж" from iTunes, "Max Korzh" from
+    Deezer, a hand-typed "korzh malyy povzroslel")
   - points are awarded through the ledger, once, idempotently
 """
 from dataclasses import dataclass
@@ -16,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from lyfe.config import get_settings
 from lyfe.core.services import points_service
-from lyfe.core.track_resolver import ResolvedTrack
+from lyfe.core.track_resolver import SAME_TRACK_THRESHOLD, ResolvedTrack, similarity
 from lyfe.models import (
     Event,
     EventTrack,
@@ -27,6 +29,7 @@ from lyfe.models import (
     TrackRequest,
     TrackStatus,
     TrackVote,
+    User,
 )
 
 settings = get_settings()
@@ -57,6 +60,48 @@ async def count_user_requests(session: AsyncSession, *, user_id: int, event_id: 
         )
         or 0
     )
+
+
+async def find_in_event(
+    session: AsyncSession, *, event_id: int, resolved: ResolvedTrack
+) -> EventTrack | None:
+    """The row this track already has in the event's list, if any.
+
+    The exact key catches the same song from the same catalogue. Similarity
+    catches the rest: two catalogues spelling an artist differently, a link
+    whose page title differs from the catalogue, a hand-typed entry.
+    """
+    return (await match_in_event(session, event_id=event_id, candidates=[resolved]))[0]
+
+
+async def match_in_event(
+    session: AsyncSession, *, event_id: int, candidates: list[ResolvedTrack]
+) -> list[EventTrack | None]:
+    """find_in_event for a whole list of search results, reading the event once."""
+    rows = (
+        await session.execute(
+            select(EventTrack, Track)
+            .join(Track, Track.id == EventTrack.track_id)
+            .where(EventTrack.event_id == event_id)
+        )
+    ).all()
+    by_key = {track.normalized_key: event_track for event_track, track in rows}
+
+    matches: list[EventTrack | None] = []
+    for resolved in candidates:
+        exact = by_key.get(resolved.normalized_key)
+        if exact is not None:
+            matches.append(exact)
+            continue
+        best, best_score = None, 0.0
+        for event_track, track in rows:
+            score = similarity(
+                resolved.artist_name, resolved.title, track.artist_name, track.title
+            )
+            if score > best_score:
+                best, best_score = event_track, score
+        matches.append(best if best_score >= SAME_TRACK_THRESHOLD else None)
+    return matches
 
 
 async def _get_or_create_track(session: AsyncSession, resolved: ResolvedTrack) -> Track:
@@ -143,10 +188,14 @@ async def add_request(
 
     used = await count_user_requests(session, user_id=user_id, event_id=event.id)
 
-    track = await _get_or_create_track(session, resolved)
-    event_track = await _get_or_create_event_track(
-        session, event_id=event.id, track_id=track.id
-    )
+    event_track = await find_in_event(session, event_id=event.id, resolved=resolved)
+    if event_track is not None:
+        track = await session.get(Track, event_track.track_id)
+    else:
+        track = await _get_or_create_track(session, resolved)
+        event_track = await _get_or_create_event_track(
+            session, event_id=event.id, track_id=track.id
+        )
 
     existing = await session.scalar(
         select(TrackRequest).where(
@@ -200,9 +249,14 @@ async def add_request(
     )
 
 
+def score_expression():
+    return EventTrack.requests_count + EventTrack.votes_count + EventTrack.boost_points
+
+
 def _top_ordering():
     return (
-        (EventTrack.requests_count + EventTrack.votes_count).desc(),
+        EventTrack.is_priority.desc(),
+        score_expression().desc(),
         EventTrack.id.asc(),
     )
 
@@ -364,3 +418,82 @@ async def user_interactions(
         )
     )
     return set(requested.scalars()), set(voted.scalars())
+
+
+class BoostResult:
+    BOOSTED = "BOOSTED"
+    NOT_ENOUGH_POINTS = "NOT_ENOUGH_POINTS"
+    LIMIT_REACHED = "LIMIT_REACHED"
+    EVENT_CLOSED = "EVENT_CLOSED"
+    NOT_FOUND = "NOT_FOUND"
+    PLAYED = "PLAYED"
+
+
+@dataclass
+class BoostOutcome:
+    status: str
+    balance: int = 0
+    used: int = 0
+    score: int = 0
+
+
+async def boosts_used(session: AsyncSession, *, user_id: int, event_id: int) -> int:
+    return int(
+        await session.scalar(
+            select(func.count(PointTransaction.id)).where(
+                PointTransaction.user_id == user_id,
+                PointTransaction.event_id == event_id,
+                PointTransaction.reason_code == PointsReason.BOOST,
+            )
+        )
+        or 0
+    )
+
+
+async def boost(session: AsyncSession, *, user_id: int, event_track_id: int) -> BoostOutcome:
+    """Spend points to lift a track: cost_boost points become cost_boost score.
+
+    Works on any track, own or someone else's — backing a track you love is the
+    point. Unlike a guaranteed play it promises nothing, so it is never refunded.
+    """
+    from lyfe.core.services import user_service
+
+    event_track = await session.get(EventTrack, event_track_id)
+    if event_track is None or event_track.status == TrackStatus.REJECTED:
+        return BoostOutcome(status=BoostResult.NOT_FOUND)
+    if event_track.status == TrackStatus.PLAYED:
+        return BoostOutcome(status=BoostResult.PLAYED)
+
+    event = await session.get(Event, event_track.event_id)
+    if event is None or not event.accepts_requests(datetime.now(timezone.utc)):
+        return BoostOutcome(status=BoostResult.EVENT_CLOSED)
+
+    # Serialise everything this person does with their balance, same as rewards.
+    await session.execute(select(User.id).where(User.id == user_id).with_for_update())
+
+    balance = await user_service.get_points_balance(session, user_id)
+    used = await boosts_used(session, user_id=user_id, event_id=event.id)
+    if used >= settings.max_boosts_per_event:
+        return BoostOutcome(status=BoostResult.LIMIT_REACHED, balance=balance, used=used)
+    if balance < settings.cost_boost:
+        return BoostOutcome(status=BoostResult.NOT_ENOUGH_POINTS, balance=balance, used=used)
+
+    await points_service.award(
+        session,
+        user_id=user_id,
+        delta=-settings.cost_boost,
+        reason_code=PointsReason.BOOST,
+        idempotency_key=f"boost:{event.id}:{user_id}:{used + 1}",
+        event_id=event.id,
+        ref_type="event_track",
+        ref_id=event_track.id,
+    )
+    event_track.boost_points += settings.cost_boost
+    await session.flush()
+
+    return BoostOutcome(
+        status=BoostResult.BOOSTED,
+        balance=balance - settings.cost_boost,
+        used=used + 1,
+        score=event_track.score,
+    )

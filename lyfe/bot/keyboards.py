@@ -1,11 +1,47 @@
 """Reply keyboards. Four buttons, no more — the user should understand the bot
 in a few seconds, not read a menu."""
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
+from aiogram.types import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+    WebAppInfo,
+)
 
+from lyfe.config import get_settings
 from lyfe.i18n import t
 
 
+def webapp_url() -> str | None:
+    base = get_settings().webapp_url.strip().rstrip("/")
+    if not base:
+        return None
+    return base if base.endswith("/app") else f"{base}/app"
+
+
+def open_app_inline(lang: str) -> InlineKeyboardMarkup | None:
+    url = webapp_url()
+    if not url:
+        return None
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text=t("btn_open_app", lang), web_app=WebAppInfo(url=url))]]
+    )
+
+
 def main_menu(lang: str) -> ReplyKeyboardMarkup:
+    url = webapp_url()
+    if url:
+        # The Mini App does everything. LYFE PASS stays as a chat button because
+        # the photo it sends is cached by Telegram and opens with no signal —
+        # the door is usually in a basement.
+        return ReplyKeyboardMarkup(
+            keyboard=[
+                [KeyboardButton(text=t("btn_open_app", lang), web_app=WebAppInfo(url=url))],
+                [KeyboardButton(text=t("btn_pass", lang))],
+            ],
+            resize_keyboard=True,
+            is_persistent=True,
+        )
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text=t("btn_request", lang)), KeyboardButton(text=t("btn_top", lang))],

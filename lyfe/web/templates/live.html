@@ -153,7 +153,7 @@ function render() {
       <div class="info">
         <div class="title">${esc(track.title)}${badge}</div>
         <div class="artist">${esc(track.artist)}</div>
-        <div class="stats">${track.requests} заявок · ${track.votes} голосов</div>
+        <div class="stats">${track.requests} заявок · ${track.votes} голосов${track.boosts ? ' · ⚡ ' + track.boosts : ''}</div>
       </div>
       <div class="score">${track.score}</div>
       <div class="actions">${actions}</div>`;

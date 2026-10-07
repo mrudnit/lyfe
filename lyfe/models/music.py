@@ -79,6 +79,11 @@ class EventTrack(PKMixin, TimestampMixin, Base):
     # Denormalised counters — read on every TOP screen, so we keep them here.
     requests_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     votes_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Score bought with LYFE POINTS through BOOST. Kept apart from votes so the
+    # DJ can always tell organic demand from paid demand.
+    boost_points: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
 
     played_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     played_by_admin_id: Mapped[int | None] = mapped_column(
@@ -93,7 +98,7 @@ class EventTrack(PKMixin, TimestampMixin, Base):
 
     @property
     def score(self) -> int:
-        return self.requests_count + self.votes_count
+        return self.requests_count + self.votes_count + self.boost_points
 
 
 class TrackRequest(PKMixin, TimestampMixin, Base):

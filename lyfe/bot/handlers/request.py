@@ -128,20 +128,28 @@ async def handle_query(message: Message, user: User, session: AsyncSession, stat
         return
 
     searching = await message.answer(t("request_searching", lang))
-    results = await track_resolver.resolve(query)
+    resolution = await track_resolver.resolve_detailed(query)
 
     try:
         await searching.delete()
     except Exception:  # noqa: BLE001 - deleting is cosmetic
         pass
 
-    if not results:
-        await state.set_state(RequestFlow.waiting_for_manual)
-        await state.update_data(raw_input=query)
-        await message.answer(t("request_not_found", lang), reply_markup=_cancel_keyboard(lang))
+    # A link we could not open is not a track. Ask again rather than guess.
+    if resolution.link_unreadable:
+        await message.answer(t("request_link_unreadable", lang), reply_markup=_cancel_keyboard(lang))
         return
 
-    await _offer_candidates(message, user, state, results, query)
+    if not resolution.candidates:
+        await state.set_state(RequestFlow.waiting_for_manual)
+        await state.update_data(raw_input=resolution.link_text or query)
+        key = "request_link_no_match" if resolution.link else "request_not_found"
+        await message.answer(
+            t(key, lang, text=resolution.link_text or ""), reply_markup=_cancel_keyboard(lang)
+        )
+        return
+
+    await _offer_candidates(message, user, state, resolution.candidates, query)
 
 
 async def _offer_candidates(message, user, state, results, query) -> None:
@@ -218,6 +226,14 @@ async def ask_manual(callback: CallbackQuery, user: User, state: FSMContext):
 @router.message(RequestFlow.waiting_for_manual, F.text)
 async def handle_manual(message: Message, user: User, session: AsyncSession, state: FSMContext):
     text = (message.text or "").strip()[:MAX_QUERY_LENGTH]
+    if track_resolver.find_url(text):
+        # Manual entry is for names. A link here goes back through the search.
+        await state.set_state(RequestFlow.waiting_for_query)
+        await handle_query(message, user, session, state)
+        return
+    if not track_resolver.split_artist_title(text):
+        await message.answer(t("request_manual_format", user.language), reply_markup=_cancel_keyboard(user.language))
+        return
     resolved = track_resolver.manual_track(text)
     await _finish(
         message,

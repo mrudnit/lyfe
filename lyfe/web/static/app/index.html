@@ -1,0 +1,1070 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>LYFE</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  /* LYFE is a night product: always dark, whatever the phone's theme. */
+  :root {
+    color-scheme: dark;
+    --bg: #0a0a0b;
+    --surface: #131316;
+    --surface-2: #1a1a1e;
+    --line: #232327;
+    --line-2: #2e2e33;
+    --text: #f4f4f5;
+    --text-2: #a1a1aa;
+    --text-3: #71717a;
+    --text-4: #52525b;
+    --accent: #f4f4f5;          /* primary action: white on black, like the DJ screen */
+    --on-accent: #0a0a0b;
+    --gold: #fbbf24;            /* LYFE POINTS, guarantee */
+    --gold-bg: #1a1509;
+    --gold-line: #a16207;
+    --heart: #f43f5e;
+    --ok: #4ade80;
+    --ok-bg: #12251c;
+    --warn: #f97316;
+    --radius: 16px;
+    --tabbar: 64px;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body {
+    font: 400 16px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    min-height: var(--tg-viewport-stable-height, 100vh);
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; padding: 0; }
+  button:disabled { cursor: default; }
+  input { font: inherit; }
+
+  .view {
+    padding: 20px 16px calc(var(--tabbar) + var(--safe-b) + 28px);
+    max-width: 560px; margin: 0 auto;
+  }
+
+  /* ---------- type ---------- */
+  .kicker {
+    font-size: 11px; letter-spacing: .28em; text-transform: uppercase;
+    color: var(--text-3); font-weight: 600;
+  }
+  .h-event {
+    font-size: 40px; line-height: 1; font-weight: 800; letter-spacing: -.01em;
+    text-transform: uppercase; margin: 10px 0 0; word-break: break-word;
+  }
+  .h-screen {
+    font-size: 13px; letter-spacing: .28em; font-weight: 700; margin: 0;
+    text-transform: uppercase;
+  }
+  .sub { color: var(--text-2); font-size: 15px; margin: 6px 0 0; }
+  .muted { color: var(--text-3); }
+  .num { font-variant-numeric: tabular-nums; }
+  .tagline {
+    text-align: center; color: var(--text-4); font-size: 11px;
+    letter-spacing: .4em; margin-top: 36px; font-weight: 600;
+  }
+
+  /* ---------- blocks ---------- */
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 16px;
+  }
+  .stack { display: flex; flex-direction: column; gap: 12px; }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .spacer { flex: 1; }
+  .section { margin-top: 28px; }
+  .section > .kicker { margin-bottom: 10px; display: block; }
+
+  .meta-line {
+    margin-top: 14px; font-size: 13px; letter-spacing: .14em; font-weight: 600;
+    color: var(--text-2); text-transform: uppercase;
+  }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-2);
+    font-size: 13px; font-weight: 600; color: var(--text);
+  }
+  .chip.live { border-color: #7f1d1d; color: #fca5a5; }
+  .chip.live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #ef4444; animation: pulse 1.4s infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; min-height: 52px; border-radius: 14px;
+    font-weight: 700; font-size: 15px; letter-spacing: .04em;
+    transition: transform .08s, opacity .15s;
+  }
+  .btn:active:not(:disabled) { transform: scale(.98); }
+  .btn.primary { background: var(--accent); color: var(--on-accent); }
+  .btn.ghost { border: 1px solid var(--line-2); color: var(--text); }
+  .btn.gold { background: var(--gold); color: #1c1306; }
+  .btn:disabled { opacity: .35; }
+  .btn.small { min-height: 40px; width: auto; padding: 0 16px; font-size: 13px; border-radius: 12px; }
+
+  /* points pill */
+  .points {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--gold-bg); border: 1px solid #3a2a0b; color: var(--gold);
+    padding: 5px 11px; border-radius: 999px; font-weight: 700; font-size: 13px;
+  }
+
+  /* ---------- home ---------- */
+  .countdown { margin-top: 18px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .wallet { display: flex; align-items: center; gap: 14px; }
+  .wallet .big { font-size: 34px; font-weight: 800; color: var(--gold); line-height: 1; }
+  .wallet .lbl { font-size: 11px; letter-spacing: .24em; color: var(--text-3); font-weight: 600; margin-top: 4px; }
+  .mine-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+  .mine-row:first-child { border-top: 0; padding-top: 0; }
+  .pos { min-width: 36px; font-weight: 800; font-size: 18px; color: var(--text-2); }
+  .slots { display: flex; gap: 6px; }
+  .slot { width: 26px; height: 6px; border-radius: 3px; background: var(--line-2); }
+  .slot.on { background: var(--text); }
+
+  /* ---------- request ---------- */
+  .search {
+    position: sticky; top: 0; z-index: 5; background: var(--bg);
+    padding: 12px 0; margin: 0 -16px; padding-left: 16px; padding-right: 16px;
+  }
+  .field {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--line-2);
+    border-radius: 14px; padding: 0 14px; min-height: 52px;
+  }
+  .field:focus-within { border-color: var(--text-3); }
+  .field input {
+    flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--text);
+    font-size: 16px; padding: 14px 0;
+  }
+  .field input::placeholder { color: var(--text-4); }
+  .field .clear { color: var(--text-3); font-size: 18px; padding: 6px; }
+  .hint { color: var(--text-3); font-size: 13px; margin-top: 10px; }
+
+  .linkbox {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--surface-2); border: 1px dashed var(--line-2);
+    border-radius: 12px; padding: 10px 12px; font-size: 14px; margin-bottom: 12px;
+  }
+  .linkbox b { font-weight: 600; }
+
+  .track {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 10px; text-align: left; width: 100%;
+  }
+  .cover {
+    width: 52px; height: 52px; border-radius: 10px; flex: none;
+    background: var(--surface-2) center/cover no-repeat;
+    display: grid; place-items: center; color: var(--text-4); font-size: 20px;
+  }
+  .cover.sm { width: 44px; height: 44px; border-radius: 8px; font-size: 16px; }
+  .tinfo { flex: 1; min-width: 0; }
+  .ttitle { font-weight: 650; font-size: 15px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tartist { color: var(--text-2); font-size: 13px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tnote { font-size: 12px; margin-top: 4px; color: var(--text-3); }
+  .tnote.join { color: var(--gold); }
+  .tnote.yours { color: var(--ok); }
+  .add {
+    flex: none; min-width: 44px; height: 44px; border-radius: 12px; padding: 0 12px;
+    background: var(--accent); color: var(--on-accent); font-weight: 800; font-size: 14px;
+  }
+  .add.join { background: var(--gold); color: #1c1306; }
+  .add:disabled { background: var(--surface-2); color: var(--text-3); }
+
+  .notice {
+    border-radius: 14px; padding: 14px 16px; font-size: 15px;
+    background: var(--surface); border: 1px solid var(--line);
+  }
+  .notice.warn { border-color: #4a2a0a; background: #1a1108; }
+  .notice p { margin: 0; }
+  .notice p + p { margin-top: 6px; }
+
+  .done { text-align: center; padding: 28px 8px 8px; }
+  .done .big-emoji { font-size: 44px; }
+  .done .tt { font-size: 22px; font-weight: 800; margin-top: 12px; }
+  .done .ta { color: var(--text-2); margin-top: 4px; }
+
+  /* ---------- top ---------- */
+  .top-head { display: flex; align-items: flex-start; gap: 12px; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; color: var(--text-3); font-size: 12px; margin-top: 10px; }
+  .chart { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+  .entry {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 10px 10px 10px 8px;
+  }
+  .entry.mine { border-color: #1f3d2c; }
+  .entry.priority { border-color: var(--gold-line); background: var(--gold-bg); }
+  .entry.played { opacity: .4; }
+  .ttitle.clamp { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .entry .tartist .badge { margin: 0 6px 0 0; }
+  .entry .cover.sm { width: 40px; height: 40px; }
+  .entry .act { width: 38px; height: 38px; }
+  .entry .score { min-width: 28px; font-size: 16px; }
+  .rank { min-width: 22px; text-align: center; font-weight: 800; color: var(--text-3); font-size: 14px; }
+  .entry:nth-child(-n+3) .rank { color: var(--text); }
+  .score { min-width: 34px; text-align: right; font-weight: 800; font-size: 17px; }
+  .acts { display: flex; gap: 6px; }
+  .act {
+    width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line-2);
+    display: grid; place-items: center; font-size: 17px;
+  }
+  .act.on { border-color: #4c1d2a; background: #22101a; }
+  .act.bolt { color: var(--gold); }
+  .act:disabled { opacity: .35; }
+  .badge {
+    display: inline-block; font-size: 9px; letter-spacing: .14em; font-weight: 700;
+    padding: 2px 6px; border-radius: 5px; margin-left: 6px; vertical-align: 2px;
+  }
+  .badge.pri { background: #422006; color: var(--gold); }
+  .badge.you { background: var(--ok-bg); color: var(--ok); }
+  .badge.played { background: var(--surface-2); color: var(--text-2); }
+
+  /* ---------- my lyfe ---------- */
+  .who { font-size: 30px; font-weight: 800; text-transform: uppercase; line-height: 1.05; word-break: break-word; }
+  .lid { font-size: 13px; letter-spacing: .24em; color: var(--text-2); font-weight: 600; margin-top: 8px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 18px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+  .stat b { display: block; font-size: 22px; font-weight: 800; }
+  .stat span { font-size: 11px; color: var(--text-3); letter-spacing: .08em; }
+  .spend { display: flex; gap: 12px; align-items: flex-start; }
+  .spend .ic { font-size: 22px; width: 32px; text-align: center; }
+  .spend .nm { font-weight: 700; letter-spacing: .06em; }
+  .spend .ds { color: var(--text-2); font-size: 14px; margin-top: 2px; }
+  .spend .price { color: var(--gold); font-weight: 800; white-space: nowrap; }
+  .earn { display: flex; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .earn:first-child { border-top: 0; }
+  .earn .v { color: var(--gold); font-weight: 700; }
+  .hist { display: flex; justify-content: space-between; padding: 9px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .hist:first-child { border-top: 0; }
+  .hist .d { font-weight: 700; }
+  .hist .d.plus { color: var(--ok); }
+  .hist .d.minus { color: var(--text-2); }
+
+  /* ---------- tab bar ---------- */
+  .tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    background: rgba(10,10,11,.92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line);
+    padding-bottom: var(--safe-b);
+  }
+  .tabs { display: grid; grid-template-columns: repeat(4, 1fr); max-width: 560px; margin: 0 auto; height: var(--tabbar); }
+  .tab {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    color: var(--text-4); font-size: 10px; letter-spacing: .16em; font-weight: 700;
+  }
+  .tab .i { font-size: 20px; line-height: 1; filter: grayscale(1); opacity: .6; }
+  .tab.on { color: var(--text); }
+  .tab.on .i { filter: none; opacity: 1; }
+
+  /* ---------- sheet ---------- */
+  .scrim {
+    position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.6);
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .scrim.show { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 41;
+    background: var(--surface); border-top: 1px solid var(--line-2);
+    border-radius: 22px 22px 0 0; padding: 10px 16px calc(20px + var(--safe-b));
+    max-height: 86vh; overflow-y: auto;
+    transform: translateY(105%); transition: transform .25s cubic-bezier(.2,.8,.2,1);
+    max-width: 560px; margin: 0 auto;
+  }
+  .sheet.show { transform: none; }
+  .grab { width: 40px; height: 4px; border-radius: 2px; background: var(--line-2); margin: 0 auto 16px; }
+  .qr { background: #fff; border-radius: 18px; padding: 10px; width: min(78vw, 300px); margin: 18px auto 0; }
+  .qr svg { width: 100%; height: auto; display: block; }
+
+  .toast {
+    position: fixed; left: 50%; z-index: 60;
+    bottom: calc(var(--tabbar) + var(--safe-b) + 16px);
+    transform: translate(-50%, 8px); opacity: 0; pointer-events: none;
+    background: var(--text); color: var(--bg); padding: 12px 20px; border-radius: 999px;
+    font-size: 14px; font-weight: 700; transition: opacity .2s, transform .2s;
+    max-width: calc(100vw - 32px); text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  .skeleton { background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%); background-size: 200% 100%; animation: sk 1.2s infinite; border-radius: 14px; height: 74px; }
+  @keyframes sk { to { background-position: -200% 0; } }
+  .center { text-align: center; padding: 60px 12px; }
+  .empty-emoji { font-size: 40px; }
+</style>
+</head>
+<body>
+<main class="view" id="view"><div class="center muted">LYFE</div></main>
+
+<nav class="tabbar" id="tabbar" hidden>
+  <div class="tabs">
+    <button class="tab" data-tab="home"><span class="i">🌙</span><span data-l="tab_home"></span></button>
+    <button class="tab" data-tab="add"><span class="i">🎵</span><span data-l="tab_add"></span></button>
+    <button class="tab" data-tab="top"><span class="i">🔥</span><span data-l="tab_top"></span></button>
+    <button class="tab" data-tab="me"><span class="i">❤️</span><span data-l="tab_me"></span></button>
+  </div>
+</nav>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+/* ------------------------------------------------------------------
+   Copy. Brand words stay in English in every language: LYFE, LYFEPARTY,
+   LYFE REQUEST, TOP REQUESTS, MY LYFE, LYFE PASS, LYFE POINTS, FEEL THE LYFE.
+   Short lines, no corporate politeness — same voice as the bot.
+------------------------------------------------------------------ */
+const COPY = {
+  ru: {
+    tab_home: 'НОЧЬ', tab_add: 'ТРЕК', tab_top: 'TOP', tab_me: 'MY LYFE',
+    presents: 'LYFEPARTY presents',
+    today: 'Сегодня ночью', tomorrow: 'Завтра', in_days: 'Через {n} {w}',
+    days: ['день', 'дня', 'дней'],
+    live: 'LIVE', ticket: '🎟 Билет',
+    no_event_t: 'Пока тишина.', no_event_s: 'Дату узнаешь первым.',
+    your_tracks: 'Твои треки сегодня', no_tracks: 'Ты ещё ничего не выбрал.',
+    add_track: '🎵 Добавить трек', slots: '{used} из {max}',
+    wallet: 'LYFE POINTS', wallet_spend: 'На что потратить →',
+    req_title: 'LYFE REQUEST', req_sub: 'Трек, который хочешь услышать {date}.',
+    req_ph: 'Название, артист или ссылка',
+    req_hint: 'Spotify, YouTube, Apple Music, TikTok, SoundCloud — ссылка тоже подойдёт.',
+    searching: 'Ищу…',
+    link_read: 'По ссылке это', link_bad_t: 'Не смог открыть эту ссылку.',
+    link_bad_s: 'Пришли другую или просто напиши название трека.',
+    link_nomatch_t: 'В каталоге такого не нашёл.',
+    not_found_t: 'Не нашёл такой трек.',
+    manual_s: 'Впиши сам в формате «Артист - Название».',
+    manual_ph: 'Артист - Название', manual_btn: 'Добавить как есть',
+    manual_format: 'Нужно так: Артист - Название. Например: Travis Scott - FE!N',
+    manual_link: 'Здесь нужно название, не ссылка.',
+    not_it: 'Не то? Впишу сам', versions: 'Другие версии ↓',
+    in_list: 'Уже в списке · 🔥 {n} — присоединяйся', yours: 'Твой ✓',
+    join: 'Я тоже', added_t: 'Трек принят.', added_first: 'Ты первый, кто его попросил.',
+    added_nth: 'Ты {n}-й, кто его попросил.', added_s: 'Если его поставят — ты узнаешь первым.',
+    already: 'Уже твой. Второй раз не считается.',
+    limit_t: 'Три трека — твой максимум.', limit_s: 'Этого хватит, чтобы развернуть ночь. Дальше решают остальные.',
+    closed_t: 'Ночь закончилась.', closed_s: 'Следующая скоро. Мы напишем.',
+    boost_it: '⚡ Поднять его · {c}', to_top: 'Смотреть TOP', add_more: 'Добавить ещё',
+    top_title: 'TOP REQUESTS', top_empty_t: 'Тишина.', top_empty_s: 'Первый трек этой ночи за тобой.',
+    legend_vote: '❤️ бесплатно · +1', legend_boost: '⚡ {c} POINTS · +{c}',
+    more: 'Ещё ↓', played: 'PLAYED', priority: 'ГАРАНТИЯ', you: 'ТВОЙ',
+    vote_done: 'Голос засчитан 🔥', vote_already: 'Ты уже голосовал за него',
+    vote_own: 'Это твой трек — он уже посчитан', vote_closed: 'Голосование закрыто',
+    boost_q_t: '⚡ BOOST', boost_q: '{c} LYFE POINTS → +{c} к треку\n«{track}»\n\nОсталось бустов на эту ночь: {left}.',
+    boost_go: 'Поднять', cancel: 'Отмена',
+    boost_done: '⚡ +{c}. Трек выше.', boost_poor: 'Нужно {c} LYFE POINTS, у тебя {have}.',
+    boost_limit: 'Бусты на эту ночь закончились.', boost_played: 'Его уже сыграли 🔥',
+    nights: 'Ночей', requests: 'Реквестов', played_n: 'Сыграли',
+    pass_btn: '🎟 LYFE PASS', pass_s: 'Покажи этот код на входе.',
+    spend_title: 'На что потратить', earn_title: 'Как заработать', hist_title: 'История',
+    boost_nm: 'BOOST', boost_ds: '+{c} к любому треку в TOP. До {max} раз за ночь.',
+    boost_left: 'Сегодня осталось: {n}', boost_how: 'Жми ⚡ в TOP REQUESTS',
+    pri_nm: 'ГАРАНТИЯ', pri_ds: 'Твой трек закрепляется у DJ и прозвучит точно. Только {max} за ночь.',
+    pri_btn: 'Выбрать трек', pri_left: 'Осталось на эту ночь: {n}',
+    pri_none: 'Сначала добавь трек — гарантия ставится на свой.', pri_full: 'Разобрали. Их всего две за ночь.',
+    pri_have: 'Твой трек уже закреплён 🎯', pri_pick: 'Какой трек закрепить?',
+    pri_q: '{c} LYFE POINTS — и «{track}» прозвучит этой ночью.\n\nБез «если» и «может быть».',
+    pri_go: 'Закрепить', pri_done: '🎯 Готово. Трек закреплён у DJ.',
+    pri_off: 'Гарантия откроется ближе к ночи.',
+    earn_req: 'Добавить трек', earn_vote: 'Лайк чужому треку (первые 3)', earn_att: 'Прийти на LYFEPARTY',
+    reason: {
+      MUSIC_REQUEST: 'Трек', VOTE: 'Лайк', EVENT_ATTENDANCE: 'Ночь на LYFEPARTY',
+      REWARD_REDEMPTION: 'Гарантия трека', BOOST: 'BOOST', GIFT: 'Подарок от LYFE',
+      MANUAL_ADJUSTMENT: 'Возврат', REFERRAL: 'Друг', ACTIVITY: 'Активность',
+    },
+    hist_empty: 'Пока пусто.',
+    error: 'Что-то сломалось. Минуту.', offline: 'Нет связи. Попробуй ещё раз.',
+    open_tg_t: 'Открой LYFE в Telegram', open_tg_s: 'Эта страница работает только внутри бота.',
+    open_bot: 'Открыть бота',
+  },
+  uk: {
+    tab_home: 'НІЧ', tab_add: 'ТРЕК', tab_top: 'TOP', tab_me: 'MY LYFE',
+    presents: 'LYFEPARTY presents',
+    today: 'Сьогодні вночі', tomorrow: 'Завтра', in_days: 'Через {n} {w}',
+    days: ['день', 'дні', 'днів'],
+    live: 'LIVE', ticket: '🎟 Квиток',
+    no_event_t: 'Поки тиша.', no_event_s: 'Дату дізнаєшся першим.',
+    your_tracks: 'Твої треки сьогодні', no_tracks: 'Ти ще нічого не обрав.',
+    add_track: '🎵 Додати трек', slots: '{used} з {max}',
+    wallet: 'LYFE POINTS', wallet_spend: 'На що витратити →',
+    req_title: 'LYFE REQUEST', req_sub: 'Трек, який хочеш почути {date}.',
+    req_ph: 'Назва, артист або посилання',
+    req_hint: 'Spotify, YouTube, Apple Music, TikTok, SoundCloud — посилання теж підійде.',
+    searching: 'Шукаю…',
+    link_read: 'За посиланням це', link_bad_t: 'Не вдалося відкрити це посилання.',
+    link_bad_s: 'Надішли інше або просто напиши назву треку.',
+    link_nomatch_t: 'У каталозі такого не знайшов.',
+    not_found_t: 'Не знайшов такий трек.',
+    manual_s: 'Впиши сам у форматі «Артист - Назва».',
+    manual_ph: 'Артист - Назва', manual_btn: 'Додати як є',
+    manual_format: 'Потрібно так: Артист - Назва. Наприклад: Travis Scott - FE!N',
+    manual_link: 'Тут потрібна назва, не посилання.',
+    not_it: 'Не те? Впишу сам', versions: 'Інші версії ↓',
+    in_list: 'Вже у списку · 🔥 {n} — приєднуйся', yours: 'Твій ✓',
+    join: 'Я теж', added_t: 'Трек прийнято.', added_first: 'Ти перший, хто його попросив.',
+    added_nth: 'Ти {n}-й, хто його попросив.', added_s: 'Якщо його поставлять — ти дізнаєшся першим.',
+    already: 'Вже твій. Вдруге не рахується.',
+    limit_t: 'Три треки — твій максимум.', limit_s: 'Цього вистачить, щоб розвернути ніч. Далі вирішують інші.',
+    closed_t: 'Ніч закінчилась.', closed_s: 'Наступна скоро. Ми напишемо.',
+    boost_it: '⚡ Підняти його · {c}', to_top: 'Дивитися TOP', add_more: 'Додати ще',
+    top_title: 'TOP REQUESTS', top_empty_t: 'Тиша.', top_empty_s: 'Перший трек цієї ночі за тобою.',
+    legend_vote: '❤️ безкоштовно · +1', legend_boost: '⚡ {c} POINTS · +{c}',
+    more: 'Ще ↓', played: 'PLAYED', priority: 'ГАРАНТІЯ', you: 'ТВІЙ',
+    vote_done: 'Голос зараховано 🔥', vote_already: 'Ти вже голосував за нього',
+    vote_own: 'Це твій трек — він уже врахований', vote_closed: 'Голосування закрите',
+    boost_q_t: '⚡ BOOST', boost_q: '{c} LYFE POINTS → +{c} до треку\n«{track}»\n\nЗалишилось бустів на цю ніч: {left}.',
+    boost_go: 'Підняти', cancel: 'Скасувати',
+    boost_done: '⚡ +{c}. Трек вище.', boost_poor: 'Потрібно {c} LYFE POINTS, у тебе {have}.',
+    boost_limit: 'Бусти на цю ніч закінчились.', boost_played: 'Його вже зіграли 🔥',
+    nights: 'Ночей', requests: 'Реквестів', played_n: 'Зіграли',
+    pass_btn: '🎟 LYFE PASS', pass_s: 'Покажи цей код на вході.',
+    spend_title: 'На що витратити', earn_title: 'Як заробити', hist_title: 'Історія',
+    boost_nm: 'BOOST', boost_ds: '+{c} до будь-якого треку в TOP. До {max} разів за ніч.',
+    boost_left: 'Сьогодні залишилось: {n}', boost_how: 'Тисни ⚡ у TOP REQUESTS',
+    pri_nm: 'ГАРАНТІЯ', pri_ds: 'Твій трек закріплюється у DJ і прозвучить точно. Лише {max} за ніч.',
+    pri_btn: 'Обрати трек', pri_left: 'Залишилось на цю ніч: {n}',
+    pri_none: 'Спершу додай трек — гарантія ставиться на свій.', pri_full: 'Розібрали. Їх лише дві за ніч.',
+    pri_have: 'Твій трек уже закріплено 🎯', pri_pick: 'Який трек закріпити?',
+    pri_q: '{c} LYFE POINTS — і «{track}» прозвучить цієї ночі.\n\nБез «якщо» і «може бути».',
+    pri_go: 'Закріпити', pri_done: '🎯 Готово. Трек закріплено у DJ.',
+    pri_off: 'Гарантія відкриється ближче до ночі.',
+    earn_req: 'Додати трек', earn_vote: 'Лайк чужому треку (перші 3)', earn_att: 'Прийти на LYFEPARTY',
+    reason: {
+      MUSIC_REQUEST: 'Трек', VOTE: 'Лайк', EVENT_ATTENDANCE: 'Ніч на LYFEPARTY',
+      REWARD_REDEMPTION: 'Гарантія треку', BOOST: 'BOOST', GIFT: 'Подарунок від LYFE',
+      MANUAL_ADJUSTMENT: 'Повернення', REFERRAL: 'Друг', ACTIVITY: 'Активність',
+    },
+    hist_empty: 'Поки порожньо.',
+    error: 'Щось пішло не так. Хвилину.', offline: 'Немає зв’язку. Спробуй ще раз.',
+    open_tg_t: 'Відкрий LYFE у Telegram', open_tg_s: 'Ця сторінка працює лише всередині бота.',
+    open_bot: 'Відкрити бота',
+  },
+};
+
+const BOT_USERNAME = '__BOT_USERNAME__';
+const tg = window.Telegram && window.Telegram.WebApp;
+const INIT_DATA = (tg && tg.initData) || '';
+
+let lang = ((tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code) || 'ru').startsWith('uk') ? 'uk' : 'ru';
+const S = { me: null, top: null, tab: 'home', search: null, query: '', busy: false };
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const view = $('#view');
+
+function L(key, vars) {
+  let s = (COPY[lang] && COPY[lang][key]) ?? COPY.ru[key] ?? key;
+  if (vars && typeof s === 'string') for (const k in vars) s = s.split('{' + k + '}').join(vars[k]);
+  return s;
+}
+function plural(n, forms) {
+  n = Math.abs(n) % 100; const n1 = n % 10;
+  if (n > 10 && n < 20) return forms[2];
+  if (n1 > 1 && n1 < 5) return forms[1];
+  if (n1 === 1) return forms[0];
+  return forms[2];
+}
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function haptic(kind) {
+  try {
+    if (!tg || !tg.HapticFeedback) return;
+    if (kind === 'ok' || kind === 'error' || kind === 'warning') tg.HapticFeedback.notificationOccurred(kind === 'ok' ? 'success' : kind);
+    else tg.HapticFeedback.impactOccurred(kind || 'light');
+  } catch (e) {}
+}
+let toastTimer;
+function toast(text) {
+  const el = $('#toast');
+  el.textContent = text; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+function confirmBox(title, message, okText) {
+  return new Promise(resolve => {
+    if (tg && tg.showPopup && tg.isVersionAtLeast && tg.isVersionAtLeast('6.2')) {
+      tg.showPopup({ title, message: message.slice(0, 256), buttons: [
+        { id: 'ok', type: 'default', text: okText }, { id: 'no', type: 'cancel' },
+      ] }, id => resolve(id === 'ok'));
+    } else {
+      resolve(window.confirm(title + '\n\n' + message));
+    }
+  });
+}
+
+async function api(path, opts = {}) {
+  const init = { method: opts.method || 'GET', headers: { 'X-Telegram-Init-Data': INIT_DATA } };
+  if (opts.body !== undefined) {
+    init.headers['Content-Type'] = 'application/json';
+    init.body = JSON.stringify(opts.body);
+    init.method = opts.method || 'POST';
+  }
+  let res;
+  try { res = await fetch(path, init); }
+  catch (e) { toast(L('offline')); throw e; }
+  if (res.status === 401) { renderOutside(); throw new Error('401'); }
+  if (!res.ok) { toast(L('error')); throw new Error(String(res.status)); }
+  return res.json();
+}
+
+/* ------------------------------------------------------------------ */
+
+function setPoints(points) {
+  if (S.me && typeof points === 'number') S.me.user.points = points;
+}
+function rules() { return S.me.rules; }
+function tonight() { return S.me.tonight || { requests_used: 0, boosts_used: 0, own: [] }; }
+function cover(url, small) {
+  return url
+    ? `<div class="cover${small ? ' sm' : ''}" style="background-image:url('${esc(url)}')"></div>`
+    : `<div class="cover${small ? ' sm' : ''}">♪</div>`;
+}
+function countdownText(ev) {
+  if (ev.status === 'LIVE') return `<span class="chip live">${L('live')}</span>`;
+  const t = ev.days <= 0 ? L('today') : ev.days === 1 ? L('tomorrow') : L('in_days', { n: ev.days, w: plural(ev.days, L('days')) });
+  return `<span class="chip">⏳ ${esc(t)}</span>`;
+}
+
+/* ---------------- tabs ---------------- */
+
+function go(tab, opts = {}) {
+  S.tab = tab;
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  window.scrollTo(0, 0);
+  if (tab === 'home') renderHome();
+  if (tab === 'add') renderAdd(opts);
+  if (tab === 'top') loadTop();
+  if (tab === 'me') renderMe(opts);
+}
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { haptic('light'); go(b.dataset.tab); }));
+
+async function refreshMe() {
+  S.me = await api('/api/app/me');
+  lang = S.me.user.language === 'uk' ? 'uk' : 'ru';
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-l]').forEach(el => { el.textContent = L(el.dataset.l); });
+}
+
+/* ---------------- НОЧЬ ---------------- */
+
+function renderHome() {
+  const { event: ev, user } = S.me;
+  const tn = tonight();
+  if (!ev) {
+    view.innerHTML = `
+      <div class="center"><div class="empty-emoji">🌙</div>
+        <div class="h-screen" style="margin-top:16px">${esc(L('no_event_t'))}</div>
+        <p class="sub">${esc(L('no_event_s'))}</p></div>
+      ${walletCard(user)}
+      <div class="tagline">FEEL THE LYFE</div>`;
+    bindWallet();
+    return;
+  }
+  const own = tn.own.length
+    ? tn.own.map(o => `<div class="mine-row"><div class="pos num">${String(o.position).padStart(2, '0')}</div><div class="tinfo"><div class="ttitle">${esc(o.name)}</div></div></div>`).join('')
+    : `<p class="muted" style="margin:0">${esc(L('no_tracks'))}</p>`;
+  const slots = Array.from({ length: rules().requests_max }, (_, i) => `<span class="slot${i < tn.requests_used ? ' on' : ''}"></span>`).join('');
+
+  view.innerHTML = `
+    <div class="kicker">${esc(L('presents'))}</div>
+    <h1 class="h-event">${esc(ev.title)}</h1>
+    <div class="meta-line">📍 ${esc([ev.date, ev.time, ev.venue, ev.city].filter(Boolean).join(' · '))}</div>
+    <div class="countdown">${countdownText(ev)}</div>
+    ${ev.ticket_url ? `<div style="margin-top:18px"><button class="btn ghost" id="ticket">${esc(L('ticket'))}</button></div>` : ''}
+
+    <div class="section">
+      <span class="kicker">${esc(L('your_tracks'))}</span>
+      <div class="card">
+        ${own}
+        <div class="row" style="margin-top:14px">
+          <div class="slots">${slots}</div>
+          <span class="muted num" style="font-size:13px">${esc(L('slots', { used: tn.requests_used, max: rules().requests_max }))}</span>
+          <span class="spacer"></span>
+        </div>
+        ${ev.accepts_requests && tn.requests_used < rules().requests_max
+          ? `<button class="btn primary" style="margin-top:14px" id="goadd">${esc(L('add_track'))}</button>` : ''}
+      </div>
+    </div>
+
+    ${walletCard(user)}
+    <div class="tagline">FEEL THE LYFE</div>`;
+
+  const t = $('#ticket'); if (t) t.onclick = () => (tg && tg.openLink ? tg.openLink(ev.ticket_url) : window.open(ev.ticket_url));
+  const a = $('#goadd'); if (a) a.onclick = () => go('add');
+  bindWallet();
+}
+function walletCard(user) {
+  return `<div class="section"><button class="card wallet" id="wallet" style="width:100%;text-align:left">
+      <div><div class="big num">${user.points}</div><div class="lbl">${esc(L('wallet'))}</div></div>
+      <span class="spacer"></span><span class="muted" style="font-size:14px">${esc(L('wallet_spend'))}</span>
+    </button></div>`;
+}
+function bindWallet() { const w = $('#wallet'); if (w) w.onclick = () => go('me', { spend: true }); }
+
+/* ---------------- ТРЕК ---------------- */
+
+let searchTimer, searchSeq = 0;
+
+function renderAdd(opts = {}) {
+  const ev = S.me.event;
+  const tn = tonight();
+  if (!ev) { view.innerHTML = noticeBlock('🌙', L('no_event_t'), L('no_event_s')); return; }
+  if (!ev.accepts_requests) { view.innerHTML = noticeBlock('🌙', L('closed_t'), L('closed_s')); return; }
+  if (tn.requests_used >= rules().requests_max) {
+    view.innerHTML = noticeBlock('✋', L('limit_t'), L('limit_s')) +
+      `<button class="btn ghost" id="totop" style="margin-top:12px">${esc(L('to_top'))}</button>`;
+    $('#totop').onclick = () => go('top');
+    return;
+  }
+  view.innerHTML = `
+    <div class="row"><h2 class="h-screen">${esc(L('req_title'))}</h2><span class="spacer"></span>
+      <span class="muted num" style="font-size:13px">${esc(L('slots', { used: tn.requests_used, max: rules().requests_max }))}</span></div>
+    <p class="sub">${esc(L('req_sub', { date: ev.date }))}</p>
+    <div class="search">
+      <label class="field"><span>🔎</span>
+        <input id="q" type="text" inputmode="search" enterkeyhint="search" autocomplete="off" autocorrect="off" spellcheck="false"
+          placeholder="${esc(L('req_ph'))}" value="${esc(S.query)}">
+        <button class="clear" id="clear" ${S.query ? '' : 'hidden'} aria-label="clear">✕</button>
+      </label>
+    </div>
+    <div id="results"></div>`;
+  const q = $('#q');
+  q.addEventListener('input', () => {
+    S.query = q.value;
+    $('#clear').hidden = !q.value;
+    clearTimeout(searchTimer);
+    const isLink = /https?:\/\//i.test(q.value);
+    searchTimer = setTimeout(runSearch, isLink ? 50 : 500);
+  });
+  q.addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(searchTimer); runSearch(); q.blur(); } });
+  $('#clear').onclick = () => { S.query = ''; S.search = null; q.value = ''; $('#clear').hidden = true; drawResults(); q.focus(); };
+  drawResults();
+  if (!S.query && !opts.noFocus) setTimeout(() => q.focus(), 150);
+}
+
+async function runSearch() {
+  const query = S.query.trim();
+  if (query.length < 2) { S.search = null; drawResults(); return; }
+  const seq = ++searchSeq;
+  S.search = { status: 'loading' };
+  S.showVersions = false;
+  drawResults();
+  try {
+    const res = await api('/api/app/search', { body: { q: query } });
+    if (seq !== searchSeq) return;
+    S.search = res;
+  } catch (e) {
+    if (seq !== searchSeq) return;
+    S.search = null;
+  }
+  drawResults();
+}
+
+function drawResults() {
+  const box = $('#results'); if (!box) return;
+  const r = S.search;
+  if (!r) {
+    box.innerHTML = `<p class="hint">${esc(L('req_hint'))}</p>`;
+    return;
+  }
+  if (r.status === 'loading') {
+    box.innerHTML = `<div class="stack"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>`;
+    return;
+  }
+  if (r.status === 'link_unreadable') {
+    box.innerHTML = `<div class="notice warn"><p><b>🔗 ${esc(L('link_bad_t'))}</b></p><p class="muted">${esc(L('link_bad_s'))}</p></div>`;
+    return;
+  }
+  const linkBox = r.link_text
+    ? `<div class="linkbox"><span>🔗</span><div><span class="muted">${esc(L('link_read'))}</span><br><b>${esc(r.link_text)}</b></div></div>` : '';
+
+  if (r.status === 'not_found' || r.status === 'link_no_match') {
+    box.innerHTML = linkBox + `<div class="notice"><p><b>${esc(L(r.status === 'link_no_match' ? 'link_nomatch_t' : 'not_found_t'))}</b></p>
+      <p class="muted">${esc(L('manual_s'))}</p></div>` + manualForm(r.link_text || (/https?:\/\//i.test(S.query) ? '' : S.query));
+    bindManual();
+    return;
+  }
+
+  const rowHtml = (c, i) => {
+    const inEv = c.in_event;
+    let note = '', btn = `<button class="add" data-i="${i}" aria-label="add">＋</button>`;
+    if (c.mine) {
+      note = `<div class="tnote yours">${esc(L('yours'))}</div>`;
+      btn = `<button class="add" disabled>✓</button>`;
+    } else if (inEv && inEv.status !== 'PLAYED') {
+      note = `<div class="tnote join">${esc(L('in_list', { n: inEv.score }))}</div>`;
+      btn = `<button class="add join" data-i="${i}">${esc(L('join'))}</button>`;
+    } else if (inEv) {
+      note = `<div class="tnote">🔥 ${esc(L('played'))}</div>`;
+    }
+    return `<div class="track">${cover(c.cover)}<div class="tinfo">
+      <div class="ttitle">${esc(c.title)}</div><div class="tartist">${esc(c.artist)}${c.album ? ' · ' + esc(c.album) : ''}</div>${note}</div>${btn}</div>`;
+  };
+  const exact = r.exact_first && !S.showVersions;
+  const shown = exact ? r.candidates.slice(0, 1) : r.candidates;
+  box.innerHTML = linkBox + `<div class="stack">` + shown.map(rowHtml).join('') + `</div>` +
+    (exact && r.candidates.length > 1 ? `<button class="btn ghost small" id="versions" style="margin:12px auto 0">${esc(L('versions'))}</button>` : '') + `
+    <button class="btn ghost small" id="notit" style="margin:16px auto 0">${esc(L('not_it'))}</button>
+    <div id="manualslot"></div>`;
+  const v = $('#versions'); if (v) v.onclick = () => { S.showVersions = true; drawResults(); };
+  box.querySelectorAll('.add[data-i]').forEach(b => b.onclick = () => addCandidate(r.candidates[+b.dataset.i], b));
+  $('#notit').onclick = () => {
+    $('#notit').remove();
+    $('#manualslot').innerHTML = manualForm(r.link_text || (/https?:\/\//i.test(S.query) ? '' : S.query));
+    bindManual(true);
+  };
+}
+
+function manualForm(prefill) {
+  return `<div class="card" style="margin-top:12px">
+    <label class="field"><input id="manual" type="text" autocomplete="off" placeholder="${esc(L('manual_ph'))}" value="${esc(prefill || '')}"></label>
+    <p class="hint" id="manualerr" hidden></p>
+    <button class="btn primary" id="manualgo" style="margin-top:12px">${esc(L('manual_btn'))}</button></div>`;
+}
+function bindManual(focus) {
+  const input = $('#manual'); if (!input) return;
+  if (focus) setTimeout(() => input.focus(), 50);
+  const err = $('#manualerr');
+  const submit = async () => {
+    const value = input.value.trim();
+    if (/https?:\/\//i.test(value)) { err.hidden = false; err.textContent = L('manual_link'); haptic('error'); return; }
+    if (!/\s[-–—]\s/.test(value) && !/^[^-]+-[^-]+$/.test(value)) { err.hidden = false; err.textContent = L('manual_format'); haptic('error'); return; }
+    // "Artist-Title" without spaces is fine to type; "Jay-Z - Song" must stay as is.
+    const normalized = /\s[-–—]\s/.test(value) ? value : value.replace(/\s*[-–—]\s*/, ' - ');
+    await submitRequest({ manual: normalized }, $('#manualgo'));
+  };
+  $('#manualgo').onclick = submit;
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+}
+
+async function addCandidate(c, button) {
+  await submitRequest({ token: c.token, q: S.query }, button);
+}
+
+async function submitRequest(body, button) {
+  if (S.busy) return;
+  S.busy = true; if (button) button.disabled = true;
+  let res;
+  try { res = await api('/api/app/request', { body }); }
+  catch (e) { S.busy = false; if (button) button.disabled = false; return; }
+  S.busy = false;
+  setPoints(res.points);
+
+  if (res.status === 'MANUAL_FORMAT' || res.status === 'MANUAL_IS_LINK') {
+    const err = $('#manualerr');
+    if (err) { err.hidden = false; err.textContent = L(res.status === 'MANUAL_FORMAT' ? 'manual_format' : 'manual_link'); }
+    if (button) button.disabled = false;
+    haptic('error');
+    return;
+  }
+  if (res.status === 'LIMIT_REACHED') { haptic('warning'); await refreshMe(); renderAdd(); return; }
+  if (res.status === 'EVENT_CLOSED') { haptic('warning'); await refreshMe(); renderAdd(); return; }
+  if (res.status === 'ALREADY_REQUESTED') { haptic('warning'); toast(L('already')); if (button) button.disabled = false; return; }
+
+  haptic('ok');
+  S.query = ''; S.search = null;
+  await refreshMe();
+  const track = res.track || {};
+  const n = res.requests_count || 1;
+  const canBoost = tonight().boosts_used < rules().boosts_max && S.me.user.points >= rules().cost_boost;
+  view.innerHTML = `
+    <div class="done">
+      <div class="big-emoji">🔥</div>
+      <div class="kicker" style="margin-top:14px">${esc(L('added_t'))}</div>
+      <div class="tt">${esc(track.title || '')}</div>
+      <div class="ta">${esc(track.artist || '')}</div>
+      <p class="sub" style="margin-top:18px">${esc(n <= 1 ? L('added_first') : L('added_nth', { n }))}<br>${esc(L('added_s'))}</p>
+    </div>
+    <div class="stack" style="margin-top:22px">
+      ${canBoost && res.event_track_id ? `<button class="btn gold" id="boostnew">${esc(L('boost_it', { c: rules().cost_boost }))}</button>` : ''}
+      <button class="btn primary" id="totop">${esc(L('to_top'))}</button>
+      ${tonight().requests_used < rules().requests_max ? `<button class="btn ghost" id="more">${esc(L('add_more'))}</button>` : ''}
+    </div>
+    <div class="tagline">FEEL THE LYFE</div>`;
+  $('#totop').onclick = () => go('top');
+  const m = $('#more'); if (m) m.onclick = () => go('add');
+  const b = $('#boostnew');
+  if (b) b.onclick = async () => {
+    const ok = await doBoost({ id: res.event_track_id, title: track.title, artist: track.artist });
+    if (ok) go('top');
+  };
+}
+
+function noticeBlock(emoji, title, sub) {
+  return `<div class="center"><div class="empty-emoji">${emoji}</div>
+    <div class="h-screen" style="margin-top:16px;letter-spacing:.12em">${esc(title)}</div>
+    <p class="sub">${esc(sub)}</p></div>`;
+}
+
+/* ---------------- TOP ---------------- */
+
+async function loadTop(append, silent) {
+  if (!append && !silent) {
+    view.innerHTML = topHeader() + `<div class="chart">${'<div class="skeleton"></div>'.repeat(5)}</div>`;
+  }
+  const offset = append && S.top ? S.top.items.length : 0;
+  let res;
+  try { res = await api('/api/app/top?offset=' + offset); } catch (e) { return; }
+  if (S.tab !== 'top') return;
+  if (append && S.top) { res.items = S.top.items.concat(res.items); }
+  S.top = res;
+  renderTop();
+}
+
+function topHeader() {
+  const ev = S.me.event;
+  return `<div class="top-head"><div>
+      <h2 class="h-screen">🔥 ${esc(L('top_title'))}</h2>
+      ${ev ? `<p class="sub" style="font-size:13px;letter-spacing:.12em;text-transform:uppercase">${esc(ev.title)} · ${esc(ev.date)}</p>` : ''}
+    </div><span class="spacer"></span><span class="points num" id="pts">⭐ ${S.me.user.points}</span></div>
+    <div class="legend"><span>${esc(L('legend_vote'))}</span><span>${esc(L('legend_boost', { c: rules().cost_boost }))}</span></div>`;
+}
+
+function renderTop() {
+  const t = S.top;
+  if (!t.event || !t.items.length) {
+    view.innerHTML = topHeader() + noticeBlock('🔥', L(t.event ? 'top_empty_t' : 'no_event_t'), L(t.event ? 'top_empty_s' : 'no_event_s')) +
+      (t.event && t.event.accepts_requests ? `<button class="btn primary" id="first">${esc(L('add_track'))}</button>` : '');
+    const f = $('#first'); if (f) f.onclick = () => go('add');
+    return;
+  }
+  const open = t.event.accepts_requests;
+  const boostsLeft = rules().boosts_max - tonight().boosts_used;
+  view.innerHTML = topHeader() + `<div class="chart">` + t.items.map((it, i) => {
+    const played = it.status === 'PLAYED';
+    const cls = ['entry', it.mine ? 'mine' : '', it.priority ? 'priority' : '', played ? 'played' : ''].join(' ');
+    const badges = (it.priority ? `<span class="badge pri">${esc(L('priority'))}</span>` : '') +
+      (played ? `<span class="badge played">${esc(L('played'))}</span>` : '') +
+      (it.mine ? `<span class="badge you">${esc(L('you'))}</span>` : '');
+    const canVote = open && !played && !it.mine && !it.voted;
+    const canBoost = open && !played && boostsLeft > 0;
+    return `<div class="${cls}">
+      <div class="rank num">${it.position}</div>
+      ${cover(it.cover, true)}
+      <div class="tinfo"><div class="ttitle clamp">${esc(it.title)}</div><div class="tartist">${badges}${esc(it.artist)}</div></div>
+      <div class="score num">${it.score}</div>
+      <div class="acts">
+        <button class="act${it.voted ? ' on' : ''}" data-vote="${i}" ${canVote ? '' : 'disabled'} aria-label="like">${it.voted || it.mine ? '❤️' : '🤍'}</button>
+        <button class="act bolt" data-boost="${i}" ${canBoost ? '' : 'disabled'} aria-label="boost">⚡</button>
+      </div></div>`;
+  }).join('') + `</div>` +
+    (t.items.length < t.total ? `<button class="btn ghost" id="more" style="margin-top:14px">${esc(L('more'))}</button>` : '');
+
+  view.querySelectorAll('[data-vote]').forEach(b => b.onclick = () => doVote(t.items[+b.dataset.vote], b));
+  view.querySelectorAll('[data-boost]').forEach(b => b.onclick = async () => { if (await doBoost(t.items[+b.dataset.boost])) loadTop(false, true); });
+  const m = $('#more'); if (m) m.onclick = () => loadTop(true);
+}
+
+async function doVote(item, button) {
+  button.disabled = true;
+  haptic('light');
+  let res;
+  try { res = await api('/api/app/vote/' + item.id, { method: 'POST' }); } catch (e) { button.disabled = false; return; }
+  setPoints(res.points);
+  const msg = { VOTED: 'vote_done', ALREADY_VOTED: 'vote_already', OWN_TRACK: 'vote_own', EVENT_CLOSED: 'vote_closed' }[res.status];
+  if (msg) toast(L(msg));
+  if (res.status === 'VOTED') { haptic('ok'); item.voted = true; item.score += 1; item.votes += 1; renderTop(); }
+}
+
+async function doBoost(item) {
+  const c = rules().cost_boost;
+  const left = rules().boosts_max - tonight().boosts_used;
+  if (left <= 0) { toast(L('boost_limit')); haptic('warning'); return false; }
+  if (S.me.user.points < c) { toast(L('boost_poor', { c, have: S.me.user.points })); haptic('warning'); return false; }
+  const name = [item.artist, item.title].filter(Boolean).join(' - ');
+  const ok = await confirmBox(L('boost_q_t'), L('boost_q', { c, track: name, left }), L('boost_go'));
+  if (!ok) return false;
+  let res;
+  try { res = await api('/api/app/boost/' + item.id, { method: 'POST' }); } catch (e) { return false; }
+  if (res.status === 'BOOSTED') {
+    haptic('ok'); toast(L('boost_done', { c }));
+    setPoints(res.points);
+    if (S.me.tonight) S.me.tonight.boosts_used = res.boosts_used;
+    return true;
+  }
+  haptic('warning');
+  const msg = {
+    NOT_ENOUGH_POINTS: L('boost_poor', { c, have: res.points }), LIMIT_REACHED: L('boost_limit'),
+    PLAYED: L('boost_played'), EVENT_CLOSED: L('vote_closed'),
+  }[res.status];
+  toast(msg || L('error'));
+  return false;
+}
+
+/* ---------------- MY LYFE ---------------- */
+
+async function renderMe(opts = {}) {
+  const { user } = S.me;
+  const r = rules();
+  const tn = tonight();
+  const ev = S.me.event;
+  view.innerHTML = `
+    <div class="kicker">MY LYFE</div>
+    <div class="who" style="margin-top:10px">${esc(user.name)}</div>
+    <div class="lid">LYFE #${esc(user.lyfe_id)}</div>
+    <div class="stats">
+      <div class="stat"><b class="num">${user.requests}</b><span>${esc(L('requests'))}</span></div>
+      <div class="stat"><b class="num">${user.played}</b><span>${esc(L('played_n'))}</span></div>
+      <div class="stat"><b class="num">${user.nights}</b><span>${esc(L('nights'))}</span></div>
+    </div>
+    <button class="btn primary" id="pass" style="margin-top:14px">${esc(L('pass_btn'))}</button>
+
+    <div class="section" id="spend">
+      <span class="kicker">${esc(L('spend_title'))}</span>
+      <div class="card wallet" style="margin-bottom:10px">
+        <div><div class="big num">${user.points}</div><div class="lbl">LYFE POINTS</div></div>
+      </div>
+      <div class="stack">
+        <div class="card spend">
+          <div class="ic">⚡</div>
+          <div class="tinfo"><div class="nm">${esc(L('boost_nm'))}</div>
+            <div class="ds">${esc(L('boost_ds', { c: r.cost_boost, max: r.boosts_max }))}</div>
+            ${ev ? `<div class="tnote">${esc(L('boost_left', { n: Math.max(0, r.boosts_max - tn.boosts_used) }))}</div>` : ''}
+            <button class="btn ghost small" id="boostgo" style="margin-top:10px">${esc(L('boost_how'))}</button>
+          </div>
+          <div class="price num">${r.cost_boost}</div>
+        </div>
+        <div class="card spend" id="pricard">
+          <div class="ic">🎯</div>
+          <div class="tinfo"><div class="nm">${esc(L('pri_nm'))}</div>
+            <div class="ds">${esc(L('pri_ds', { max: 2 }))}</div>
+            <div id="pristate"><div class="tnote">…</div></div>
+          </div>
+          <div class="price num">${r.cost_priority}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <span class="kicker">${esc(L('earn_title'))}</span>
+      <div class="card">
+        <div class="earn"><span>🎵 ${esc(L('earn_req'))}</span><span class="v">+${r.points_request}</span></div>
+        ${r.points_vote ? `<div class="earn"><span>❤️ ${esc(L('earn_vote'))}</span><span class="v">+${r.points_vote}</span></div>` : ''}
+        <div class="earn"><span>🌙 ${esc(L('earn_att'))}</span><span class="v">+${r.points_attendance}</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <span class="kicker">${esc(L('hist_title'))}</span>
+      <div class="card" id="hist"><div class="tnote">…</div></div>
+    </div>
+    <div class="tagline">FEEL THE LYFE</div>`;
+
+  $('#pass').onclick = openPass;
+  $('#boostgo').onclick = () => go('top');
+  if (opts.spend) setTimeout(() => $('#spend').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+
+  api('/api/app/history').then(h => {
+    const box = $('#hist'); if (!box) return;
+    box.innerHTML = h.items.length ? h.items.map(x => {
+      const d = new Date(x.at);
+      const when = d.toLocaleDateString(lang === 'uk' ? 'uk-UA' : 'ru-RU', { day: '2-digit', month: '2-digit' });
+      const label = (L('reason')[x.reason]) || x.reason;
+      return `<div class="hist"><span>${esc(label)} <span class="muted">· ${when}</span></span><span class="d num ${x.delta > 0 ? 'plus' : 'minus'}">${x.delta > 0 ? '+' : ''}${x.delta}</span></div>`;
+    }).join('') : `<div class="tnote">${esc(L('hist_empty'))}</div>`;
+  }).catch(() => {});
+
+  api('/api/app/priority').then(p => {
+    const box = $('#pristate'); if (!box) return;
+    if (!p.available) { box.innerHTML = `<div class="tnote">${esc(L('pri_off'))}</div>`; return; }
+    if (p.has_one) { box.innerHTML = `<div class="tnote yours">${esc(L('pri_have'))}</div>`; return; }
+    if (!p.left) { box.innerHTML = `<div class="tnote">${esc(L('pri_full'))}</div>`; return; }
+    if (!p.tracks.length) { box.innerHTML = `<div class="tnote">${esc(L('pri_none'))}</div>`; return; }
+    box.innerHTML = `<div class="tnote">${esc(L('pri_left', { n: p.left }))}</div>
+      <button class="btn gold small" id="prigo" style="margin-top:10px" ${S.me.user.points < p.cost ? 'disabled' : ''}>${esc(L('pri_btn'))}</button>`;
+    $('#prigo').onclick = () => pickPriority(p);
+  }).catch(() => {});
+}
+
+function pickPriority(p) {
+  openSheet(`<div class="kicker" style="text-align:center">🎯 ${esc(L('pri_nm'))} · ${p.cost}</div>
+    <h3 style="text-align:center;margin:10px 0 16px">${esc(L('pri_pick'))}</h3>
+    <div class="stack">${p.tracks.map((t, i) => `<button class="track" data-p="${i}">${cover(null, true)}<div class="tinfo"><div class="ttitle">${esc(t.title)}</div><div class="tartist">${esc(t.artist)}</div></div><span>›</span></button>`).join('')}</div>`);
+  document.querySelectorAll('[data-p]').forEach(b => b.onclick = async () => {
+    const t = p.tracks[+b.dataset.p];
+    const ok = await confirmBox('🎯 ' + L('pri_nm'), L('pri_q', { c: p.cost, track: t.artist + ' - ' + t.title }), L('pri_go'));
+    if (!ok) return;
+    let res;
+    try { res = await api('/api/app/priority/' + t.id, { method: 'POST' }); } catch (e) { return; }
+    closeSheet();
+    if (res.status === 'OK') { haptic('ok'); toast(L('pri_done')); }
+    else {
+      haptic('warning');
+      toast({ NOT_ENOUGH_POINTS: L('boost_poor', { c: p.cost, have: res.points }), PRIORITY_FULL: L('pri_full'), LIMIT_REACHED: L('pri_have') }[res.status] || L('error'));
+    }
+    await refreshMe(); renderMe({ spend: true });
+  });
+}
+
+async function openPass() {
+  haptic('light');
+  openSheet(`<div class="center" style="padding:20px 0">…</div>`);
+  let p;
+  try { p = await api('/api/app/pass'); } catch (e) { closeSheet(); return; }
+  $('#sheet').innerHTML = `<div class="grab"></div>
+    <div style="text-align:center">
+      <div class="kicker">🎟 LYFE PASS</div>
+      <div class="who" style="font-size:24px;margin-top:10px">${esc(p.name)}</div>
+      <div class="lid">LYFE #${esc(p.lyfe_id)}</div>
+      <div class="qr">${p.svg}</div>
+      <p class="sub">${esc(L('pass_s'))}</p>
+    </div>`;
+}
+
+/* ---------------- sheet ---------------- */
+
+function openSheet(html) {
+  $('#sheet').innerHTML = `<div class="grab"></div>` + html;
+  $('#scrim').classList.add('show'); $('#sheet').classList.add('show');
+  if (tg && tg.BackButton) { tg.BackButton.show(); }
+}
+function closeSheet() {
+  $('#scrim').classList.remove('show'); $('#sheet').classList.remove('show');
+  if (tg && tg.BackButton) tg.BackButton.hide();
+}
+$('#scrim').onclick = closeSheet;
+if (tg && tg.BackButton) tg.BackButton.onClick(closeSheet);
+
+/* ---------------- outside Telegram ---------------- */
+
+function renderOutside() {
+  $('#tabbar').hidden = true;
+  const link = BOT_USERNAME && !BOT_USERNAME.startsWith('__') ? `https://t.me/${BOT_USERNAME}` : null;
+  view.innerHTML = `<div class="center"><div class="kicker">LYFEPARTY</div>
+    <div class="h-event" style="font-size:30px;margin-top:16px">${esc(L('open_tg_t'))}</div>
+    <p class="sub">${esc(L('open_tg_s'))}</p>
+    ${link ? `<a class="btn primary" style="margin-top:20px;text-decoration:none" href="${link}">${esc(L('open_bot'))}</a>` : ''}
+    <div class="tagline">FEEL THE LYFE</div></div>`;
+}
+
+/* ---------------- boot ---------------- */
+
+(async function boot() {
+  if (tg) {
+    tg.ready();
+    tg.expand();
+    try { tg.setHeaderColor('#0a0a0b'); tg.setBackgroundColor('#0a0a0b'); } catch (e) {}
+    try { if (tg.isVersionAtLeast('7.7')) tg.disableVerticalSwipes(); } catch (e) {}
+  }
+  if (!INIT_DATA) { renderOutside(); return; }
+  try { await refreshMe(); } catch (e) { return; }
+  $('#tabbar').hidden = false;
+  const start = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
+  go(['add', 'top', 'me'].includes(start) ? start : 'home');
+
+  // Keep the chart honest while it is on screen.
+  setInterval(() => {
+    if (document.hidden || S.busy) return;
+    if (S.tab === 'top' && S.top && S.top.items.length <= S.top.page_size) loadTop(false, true);
+  }, 20000);
+})();
+</script>
+</body>
+</html>
