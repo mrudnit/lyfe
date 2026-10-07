@@ -13,9 +13,15 @@ from lyfe.i18n import t
 
 
 def webapp_url() -> str | None:
-    base = get_settings().webapp_url.strip().rstrip("/")
+    base = get_settings().webapp_url.strip().strip("\"'").rstrip("/")
     if not base:
         return None
+    # Railway shows the domain without a scheme, and that is what gets pasted.
+    # Telegram accepts only https, so add it rather than refuse to start.
+    if base.startswith("http://"):
+        base = "https://" + base[len("http://"):]
+    elif not base.startswith("https://"):
+        base = "https://" + base
     return base if base.endswith("/app") else f"{base}/app"
 
 
