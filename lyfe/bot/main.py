@@ -39,10 +39,14 @@ async def main() -> None:
     url = webapp_url()
     if url:
         # The button left of the message field opens the Mini App in every chat.
-        await bot.set_chat_menu_button(
-            menu_button=MenuButtonWebApp(text="LYFE", web_app=WebAppInfo(url=url))
-        )
-        logger.info("Mini App at %s", url)
+        # A bad URL must cost us this button, never the whole bot.
+        try:
+            await bot.set_chat_menu_button(
+                menu_button=MenuButtonWebApp(text="LYFE", web_app=WebAppInfo(url=url))
+            )
+            logger.info("Mini App at %s", url)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Mini App menu button not set (WEBAPP_URL=%r): %s", url, exc)
 
     await bot.delete_webhook(drop_pending_updates=True)
     try:
