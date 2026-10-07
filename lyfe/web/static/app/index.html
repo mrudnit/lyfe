@@ -3,309 +3,314 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="light">
 <title>LYFE</title>
+<link rel="preload" href="/static/app/logo.jpg" as="image">
+<link rel="stylesheet" href="/static/app/fonts/fonts.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-  /* LYFE is a night product: always dark, whatever the phone's theme. */
+  /* Paper and ink. No cards, no frames: hierarchy comes from type size,
+     weight and white space, the way a poster does it. */
   :root {
-    color-scheme: dark;
-    --bg: #0a0a0b;
-    --surface: #131316;
-    --surface-2: #1a1a1e;
-    --line: #232327;
-    --line-2: #2e2e33;
-    --text: #f4f4f5;
-    --text-2: #a1a1aa;
-    --text-3: #71717a;
-    --text-4: #52525b;
-    --accent: #f4f4f5;          /* primary action: white on black, like the DJ screen */
-    --on-accent: #0a0a0b;
-    --gold: #fbbf24;            /* LYFE POINTS, guarantee */
-    --gold-bg: #1a1509;
-    --gold-line: #a16207;
-    --heart: #f43f5e;
-    --ok: #4ade80;
-    --ok-bg: #12251c;
-    --warn: #f97316;
-    --radius: 16px;
-    --tabbar: 64px;
+    color-scheme: light;
+    --paper: #ffffff;
+    --ink: #0a0a0a;
+    --ink-2: #5c5c5c;
+    --ink-3: #9a9a9a;
+    --rule: #e6e6e6;
+    --font-display: 'Unbounded', 'Druk Wide', 'Arial Black', sans-serif;
+    --font-text: 'Onest', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --gutter: 20px;
+    --tabbar: 58px;
     --safe-b: env(safe-area-inset-bottom, 0px);
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); }
   body {
-    font: 400 16px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    font: 400 16px/1.45 var(--font-text);
     min-height: var(--tg-viewport-stable-height, 100vh);
     overscroll-behavior-y: none;
     -webkit-font-smoothing: antialiased;
   }
-  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; padding: 0; }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; padding: 0; text-align: inherit; }
   button:disabled { cursor: default; }
-  input { font: inherit; }
+  input { font: inherit; color: inherit; }
+  ::selection { background: var(--ink); color: var(--paper); }
 
   .view {
-    padding: 20px 16px calc(var(--tabbar) + var(--safe-b) + 28px);
+    padding: 18px var(--gutter) calc(var(--tabbar) + var(--safe-b) + 40px);
     max-width: 560px; margin: 0 auto;
+    animation: enter .35s ease both;
   }
+  @keyframes enter { from { opacity: 0; transform: translateY(6px); } }
 
   /* ---------- type ---------- */
-  .kicker {
-    font-size: 11px; letter-spacing: .28em; text-transform: uppercase;
-    color: var(--text-3); font-weight: 600;
+  .d { font-family: var(--font-display); text-transform: uppercase; letter-spacing: -.01em; }
+  .label {
+    font-family: var(--font-display); font-size: 10px; font-weight: 600;
+    letter-spacing: .18em; text-transform: uppercase; color: var(--ink-3);
   }
-  .h-event {
-    font-size: 40px; line-height: 1; font-weight: 800; letter-spacing: -.01em;
-    text-transform: uppercase; margin: 10px 0 0; word-break: break-word;
+  .mega {
+    font-family: var(--font-display); font-weight: 900; text-transform: uppercase;
+    font-size: clamp(40px, 13.5vw, 72px); line-height: .9; letter-spacing: -.03em;
+    margin: 0; word-break: break-word; hyphens: auto;
   }
-  .h-screen {
-    font-size: 13px; letter-spacing: .28em; font-weight: 700; margin: 0;
-    text-transform: uppercase;
+  .big-num {
+    font-family: var(--font-display); font-weight: 900; line-height: .85;
+    font-size: clamp(64px, 24vw, 120px); letter-spacing: -.05em;
   }
-  .sub { color: var(--text-2); font-size: 15px; margin: 6px 0 0; }
-  .muted { color: var(--text-3); }
   .num { font-variant-numeric: tabular-nums; }
-  .tagline {
-    text-align: center; color: var(--text-4); font-size: 11px;
-    letter-spacing: .4em; margin-top: 36px; font-weight: 600;
-  }
+  .muted { color: var(--ink-2); }
+  .faint { color: var(--ink-3); }
+  p { margin: 0; }
 
-  /* ---------- blocks ---------- */
-  .card {
-    background: var(--surface); border: 1px solid var(--line);
-    border-radius: var(--radius); padding: 16px;
-  }
-  .stack { display: flex; flex-direction: column; gap: 12px; }
-  .row { display: flex; align-items: center; gap: 12px; }
-  .spacer { flex: 1; }
-  .section { margin-top: 28px; }
-  .section > .kicker { margin-bottom: 10px; display: block; }
+  .rule { height: 1px; background: var(--ink); margin: 28px 0 14px; }
+  .rule.soft { background: var(--rule); }
+  .gap { height: 44px; }
 
-  .meta-line {
-    margin-top: 14px; font-size: 13px; letter-spacing: .14em; font-weight: 600;
-    color: var(--text-2); text-transform: uppercase;
+  .topline {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 26px;
   }
-  .chip {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-2);
-    font-size: 13px; font-weight: 600; color: var(--text);
-  }
-  .chip.live { border-color: #7f1d1d; color: #fca5a5; }
-  .chip.live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #ef4444; animation: pulse 1.4s infinite; }
-  @keyframes pulse { 50% { opacity: .3; } }
+  /* the logo file has a lot of white around the mark; crop to the letters */
+  .mark { width: 92px; height: 36px; background: url(/static/app/logo.jpg) 50% 53% / 106px auto no-repeat; mix-blend-mode: multiply; margin-left: -6px; }
 
+  .meta {
+    font-family: var(--font-display); font-size: 11px; font-weight: 600;
+    letter-spacing: .12em; text-transform: uppercase; margin-top: 18px; line-height: 1.7;
+  }
+  .meta span + span::before { content: "/"; margin: 0 .6em; color: var(--ink-3); }
+
+  /* ---------- actions ---------- */
   .btn {
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    width: 100%; min-height: 52px; border-radius: 14px;
-    font-weight: 700; font-size: 15px; letter-spacing: .04em;
-    transition: transform .08s, opacity .15s;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    width: 100%; min-height: 58px; padding: 0 20px;
+    background: var(--ink); color: var(--paper);
+    font-family: var(--font-display); font-size: 12px; font-weight: 700;
+    letter-spacing: .12em; text-transform: uppercase;
+    transition: transform .1s, opacity .15s;
   }
-  .btn:active:not(:disabled) { transform: scale(.98); }
-  .btn.primary { background: var(--accent); color: var(--on-accent); }
-  .btn.ghost { border: 1px solid var(--line-2); color: var(--text); }
-  .btn.gold { background: var(--gold); color: #1c1306; }
-  .btn:disabled { opacity: .35; }
-  .btn.small { min-height: 40px; width: auto; padding: 0 16px; font-size: 13px; border-radius: 12px; }
-
-  /* points pill */
-  .points {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: var(--gold-bg); border: 1px solid #3a2a0b; color: var(--gold);
-    padding: 5px 11px; border-radius: 999px; font-weight: 700; font-size: 13px;
+  .btn::after { content: "→"; font-family: var(--font-text); font-size: 20px; letter-spacing: 0; }
+  .btn.plain::after { content: none; }
+  .btn.plain { justify-content: center; }
+  .btn:active:not(:disabled) { transform: scale(.985); }
+  .btn:disabled { opacity: .25; }
+  .link {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-display); font-size: 11px; font-weight: 700;
+    letter-spacing: .12em; text-transform: uppercase;
+    border-bottom: 2px solid var(--ink); padding: 4px 0;
   }
+  .link:disabled { opacity: .3; }
 
   /* ---------- home ---------- */
-  .countdown { margin-top: 18px; display: flex; gap: 8px; flex-wrap: wrap; }
-  .wallet { display: flex; align-items: center; gap: 14px; }
-  .wallet .big { font-size: 34px; font-weight: 800; color: var(--gold); line-height: 1; }
-  .wallet .lbl { font-size: 11px; letter-spacing: .24em; color: var(--text-3); font-weight: 600; margin-top: 4px; }
-  .mine-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
-  .mine-row:first-child { border-top: 0; padding-top: 0; }
-  .pos { min-width: 36px; font-weight: 800; font-size: 18px; color: var(--text-2); }
-  .slots { display: flex; gap: 6px; }
-  .slot { width: 26px; height: 6px; border-radius: 3px; background: var(--line-2); }
-  .slot.on { background: var(--text); }
+  .count { display: flex; align-items: flex-end; gap: 14px; margin-top: 30px; }
+  .count .unit { font-family: var(--font-display); font-weight: 700; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; padding-bottom: 8px; line-height: 1.3; }
+  .live { display: inline-flex; align-items: center; gap: 10px; margin-top: 30px; font-family: var(--font-display); font-weight: 900; font-size: 28px; }
+  .live::before { content: ""; width: 14px; height: 14px; border-radius: 50%; background: var(--ink); animation: blink 1.2s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .tracks-mine { list-style: none; margin: 0; padding: 0; }
+  .tracks-mine li { display: flex; gap: 16px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+  .tracks-mine .p { font-family: var(--font-display); font-weight: 800; font-size: 22px; min-width: 44px; letter-spacing: -.02em; }
+  .tracks-mine .n { font-weight: 600; line-height: 1.3; }
+  .slots { display: flex; gap: 4px; margin: 16px 0 22px; }
+  .slot { flex: 1; height: 3px; background: var(--rule); }
+  .slot.on { background: var(--ink); }
+
+  .wallet { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; width: 100%; }
+  .wallet .big-num { font-size: clamp(56px, 20vw, 96px); }
 
   /* ---------- request ---------- */
-  .search {
-    position: sticky; top: 0; z-index: 5; background: var(--bg);
-    padding: 12px 0; margin: 0 -16px; padding-left: 16px; padding-right: 16px;
-  }
-  .field {
-    display: flex; align-items: center; gap: 10px;
-    background: var(--surface); border: 1px solid var(--line-2);
-    border-radius: 14px; padding: 0 14px; min-height: 52px;
-  }
-  .field:focus-within { border-color: var(--text-3); }
+  .search { position: sticky; top: 0; z-index: 5; background: var(--paper); padding: 6px 0 14px; margin-top: 18px; }
+  .field { display: flex; align-items: center; gap: 10px; border-bottom: 2px solid var(--ink); }
   .field input {
-    flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--text);
-    font-size: 16px; padding: 14px 0;
+    flex: 1; min-width: 0; background: none; border: 0; outline: 0;
+    font-size: 20px; font-weight: 600; padding: 12px 0; letter-spacing: -.01em;
   }
-  .field input::placeholder { color: var(--text-4); }
-  .field .clear { color: var(--text-3); font-size: 18px; padding: 6px; }
-  .hint { color: var(--text-3); font-size: 13px; margin-top: 10px; }
+  .field input::placeholder { color: var(--ink-3); font-weight: 500; }
+  .field .clear { font-size: 22px; padding: 6px 0 6px 10px; color: var(--ink-2); }
+  .hint { color: var(--ink-2); font-size: 14px; margin-top: 4px; }
 
-  .linkbox {
-    display: flex; gap: 10px; align-items: flex-start;
-    background: var(--surface-2); border: 1px dashed var(--line-2);
-    border-radius: 12px; padding: 10px 12px; font-size: 14px; margin-bottom: 12px;
-  }
-  .linkbox b { font-weight: 600; }
+  .from-link { padding: 14px 0 18px; }
+  .from-link .t { font-weight: 700; font-size: 20px; line-height: 1.25; margin-top: 6px; letter-spacing: -.01em; }
 
-  .track {
-    display: flex; align-items: center; gap: 12px;
-    background: var(--surface); border: 1px solid var(--line);
-    border-radius: 14px; padding: 10px; text-align: left; width: 100%;
-  }
-  .cover {
-    width: 52px; height: 52px; border-radius: 10px; flex: none;
-    background: var(--surface-2) center/cover no-repeat;
-    display: grid; place-items: center; color: var(--text-4); font-size: 20px;
-  }
-  .cover.sm { width: 44px; height: 44px; border-radius: 8px; font-size: 16px; }
+  .res { list-style: none; margin: 0; padding: 0; }
+  .res li { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+  .from-link + .res li:first-child { border-top: 1px solid var(--ink); }
+  .cover { width: 52px; height: 52px; flex: none; background: #f2f2f2 center/cover no-repeat; filter: grayscale(1) contrast(1.05); }
+  .res li:hover .cover, .res .cover.color { filter: none; }
   .tinfo { flex: 1; min-width: 0; }
-  .ttitle { font-weight: 650; font-size: 15px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tartist { color: var(--text-2); font-size: 13px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tnote { font-size: 12px; margin-top: 4px; color: var(--text-3); }
-  .tnote.join { color: var(--gold); }
-  .tnote.yours { color: var(--ok); }
+  .ttitle { font-weight: 700; font-size: 15px; line-height: 1.25; }
+  .tartist { color: var(--ink-2); font-size: 13px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tnote { font-size: 12px; margin-top: 6px; font-weight: 600; }
   .add {
-    flex: none; min-width: 44px; height: 44px; border-radius: 12px; padding: 0 12px;
-    background: var(--accent); color: var(--on-accent); font-weight: 800; font-size: 14px;
+    flex: none; height: 40px; min-width: 40px; padding: 0 12px;
+    background: var(--ink); color: var(--paper);
+    font-family: var(--font-display); font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
   }
-  .add.join { background: var(--gold); color: #1c1306; }
-  .add:disabled { background: var(--surface-2); color: var(--text-3); }
+  .add { display: grid; place-items: center; text-align: center; }
+  .add.plus { font-family: var(--font-text); font-size: 24px; font-weight: 300; padding: 0; width: 40px; line-height: 1; }
+  .add:disabled { background: none; color: var(--ink); border: 0; font-size: 18px; }
 
-  .notice {
-    border-radius: 14px; padding: 14px 16px; font-size: 15px;
-    background: var(--surface); border: 1px solid var(--line);
-  }
-  .notice.warn { border-color: #4a2a0a; background: #1a1108; }
-  .notice p { margin: 0; }
-  .notice p + p { margin-top: 6px; }
+  .say { padding: 24px 0 8px; }
+  .say .h { font-family: var(--font-display); font-weight: 800; font-size: 22px; line-height: 1.15; text-transform: uppercase; letter-spacing: -.01em; }
+  .say .s { color: var(--ink-2); margin-top: 10px; font-size: 15px; }
 
-  .done { text-align: center; padding: 28px 8px 8px; }
-  .done .big-emoji { font-size: 44px; }
-  .done .tt { font-size: 22px; font-weight: 800; margin-top: 12px; }
-  .done .ta { color: var(--text-2); margin-top: 4px; }
+  .manual { margin-top: 18px; }
+  .manual .field input { font-size: 18px; }
+  .err { font-size: 13px; margin-top: 8px; font-weight: 600; }
+
+  .done { padding-top: 10px; }
+  .done .title { font-family: var(--font-display); font-weight: 900; text-transform: uppercase; font-size: clamp(30px, 10vw, 52px); line-height: .95; letter-spacing: -.03em; margin-top: 18px; word-break: break-word; }
+  .done .artist { font-size: 18px; font-weight: 600; margin-top: 10px; }
 
   /* ---------- top ---------- */
-  .top-head { display: flex; align-items: flex-start; gap: 12px; }
-  .legend { display: flex; gap: 14px; flex-wrap: wrap; color: var(--text-3); font-size: 12px; margin-top: 10px; }
-  .chart { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
-  .entry {
-    display: flex; align-items: center; gap: 10px;
-    background: var(--surface); border: 1px solid var(--line);
-    border-radius: 14px; padding: 10px 10px 10px 8px;
-  }
-  .entry.mine { border-color: #1f3d2c; }
-  .entry.priority { border-color: var(--gold-line); background: var(--gold-bg); }
-  .entry.played { opacity: .4; }
-  .ttitle.clamp { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  .entry .tartist .badge { margin: 0 6px 0 0; }
-  .entry .cover.sm { width: 40px; height: 40px; }
-  .entry .act { width: 38px; height: 38px; }
-  .entry .score { min-width: 28px; font-size: 16px; }
-  .rank { min-width: 22px; text-align: center; font-weight: 800; color: var(--text-3); font-size: 14px; }
-  .entry:nth-child(-n+3) .rank { color: var(--text); }
-  .score { min-width: 34px; text-align: right; font-weight: 800; font-size: 17px; }
-  .acts { display: flex; gap: 6px; }
-  .act {
-    width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line-2);
-    display: grid; place-items: center; font-size: 17px;
-  }
-  .act.on { border-color: #4c1d2a; background: #22101a; }
-  .act.bolt { color: var(--gold); }
-  .act:disabled { opacity: .35; }
-  .badge {
-    display: inline-block; font-size: 9px; letter-spacing: .14em; font-weight: 700;
-    padding: 2px 6px; border-radius: 5px; margin-left: 6px; vertical-align: 2px;
-  }
-  .badge.pri { background: #422006; color: var(--gold); }
-  .badge.you { background: var(--ok-bg); color: var(--ok); }
-  .badge.played { background: var(--surface-2); color: var(--text-2); }
+  .board { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--ink); }
+  .board li { display: grid; grid-template-columns: 46px 1fr auto; gap: 10px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--rule); }
+  .board .pos { font-family: var(--font-display); font-weight: 900; font-size: 24px; letter-spacing: -.04em; line-height: 1; }
+  .board li:nth-child(n+4) .pos { font-size: 17px; color: var(--ink-2); }
+  .board .ttitle { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .board .right { display: flex; align-items: center; gap: 4px; }
+  .board .score { font-family: var(--font-display); font-weight: 800; font-size: 16px; min-width: 34px; text-align: right; margin-right: 6px; }
+  .board .act { width: 38px; height: 38px; display: grid; place-items: center; font-size: 20px; }
+  .board .act.boost { font-family: var(--font-display); font-size: 10px; font-weight: 800; letter-spacing: .02em; border: 1.5px solid var(--ink); width: 38px; height: 30px; }
+  .board .act:disabled { opacity: .2; }
+  .board .tag { font-family: var(--font-display); font-size: 9px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; margin-right: 8px; }
+  .board li.pri { background: var(--ink); color: var(--paper); margin: 0 calc(var(--gutter) * -1); padding-left: var(--gutter); padding-right: var(--gutter); border-bottom-color: var(--ink); }
+  .board li.pri .tartist { color: #bdbdbd; }
+  .board li.pri .act.boost { border-color: var(--paper); }
+  .board li.played .ttitle { text-decoration: line-through; text-decoration-thickness: 2px; }
+  .board li.played { color: var(--ink-3); }
+  .board li.played .tartist { color: var(--ink-3); }
+  .legend { display: flex; gap: 18px; font-size: 12px; color: var(--ink-2); margin: 14px 0 16px; }
 
   /* ---------- my lyfe ---------- */
-  .who { font-size: 30px; font-weight: 800; text-transform: uppercase; line-height: 1.05; word-break: break-word; }
-  .lid { font-size: 13px; letter-spacing: .24em; color: var(--text-2); font-weight: 600; margin-top: 8px; }
-  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 18px; }
-  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
-  .stat b { display: block; font-size: 22px; font-weight: 800; }
-  .stat span { font-size: 11px; color: var(--text-3); letter-spacing: .08em; }
-  .spend { display: flex; gap: 12px; align-items: flex-start; }
-  .spend .ic { font-size: 22px; width: 32px; text-align: center; }
-  .spend .nm { font-weight: 700; letter-spacing: .06em; }
-  .spend .ds { color: var(--text-2); font-size: 14px; margin-top: 2px; }
-  .spend .price { color: var(--gold); font-weight: 800; white-space: nowrap; }
-  .earn { display: flex; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
-  .earn:first-child { border-top: 0; }
-  .earn .v { color: var(--gold); font-weight: 700; }
-  .hist { display: flex; justify-content: space-between; padding: 9px 0; border-top: 1px solid var(--line); font-size: 14px; }
-  .hist:first-child { border-top: 0; }
-  .hist .d { font-weight: 700; }
-  .hist .d.plus { color: var(--ok); }
-  .hist .d.minus { color: var(--text-2); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 26px; border-top: 1px solid var(--ink); }
+  .stats div { padding: 14px 0 0; }
+  .stats b { display: block; font-family: var(--font-display); font-weight: 900; font-size: 34px; letter-spacing: -.04em; line-height: 1; }
+  .stats span { display: block; margin-top: 8px; }
+  .offer { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; padding: 18px 0 20px; border-bottom: 1px solid var(--rule); }
+  .offer .nm { font-family: var(--font-display); font-weight: 800; font-size: 20px; text-transform: uppercase; letter-spacing: -.01em; }
+  .offer .price { font-family: var(--font-display); font-weight: 900; font-size: 20px; text-align: right; }
+  .offer .price small { display: block; font-size: 9px; font-weight: 600; letter-spacing: .14em; color: var(--ink-3); }
+  .offer .ds { grid-column: 1 / -1; color: var(--ink-2); font-size: 14px; max-width: 34ch; }
+  .offer .state { grid-column: 1 / -1; margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; font-weight: 600; }
+  .ledger { list-style: none; margin: 0; padding: 0; }
+  .ledger li { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--rule); font-size: 14px; }
+  .ledger .v { font-family: var(--font-display); font-weight: 700; font-size: 13px; }
+  .earn li .v::before { content: "+"; }
 
   /* ---------- tab bar ---------- */
   .tabbar {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
-    background: rgba(10,10,11,.92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    border-top: 1px solid var(--line);
+    background: rgba(255,255,255,.94); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--ink);
     padding-bottom: var(--safe-b);
   }
   .tabs { display: grid; grid-template-columns: repeat(4, 1fr); max-width: 560px; margin: 0 auto; height: var(--tabbar); }
   .tab {
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-    color: var(--text-4); font-size: 10px; letter-spacing: .16em; font-weight: 700;
+    position: relative; display: grid; place-items: center; text-align: center;
+    font-family: var(--font-display); font-size: 10px; font-weight: 600;
+    letter-spacing: .14em; color: var(--ink-3);
   }
-  .tab .i { font-size: 20px; line-height: 1; filter: grayscale(1); opacity: .6; }
-  .tab.on { color: var(--text); }
-  .tab.on .i { filter: none; opacity: 1; }
+  .tab.on { color: var(--ink); font-weight: 800; }
+  .tab.on::before { content: ""; position: absolute; top: -1px; left: 22%; right: 22%; height: 4px; background: var(--ink); }
 
   /* ---------- sheet ---------- */
-  .scrim {
-    position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.6);
-    opacity: 0; pointer-events: none; transition: opacity .2s;
-  }
+  .scrim { position: fixed; inset: 0; z-index: 40; background: rgba(255,255,255,.7); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity .2s; }
   .scrim.show { opacity: 1; pointer-events: auto; }
   .sheet {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 41;
-    background: var(--surface); border-top: 1px solid var(--line-2);
-    border-radius: 22px 22px 0 0; padding: 10px 16px calc(20px + var(--safe-b));
-    max-height: 86vh; overflow-y: auto;
-    transform: translateY(105%); transition: transform .25s cubic-bezier(.2,.8,.2,1);
+    background: var(--paper); border-top: 2px solid var(--ink);
+    padding: 20px var(--gutter) calc(24px + var(--safe-b));
+    max-height: 90vh; overflow-y: auto;
+    transform: translateY(105%); transition: transform .3s cubic-bezier(.2,.8,.2,1);
     max-width: 560px; margin: 0 auto;
   }
   .sheet.show { transform: none; }
-  .grab { width: 40px; height: 4px; border-radius: 2px; background: var(--line-2); margin: 0 auto 16px; }
-  .qr { background: #fff; border-radius: 18px; padding: 10px; width: min(78vw, 300px); margin: 18px auto 0; }
+  .sheet .close { position: absolute; right: var(--gutter); top: 14px; font-size: 26px; line-height: 1; }
+  .qr { width: min(76vw, 300px); margin: 22px auto 0; }
   .qr svg { width: 100%; height: auto; display: block; }
 
   .toast {
-    position: fixed; left: 50%; z-index: 60;
-    bottom: calc(var(--tabbar) + var(--safe-b) + 16px);
-    transform: translate(-50%, 8px); opacity: 0; pointer-events: none;
-    background: var(--text); color: var(--bg); padding: 12px 20px; border-radius: 999px;
-    font-size: 14px; font-weight: 700; transition: opacity .2s, transform .2s;
-    max-width: calc(100vw - 32px); text-align: center;
+    position: fixed; left: var(--gutter); right: var(--gutter); z-index: 60;
+    bottom: calc(var(--tabbar) + var(--safe-b) + 12px);
+    transform: translateY(10px); opacity: 0; pointer-events: none;
+    background: var(--ink); color: var(--paper); padding: 16px 18px;
+    font-size: 14px; font-weight: 600; transition: opacity .2s, transform .2s;
+    max-width: 520px; margin: 0 auto;
   }
-  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.show { opacity: 1; transform: none; }
 
-  .skeleton { background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%); background-size: 200% 100%; animation: sk 1.2s infinite; border-radius: 14px; height: 74px; }
-  @keyframes sk { to { background-position: -200% 0; } }
-  .center { text-align: center; padding: 60px 12px; }
-  .empty-emoji { font-size: 40px; }
+  .loading { height: 72px; border-bottom: 1px solid var(--rule); position: relative; overflow: hidden; }
+  .loading::after { content: ""; position: absolute; left: 0; top: 50%; height: 2px; width: 30%; background: var(--ink); animation: scan 1s ease-in-out infinite; }
+  @keyframes scan { from { transform: translateX(-100%); } to { transform: translateX(400%); } }
+
+  /* ---------- splash ---------- */
+  .splash {
+    position: fixed; inset: 0; z-index: 100; background: var(--paper);
+    display: grid; place-items: center; overflow: hidden;
+    transition: opacity .5s ease, transform .6s cubic-bezier(.7,0,.3,1);
+  }
+  .splash.out { opacity: 0; transform: scale(1.08); pointer-events: none; }
+  .splash svg { width: min(86vw, 420px); height: auto; overflow: visible; }
+  .splash .word {
+    position: absolute; bottom: calc(48px + var(--safe-b)); left: 0; right: 0; text-align: center;
+    font-family: var(--font-display); font-weight: 700; font-size: 10px; letter-spacing: .5em;
+    opacity: 0; animation: fade .6s 1.9s ease forwards;
+  }
+  @keyframes fade { to { opacity: 1; } }
 </style>
 </head>
 <body>
-<main class="view" id="view"><div class="center muted">LYFE</div></main>
+
+<!-- Launch: the two letters fly in through smoke and settle into the mark. -->
+<div class="splash" id="splash" aria-hidden="true">
+  <svg viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="smoke" x="-50%" y="-50%" width="200%" height="200%">
+        <feTurbulence id="smokeNoise" type="fractalNoise" baseFrequency="0.012 0.02" numOctaves="3" seed="7" result="noise"/>
+        <feDisplacementMap id="smokeDisp" in="SourceGraphic" in2="noise" scale="160" xChannelSelector="R" yChannelSelector="G" result="moved"/>
+        <feGaussianBlur id="smokeBlur" in="moved" stdDeviation="14"/>
+      </filter>
+      <filter id="haze" x="-50%" y="-50%" width="200%" height="200%">
+        <feTurbulence id="hazeNoise" type="fractalNoise" baseFrequency="0.008 0.016" numOctaves="2" seed="3" result="noise"/>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="220" xChannelSelector="R" yChannelSelector="G" result="moved"/>
+        <feGaussianBlur in="moved" stdDeviation="22"/>
+      </filter>
+      <!-- feathered halves: the ribbon between the letters fades instead of being cut -->
+      <linearGradient id="fadeL" x1="0" x2="1" y1="0" y2="0">
+        <stop offset="0.36" stop-color="#fff"/><stop offset="0.62" stop-color="#fff" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="fadeP" x1="0" x2="1" y1="0" y2="0">
+        <stop offset="0.42" stop-color="#fff" stop-opacity="0"/><stop offset="0.66" stop-color="#fff"/>
+      </linearGradient>
+      <mask id="leftHalf" maskUnits="userSpaceOnUse" x="0" y="0" width="640" height="640"><rect width="640" height="640" fill="url(#fadeL)"/></mask>
+      <mask id="rightHalf" maskUnits="userSpaceOnUse" x="0" y="0" width="640" height="640"><rect width="640" height="640" fill="url(#fadeP)"/></mask>
+    </defs>
+    <!-- a trail of smoke that drifts after the letters and thins out -->
+    <image id="hazeImg" href="/static/app/logo.jpg" width="640" height="640" filter="url(#haze)" opacity="0" style="mix-blend-mode:multiply"/>
+    <g id="partL" style="transform-origin: 140px 320px; transform-box: view-box; mix-blend-mode: multiply">
+      <g filter="url(#smoke)"><image href="/static/app/logo.jpg" width="640" height="640" mask="url(#leftHalf)"/></g>
+    </g>
+    <g id="partP" style="transform-origin: 520px 320px; transform-box: view-box; mix-blend-mode: multiply">
+      <g filter="url(#smoke)"><image href="/static/app/logo.jpg" width="640" height="640" mask="url(#rightHalf)"/></g>
+    </g>
+    <!-- the untouched mark takes over at the end, so no seam is ever visible -->
+    <image id="wholeImg" href="/static/app/logo.jpg" width="640" height="640" opacity="0" style="mix-blend-mode:multiply"/>
+  </svg>
+  <div class="word">FEEL THE LYFE</div>
+</div>
+
+<main class="view" id="view"></main>
 
 <nav class="tabbar" id="tabbar" hidden>
   <div class="tabs">
-    <button class="tab" data-tab="home"><span class="i">🌙</span><span data-l="tab_home"></span></button>
-    <button class="tab" data-tab="add"><span class="i">🎵</span><span data-l="tab_add"></span></button>
-    <button class="tab" data-tab="top"><span class="i">🔥</span><span data-l="tab_top"></span></button>
-    <button class="tab" data-tab="me"><span class="i">❤️</span><span data-l="tab_me"></span></button>
+    <button class="tab" data-tab="home" data-l="tab_home"></button>
+    <button class="tab" data-tab="add" data-l="tab_add"></button>
+    <button class="tab" data-tab="top" data-l="tab_top"></button>
+    <button class="tab" data-tab="me" data-l="tab_me"></button>
   </div>
 </nav>
 
@@ -325,58 +330,56 @@ const COPY = {
   ru: {
     tab_home: 'НОЧЬ', tab_add: 'ТРЕК', tab_top: 'TOP', tab_me: 'MY LYFE',
     presents: 'LYFEPARTY presents',
-    today: 'Сегодня ночью', tomorrow: 'Завтра', in_days: 'Через {n} {w}',
-    days: ['день', 'дня', 'дней'],
-    live: 'LIVE', ticket: '🎟 Билет',
+    today: 'Сегодня ночью', tomorrow: 'Завтра', days: ['день', 'дня', 'дней'], left: 'осталось',
+    live: 'LIVE', ticket: 'Билет',
     no_event_t: 'Пока тишина.', no_event_s: 'Дату узнаешь первым.',
-    your_tracks: 'Твои треки сегодня', no_tracks: 'Ты ещё ничего не выбрал.',
-    add_track: '🎵 Добавить трек', slots: '{used} из {max}',
-    wallet: 'LYFE POINTS', wallet_spend: 'На что потратить →',
+    your_tracks: 'Твои треки', no_tracks: 'Ты ещё ничего не выбрал. Три трека — и ночь звучит по-твоему.',
+    add_track: 'Добавить трек', slots: '{used} из {max}',
+    wallet: 'LYFE POINTS', wallet_spend: 'Потратить',
     req_title: 'LYFE REQUEST', req_sub: 'Трек, который хочешь услышать {date}.',
     req_ph: 'Название, артист или ссылка',
     req_hint: 'Spotify, YouTube, Apple Music, TikTok, SoundCloud — ссылка тоже подойдёт.',
-    searching: 'Ищу…',
-    link_read: 'По ссылке это', link_bad_t: 'Не смог открыть эту ссылку.',
+    link_read: 'По ссылке это', link_bad_t: 'Ссылка не открылась.',
     link_bad_s: 'Пришли другую или просто напиши название трека.',
-    link_nomatch_t: 'В каталоге такого не нашёл.',
-    not_found_t: 'Не нашёл такой трек.',
-    manual_s: 'Впиши сам в формате «Артист - Название».',
+    link_nomatch_t: 'В каталоге такого нет.',
+    not_found_t: 'Не нашёл.',
+    manual_s: 'Впиши сам: Артист - Название.',
     manual_ph: 'Артист - Название', manual_btn: 'Добавить как есть',
     manual_format: 'Нужно так: Артист - Название. Например: Travis Scott - FE!N',
     manual_link: 'Здесь нужно название, не ссылка.',
-    not_it: 'Не то? Впишу сам', versions: 'Другие версии ↓',
-    in_list: 'Уже в списке · 🔥 {n} — присоединяйся', yours: 'Твой ✓',
-    join: 'Я тоже', added_t: 'Трек принят.', added_first: 'Ты первый, кто его попросил.',
+    not_it: 'Не то — впишу сам', versions: 'Другие версии',
+    in_list: 'Уже в списке · {n} — присоединяйся', yours: 'Твой',
+    join: 'Я тоже', added_t: 'Трек принят', added_first: 'Ты первый, кто его попросил.',
     added_nth: 'Ты {n}-й, кто его попросил.', added_s: 'Если его поставят — ты узнаешь первым.',
     already: 'Уже твой. Второй раз не считается.',
     limit_t: 'Три трека — твой максимум.', limit_s: 'Этого хватит, чтобы развернуть ночь. Дальше решают остальные.',
     closed_t: 'Ночь закончилась.', closed_s: 'Следующая скоро. Мы напишем.',
-    boost_it: '⚡ Поднять его · {c}', to_top: 'Смотреть TOP', add_more: 'Добавить ещё',
+    boost_it: 'Поднять его +{c}', to_top: 'Смотреть TOP', add_more: 'Добавить ещё',
     top_title: 'TOP REQUESTS', top_empty_t: 'Тишина.', top_empty_s: 'Первый трек этой ночи за тобой.',
-    legend_vote: '❤️ бесплатно · +1', legend_boost: '⚡ {c} POINTS · +{c}',
-    more: 'Ещё ↓', played: 'PLAYED', priority: 'ГАРАНТИЯ', you: 'ТВОЙ',
-    vote_done: 'Голос засчитан 🔥', vote_already: 'Ты уже голосовал за него',
-    vote_own: 'Это твой трек — он уже посчитан', vote_closed: 'Голосование закрыто',
-    boost_q_t: '⚡ BOOST', boost_q: '{c} LYFE POINTS → +{c} к треку\n«{track}»\n\nОсталось бустов на эту ночь: {left}.',
-    boost_go: 'Поднять', cancel: 'Отмена',
-    boost_done: '⚡ +{c}. Трек выше.', boost_poor: 'Нужно {c} LYFE POINTS, у тебя {have}.',
-    boost_limit: 'Бусты на эту ночь закончились.', boost_played: 'Его уже сыграли 🔥',
+    legend_vote: '♡ бесплатно, +1', legend_boost: '+{c} за {c} LYFE POINTS',
+    more: 'Ещё', played: 'Сыграно', priority: 'Гарантия', you: 'Твой',
+    vote_done: 'Голос засчитан.', vote_already: 'Ты уже голосовал за него.',
+    vote_own: 'Это твой трек — он уже посчитан.', vote_closed: 'Голосование закрыто.',
+    boost_q_t: 'BOOST', boost_q: '{c} LYFE POINTS → +{c} к треку\n«{track}»\n\nОсталось бустов на эту ночь: {left}.',
+    boost_go: 'Поднять',
+    boost_done: '+{c}. Трек выше.', boost_poor: 'Нужно {c} LYFE POINTS, у тебя {have}.',
+    boost_limit: 'Бусты на эту ночь закончились.', boost_played: 'Его уже сыграли.',
     nights: 'Ночей', requests: 'Реквестов', played_n: 'Сыграли',
-    pass_btn: '🎟 LYFE PASS', pass_s: 'Покажи этот код на входе.',
+    pass_btn: 'LYFE PASS', pass_s: 'Покажи этот код на входе.',
     spend_title: 'На что потратить', earn_title: 'Как заработать', hist_title: 'История',
-    boost_nm: 'BOOST', boost_ds: '+{c} к любому треку в TOP. До {max} раз за ночь.',
-    boost_left: 'Сегодня осталось: {n}', boost_how: 'Жми ⚡ в TOP REQUESTS',
-    pri_nm: 'ГАРАНТИЯ', pri_ds: 'Твой трек закрепляется у DJ и прозвучит точно. Только {max} за ночь.',
-    pri_btn: 'Выбрать трек', pri_left: 'Осталось на эту ночь: {n}',
+    boost_nm: 'Boost', boost_ds: '+{c} к любому треку в TOP. До {max} раз за ночь.',
+    boost_left: 'Сегодня осталось: {n}', boost_how: 'В TOP',
+    pri_nm: 'Гарантия', pri_ds: 'Твой трек закрепляется у DJ и звучит точно. Только {max} за ночь.',
+    pri_btn: 'Выбрать трек', pri_left: 'Осталось на ночь: {n}',
     pri_none: 'Сначала добавь трек — гарантия ставится на свой.', pri_full: 'Разобрали. Их всего две за ночь.',
-    pri_have: 'Твой трек уже закреплён 🎯', pri_pick: 'Какой трек закрепить?',
+    pri_have: 'Твой трек уже закреплён.', pri_pick: 'Какой трек закрепить?',
     pri_q: '{c} LYFE POINTS — и «{track}» прозвучит этой ночью.\n\nБез «если» и «может быть».',
-    pri_go: 'Закрепить', pri_done: '🎯 Готово. Трек закреплён у DJ.',
-    pri_off: 'Гарантия откроется ближе к ночи.',
-    earn_req: 'Добавить трек', earn_vote: 'Лайк чужому треку (первые 3)', earn_att: 'Прийти на LYFEPARTY',
+    pri_go: 'Закрепить', pri_done: 'Готово. Трек закреплён у DJ.',
+    pri_off: 'Откроется ближе к ночи.',
+    earn_req: 'Добавить трек', earn_vote: 'Лайк чужому треку, первые 3', earn_att: 'Прийти на LYFEPARTY',
     reason: {
       MUSIC_REQUEST: 'Трек', VOTE: 'Лайк', EVENT_ATTENDANCE: 'Ночь на LYFEPARTY',
-      REWARD_REDEMPTION: 'Гарантия трека', BOOST: 'BOOST', GIFT: 'Подарок от LYFE',
+      REWARD_REDEMPTION: 'Гарантия трека', BOOST: 'Boost', GIFT: 'Подарок от LYFE',
       MANUAL_ADJUSTMENT: 'Возврат', REFERRAL: 'Друг', ACTIVITY: 'Активность',
     },
     hist_empty: 'Пока пусто.',
@@ -387,58 +390,56 @@ const COPY = {
   uk: {
     tab_home: 'НІЧ', tab_add: 'ТРЕК', tab_top: 'TOP', tab_me: 'MY LYFE',
     presents: 'LYFEPARTY presents',
-    today: 'Сьогодні вночі', tomorrow: 'Завтра', in_days: 'Через {n} {w}',
-    days: ['день', 'дні', 'днів'],
-    live: 'LIVE', ticket: '🎟 Квиток',
+    today: 'Сьогодні вночі', tomorrow: 'Завтра', days: ['день', 'дні', 'днів'], left: 'залишилось',
+    live: 'LIVE', ticket: 'Квиток',
     no_event_t: 'Поки тиша.', no_event_s: 'Дату дізнаєшся першим.',
-    your_tracks: 'Твої треки сьогодні', no_tracks: 'Ти ще нічого не обрав.',
-    add_track: '🎵 Додати трек', slots: '{used} з {max}',
-    wallet: 'LYFE POINTS', wallet_spend: 'На що витратити →',
+    your_tracks: 'Твої треки', no_tracks: 'Ти ще нічого не обрав. Три треки — і ніч звучить по-твоєму.',
+    add_track: 'Додати трек', slots: '{used} з {max}',
+    wallet: 'LYFE POINTS', wallet_spend: 'Витратити',
     req_title: 'LYFE REQUEST', req_sub: 'Трек, який хочеш почути {date}.',
     req_ph: 'Назва, артист або посилання',
     req_hint: 'Spotify, YouTube, Apple Music, TikTok, SoundCloud — посилання теж підійде.',
-    searching: 'Шукаю…',
-    link_read: 'За посиланням це', link_bad_t: 'Не вдалося відкрити це посилання.',
+    link_read: 'За посиланням це', link_bad_t: 'Посилання не відкрилось.',
     link_bad_s: 'Надішли інше або просто напиши назву треку.',
-    link_nomatch_t: 'У каталозі такого не знайшов.',
-    not_found_t: 'Не знайшов такий трек.',
-    manual_s: 'Впиши сам у форматі «Артист - Назва».',
+    link_nomatch_t: 'У каталозі такого немає.',
+    not_found_t: 'Не знайшов.',
+    manual_s: 'Впиши сам: Артист - Назва.',
     manual_ph: 'Артист - Назва', manual_btn: 'Додати як є',
     manual_format: 'Потрібно так: Артист - Назва. Наприклад: Travis Scott - FE!N',
     manual_link: 'Тут потрібна назва, не посилання.',
-    not_it: 'Не те? Впишу сам', versions: 'Інші версії ↓',
-    in_list: 'Вже у списку · 🔥 {n} — приєднуйся', yours: 'Твій ✓',
-    join: 'Я теж', added_t: 'Трек прийнято.', added_first: 'Ти перший, хто його попросив.',
+    not_it: 'Не те — впишу сам', versions: 'Інші версії',
+    in_list: 'Вже у списку · {n} — приєднуйся', yours: 'Твій',
+    join: 'Я теж', added_t: 'Трек прийнято', added_first: 'Ти перший, хто його попросив.',
     added_nth: 'Ти {n}-й, хто його попросив.', added_s: 'Якщо його поставлять — ти дізнаєшся першим.',
     already: 'Вже твій. Вдруге не рахується.',
     limit_t: 'Три треки — твій максимум.', limit_s: 'Цього вистачить, щоб розвернути ніч. Далі вирішують інші.',
     closed_t: 'Ніч закінчилась.', closed_s: 'Наступна скоро. Ми напишемо.',
-    boost_it: '⚡ Підняти його · {c}', to_top: 'Дивитися TOP', add_more: 'Додати ще',
+    boost_it: 'Підняти його +{c}', to_top: 'Дивитися TOP', add_more: 'Додати ще',
     top_title: 'TOP REQUESTS', top_empty_t: 'Тиша.', top_empty_s: 'Перший трек цієї ночі за тобою.',
-    legend_vote: '❤️ безкоштовно · +1', legend_boost: '⚡ {c} POINTS · +{c}',
-    more: 'Ще ↓', played: 'PLAYED', priority: 'ГАРАНТІЯ', you: 'ТВІЙ',
-    vote_done: 'Голос зараховано 🔥', vote_already: 'Ти вже голосував за нього',
-    vote_own: 'Це твій трек — він уже врахований', vote_closed: 'Голосування закрите',
-    boost_q_t: '⚡ BOOST', boost_q: '{c} LYFE POINTS → +{c} до треку\n«{track}»\n\nЗалишилось бустів на цю ніч: {left}.',
-    boost_go: 'Підняти', cancel: 'Скасувати',
-    boost_done: '⚡ +{c}. Трек вище.', boost_poor: 'Потрібно {c} LYFE POINTS, у тебе {have}.',
-    boost_limit: 'Бусти на цю ніч закінчились.', boost_played: 'Його вже зіграли 🔥',
+    legend_vote: '♡ безкоштовно, +1', legend_boost: '+{c} за {c} LYFE POINTS',
+    more: 'Ще', played: 'Зіграно', priority: 'Гарантія', you: 'Твій',
+    vote_done: 'Голос зараховано.', vote_already: 'Ти вже голосував за нього.',
+    vote_own: 'Це твій трек — він уже врахований.', vote_closed: 'Голосування закрите.',
+    boost_q_t: 'BOOST', boost_q: '{c} LYFE POINTS → +{c} до треку\n«{track}»\n\nЗалишилось бустів на цю ніч: {left}.',
+    boost_go: 'Підняти',
+    boost_done: '+{c}. Трек вище.', boost_poor: 'Потрібно {c} LYFE POINTS, у тебе {have}.',
+    boost_limit: 'Бусти на цю ніч закінчились.', boost_played: 'Його вже зіграли.',
     nights: 'Ночей', requests: 'Реквестів', played_n: 'Зіграли',
-    pass_btn: '🎟 LYFE PASS', pass_s: 'Покажи цей код на вході.',
+    pass_btn: 'LYFE PASS', pass_s: 'Покажи цей код на вході.',
     spend_title: 'На що витратити', earn_title: 'Як заробити', hist_title: 'Історія',
-    boost_nm: 'BOOST', boost_ds: '+{c} до будь-якого треку в TOP. До {max} разів за ніч.',
-    boost_left: 'Сьогодні залишилось: {n}', boost_how: 'Тисни ⚡ у TOP REQUESTS',
-    pri_nm: 'ГАРАНТІЯ', pri_ds: 'Твій трек закріплюється у DJ і прозвучить точно. Лише {max} за ніч.',
-    pri_btn: 'Обрати трек', pri_left: 'Залишилось на цю ніч: {n}',
+    boost_nm: 'Boost', boost_ds: '+{c} до будь-якого треку в TOP. До {max} разів за ніч.',
+    boost_left: 'Сьогодні залишилось: {n}', boost_how: 'У TOP',
+    pri_nm: 'Гарантія', pri_ds: 'Твій трек закріплюється у DJ і звучить точно. Лише {max} за ніч.',
+    pri_btn: 'Обрати трек', pri_left: 'Залишилось на ніч: {n}',
     pri_none: 'Спершу додай трек — гарантія ставиться на свій.', pri_full: 'Розібрали. Їх лише дві за ніч.',
-    pri_have: 'Твій трек уже закріплено 🎯', pri_pick: 'Який трек закріпити?',
+    pri_have: 'Твій трек уже закріплено.', pri_pick: 'Який трек закріпити?',
     pri_q: '{c} LYFE POINTS — і «{track}» прозвучить цієї ночі.\n\nБез «якщо» і «може бути».',
-    pri_go: 'Закріпити', pri_done: '🎯 Готово. Трек закріплено у DJ.',
-    pri_off: 'Гарантія відкриється ближче до ночі.',
-    earn_req: 'Додати трек', earn_vote: 'Лайк чужому треку (перші 3)', earn_att: 'Прийти на LYFEPARTY',
+    pri_go: 'Закріпити', pri_done: 'Готово. Трек закріплено у DJ.',
+    pri_off: 'Відкриється ближче до ночі.',
+    earn_req: 'Додати трек', earn_vote: 'Лайк чужому треку, перші 3', earn_att: 'Прийти на LYFEPARTY',
     reason: {
       MUSIC_REQUEST: 'Трек', VOTE: 'Лайк', EVENT_ATTENDANCE: 'Ніч на LYFEPARTY',
-      REWARD_REDEMPTION: 'Гарантія треку', BOOST: 'BOOST', GIFT: 'Подарунок від LYFE',
+      REWARD_REDEMPTION: 'Гарантія треку', BOOST: 'Boost', GIFT: 'Подарунок від LYFE',
       MANUAL_ADJUSTMENT: 'Повернення', REFERRAL: 'Друг', ACTIVITY: 'Активність',
     },
     hist_empty: 'Поки порожньо.',
@@ -453,7 +454,7 @@ const tg = window.Telegram && window.Telegram.WebApp;
 const INIT_DATA = (tg && tg.initData) || '';
 
 let lang = ((tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code) || 'ru').startsWith('uk') ? 'uk' : 'ru';
-const S = { me: null, top: null, tab: 'home', search: null, query: '', busy: false };
+const S = { me: null, top: null, tab: 'home', search: null, query: '', busy: false, showVersions: false };
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const view = $('#view');
@@ -474,6 +475,7 @@ function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
+function pad(n) { return String(n).padStart(2, '0'); }
 function haptic(kind) {
   try {
     if (!tg || !tg.HapticFeedback) return;
@@ -485,7 +487,7 @@ let toastTimer;
 function toast(text) {
   const el = $('#toast');
   el.textContent = text; el.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
 }
 function confirmBox(title, message, okText) {
   return new Promise(resolve => {
@@ -516,21 +518,13 @@ async function api(path, opts = {}) {
 
 /* ------------------------------------------------------------------ */
 
-function setPoints(points) {
-  if (S.me && typeof points === 'number') S.me.user.points = points;
-}
+function setPoints(points) { if (S.me && typeof points === 'number') S.me.user.points = points; }
 function rules() { return S.me.rules; }
 function tonight() { return S.me.tonight || { requests_used: 0, boosts_used: 0, own: [] }; }
-function cover(url, small) {
-  return url
-    ? `<div class="cover${small ? ' sm' : ''}" style="background-image:url('${esc(url)}')"></div>`
-    : `<div class="cover${small ? ' sm' : ''}">♪</div>`;
+function cover(url) {
+  return `<div class="cover"${url ? ` style="background-image:url('${esc(url)}')"` : ''}></div>`;
 }
-function countdownText(ev) {
-  if (ev.status === 'LIVE') return `<span class="chip live">${L('live')}</span>`;
-  const t = ev.days <= 0 ? L('today') : ev.days === 1 ? L('tomorrow') : L('in_days', { n: ev.days, w: plural(ev.days, L('days')) });
-  return `<span class="chip">⏳ ${esc(t)}</span>`;
-}
+function rerender() { view.style.animation = 'none'; void view.offsetWidth; view.style.animation = ''; }
 
 /* ---------------- tabs ---------------- */
 
@@ -538,6 +532,7 @@ function go(tab, opts = {}) {
   S.tab = tab;
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
   window.scrollTo(0, 0);
+  rerender();
   if (tab === 'home') renderHome();
   if (tab === 'add') renderAdd(opts);
   if (tab === 'top') loadTop();
@@ -552,59 +547,57 @@ async function refreshMe() {
   document.querySelectorAll('[data-l]').forEach(el => { el.textContent = L(el.dataset.l); });
 }
 
+function topline(right) {
+  return `<div class="topline"><span class="mark" role="img" aria-label="LYFE"></span>${right || ''}</div>`;
+}
+
 /* ---------------- НОЧЬ ---------------- */
 
 function renderHome() {
   const { event: ev, user } = S.me;
   const tn = tonight();
   if (!ev) {
-    view.innerHTML = `
-      <div class="center"><div class="empty-emoji">🌙</div>
-        <div class="h-screen" style="margin-top:16px">${esc(L('no_event_t'))}</div>
-        <p class="sub">${esc(L('no_event_s'))}</p></div>
-      ${walletCard(user)}
-      <div class="tagline">FEEL THE LYFE</div>`;
+    view.innerHTML = topline() + `
+      <h1 class="mega">${esc(L('no_event_t'))}</h1>
+      <p class="muted" style="margin-top:16px">${esc(L('no_event_s'))}</p>
+      ${walletBlock(user)}`;
     bindWallet();
     return;
   }
+
+  let when;
+  if (ev.status === 'LIVE') when = `<div class="live">${esc(L('live'))}</div>`;
+  else if (ev.days <= 1) when = `<div class="live" style="font-size:22px">${esc(ev.days <= 0 ? L('today') : L('tomorrow'))}</div>`;
+  else when = `<div class="count"><span class="big-num num">${pad(ev.days)}</span><span class="unit">${esc(plural(ev.days, L('days')))}<br><span class="faint">${esc(L('left'))}</span></span></div>`;
+
   const own = tn.own.length
-    ? tn.own.map(o => `<div class="mine-row"><div class="pos num">${String(o.position).padStart(2, '0')}</div><div class="tinfo"><div class="ttitle">${esc(o.name)}</div></div></div>`).join('')
-    : `<p class="muted" style="margin:0">${esc(L('no_tracks'))}</p>`;
+    ? `<ul class="tracks-mine">${tn.own.map(o => `<li><span class="p num">${pad(o.position)}</span><span class="n">${esc(o.name)}</span></li>`).join('')}</ul>`
+    : `<p class="muted">${esc(L('no_tracks'))}</p>`;
   const slots = Array.from({ length: rules().requests_max }, (_, i) => `<span class="slot${i < tn.requests_used ? ' on' : ''}"></span>`).join('');
+  const canAdd = ev.accepts_requests && tn.requests_used < rules().requests_max;
 
-  view.innerHTML = `
-    <div class="kicker">${esc(L('presents'))}</div>
-    <h1 class="h-event">${esc(ev.title)}</h1>
-    <div class="meta-line">📍 ${esc([ev.date, ev.time, ev.venue, ev.city].filter(Boolean).join(' · '))}</div>
-    <div class="countdown">${countdownText(ev)}</div>
-    ${ev.ticket_url ? `<div style="margin-top:18px"><button class="btn ghost" id="ticket">${esc(L('ticket'))}</button></div>` : ''}
+  view.innerHTML = topline(ev.ticket_url ? `<button class="link" id="ticket">${esc(L('ticket'))} ↗</button>` : '') + `
+    <div class="label">${esc(L('presents'))}</div>
+    <h1 class="mega" style="margin-top:10px">${esc(ev.title)}</h1>
+    <div class="meta">${[ev.date, ev.time, ev.venue, ev.city].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('')}</div>
+    ${when}
 
-    <div class="section">
-      <span class="kicker">${esc(L('your_tracks'))}</span>
-      <div class="card">
-        ${own}
-        <div class="row" style="margin-top:14px">
-          <div class="slots">${slots}</div>
-          <span class="muted num" style="font-size:13px">${esc(L('slots', { used: tn.requests_used, max: rules().requests_max }))}</span>
-          <span class="spacer"></span>
-        </div>
-        ${ev.accepts_requests && tn.requests_used < rules().requests_max
-          ? `<button class="btn primary" style="margin-top:14px" id="goadd">${esc(L('add_track'))}</button>` : ''}
-      </div>
-    </div>
+    <div class="rule"></div>
+    <div class="topline" style="margin:0 0 6px"><span class="label">${esc(L('your_tracks'))}</span><span class="label num">${esc(L('slots', { used: tn.requests_used, max: rules().requests_max }))}</span></div>
+    ${own}
+    <div class="slots">${slots}</div>
+    ${canAdd ? `<button class="btn" id="goadd">${esc(L('add_track'))}</button>` : ''}
 
-    ${walletCard(user)}
-    <div class="tagline">FEEL THE LYFE</div>`;
+    ${walletBlock(user)}`;
 
   const t = $('#ticket'); if (t) t.onclick = () => (tg && tg.openLink ? tg.openLink(ev.ticket_url) : window.open(ev.ticket_url));
   const a = $('#goadd'); if (a) a.onclick = () => go('add');
   bindWallet();
 }
-function walletCard(user) {
-  return `<div class="section"><button class="card wallet" id="wallet" style="width:100%;text-align:left">
-      <div><div class="big num">${user.points}</div><div class="lbl">${esc(L('wallet'))}</div></div>
-      <span class="spacer"></span><span class="muted" style="font-size:14px">${esc(L('wallet_spend'))}</span>
-    </button></div>`;
+function walletBlock(user) {
+  return `<div class="rule"></div><span class="label">${esc(L('wallet'))}</span>
+    <div class="wallet" style="margin-top:8px"><span class="big-num num">${user.points}</span>
+      <button class="link" id="wallet" style="margin-bottom:10px">${esc(L('wallet_spend'))} →</button></div>`;
 }
 function bindWallet() { const w = $('#wallet'); if (w) w.onclick = () => go('me', { spend: true }); }
 
@@ -612,26 +605,30 @@ function bindWallet() { const w = $('#wallet'); if (w) w.onclick = () => go('me'
 
 let searchTimer, searchSeq = 0;
 
+function say(title, sub) {
+  return `<div class="say"><div class="h">${esc(title)}</div>${sub ? `<p class="s">${esc(sub)}</p>` : ''}</div>`;
+}
+
 function renderAdd(opts = {}) {
   const ev = S.me.event;
   const tn = tonight();
-  if (!ev) { view.innerHTML = noticeBlock('🌙', L('no_event_t'), L('no_event_s')); return; }
-  if (!ev.accepts_requests) { view.innerHTML = noticeBlock('🌙', L('closed_t'), L('closed_s')); return; }
+  const head = topline(`<span class="label num">${ev ? esc(L('slots', { used: tn.requests_used, max: rules().requests_max })) : ''}</span>`);
+  if (!ev) { view.innerHTML = head + `<h1 class="mega">${esc(L('no_event_t'))}</h1><p class="muted" style="margin-top:16px">${esc(L('no_event_s'))}</p>`; return; }
+  if (!ev.accepts_requests) { view.innerHTML = head + `<h1 class="mega">${esc(L('closed_t'))}</h1><p class="muted" style="margin-top:16px">${esc(L('closed_s'))}</p>`; return; }
   if (tn.requests_used >= rules().requests_max) {
-    view.innerHTML = noticeBlock('✋', L('limit_t'), L('limit_s')) +
-      `<button class="btn ghost" id="totop" style="margin-top:12px">${esc(L('to_top'))}</button>`;
+    view.innerHTML = head + `<h1 class="mega">${esc(L('limit_t'))}</h1><p class="muted" style="margin:16px 0 28px">${esc(L('limit_s'))}</p>
+      <button class="btn" id="totop">${esc(L('to_top'))}</button>`;
     $('#totop').onclick = () => go('top');
     return;
   }
-  view.innerHTML = `
-    <div class="row"><h2 class="h-screen">${esc(L('req_title'))}</h2><span class="spacer"></span>
-      <span class="muted num" style="font-size:13px">${esc(L('slots', { used: tn.requests_used, max: rules().requests_max }))}</span></div>
-    <p class="sub">${esc(L('req_sub', { date: ev.date }))}</p>
+  view.innerHTML = head + `
+    <h1 class="mega" style="font-size:clamp(30px,9.5vw,52px)">${esc(L('req_title'))}</h1>
+    <p class="muted" style="margin-top:10px">${esc(L('req_sub', { date: ev.date }))}</p>
     <div class="search">
-      <label class="field"><span>🔎</span>
+      <label class="field">
         <input id="q" type="text" inputmode="search" enterkeyhint="search" autocomplete="off" autocorrect="off" spellcheck="false"
           placeholder="${esc(L('req_ph'))}" value="${esc(S.query)}">
-        <button class="clear" id="clear" ${S.query ? '' : 'hidden'} aria-label="clear">✕</button>
+        <button class="clear" id="clear" ${S.query ? '' : 'hidden'} aria-label="clear">×</button>
       </label>
     </div>
     <div id="results"></div>`;
@@ -640,8 +637,7 @@ function renderAdd(opts = {}) {
     S.query = q.value;
     $('#clear').hidden = !q.value;
     clearTimeout(searchTimer);
-    const isLink = /https?:\/\//i.test(q.value);
-    searchTimer = setTimeout(runSearch, isLink ? 50 : 500);
+    searchTimer = setTimeout(runSearch, /https?:\/\//i.test(q.value) ? 50 : 500);
   });
   q.addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(searchTimer); runSearch(); q.blur(); } });
   $('#clear').onclick = () => { S.query = ''; S.search = null; q.value = ''; $('#clear').hidden = true; drawResults(); q.focus(); };
@@ -670,51 +666,45 @@ async function runSearch() {
 function drawResults() {
   const box = $('#results'); if (!box) return;
   const r = S.search;
-  if (!r) {
-    box.innerHTML = `<p class="hint">${esc(L('req_hint'))}</p>`;
-    return;
-  }
-  if (r.status === 'loading') {
-    box.innerHTML = `<div class="stack"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>`;
-    return;
-  }
-  if (r.status === 'link_unreadable') {
-    box.innerHTML = `<div class="notice warn"><p><b>🔗 ${esc(L('link_bad_t'))}</b></p><p class="muted">${esc(L('link_bad_s'))}</p></div>`;
-    return;
-  }
+  if (!r) { box.innerHTML = `<p class="hint">${esc(L('req_hint'))}</p>`; return; }
+  if (r.status === 'loading') { box.innerHTML = '<div class="loading"></div><div class="loading"></div><div class="loading"></div>'; return; }
+  if (r.status === 'link_unreadable') { box.innerHTML = say(L('link_bad_t'), L('link_bad_s')); return; }
+
   const linkBox = r.link_text
-    ? `<div class="linkbox"><span>🔗</span><div><span class="muted">${esc(L('link_read'))}</span><br><b>${esc(r.link_text)}</b></div></div>` : '';
+    ? `<div class="from-link"><span class="label">${esc(L('link_read'))}</span><div class="t">${esc(r.link_text)}</div></div>` : '';
 
   if (r.status === 'not_found' || r.status === 'link_no_match') {
-    box.innerHTML = linkBox + `<div class="notice"><p><b>${esc(L(r.status === 'link_no_match' ? 'link_nomatch_t' : 'not_found_t'))}</b></p>
-      <p class="muted">${esc(L('manual_s'))}</p></div>` + manualForm(r.link_text || (/https?:\/\//i.test(S.query) ? '' : S.query));
+    box.innerHTML = linkBox + say(L(r.status === 'link_no_match' ? 'link_nomatch_t' : 'not_found_t'), L('manual_s')) +
+      manualForm(r.link_text || (/https?:\/\//i.test(S.query) ? '' : S.query));
     bindManual();
     return;
   }
 
-  const rowHtml = (c, i) => {
+  const row = (c, i) => {
     const inEv = c.in_event;
-    let note = '', btn = `<button class="add" data-i="${i}" aria-label="add">＋</button>`;
+    let note = '', btn = `<button class="add plus" data-i="${i}" aria-label="add">+</button>`;
     if (c.mine) {
-      note = `<div class="tnote yours">${esc(L('yours'))}</div>`;
+      note = `<div class="tnote">${esc(L('yours'))} ✓</div>`;
       btn = `<button class="add" disabled>✓</button>`;
     } else if (inEv && inEv.status !== 'PLAYED') {
-      note = `<div class="tnote join">${esc(L('in_list', { n: inEv.score }))}</div>`;
-      btn = `<button class="add join" data-i="${i}">${esc(L('join'))}</button>`;
+      note = `<div class="tnote">${esc(L('in_list', { n: inEv.score }))}</div>`;
+      btn = `<button class="add" data-i="${i}">${esc(L('join'))}</button>`;
     } else if (inEv) {
-      note = `<div class="tnote">🔥 ${esc(L('played'))}</div>`;
+      note = `<div class="tnote faint">${esc(L('played'))}</div>`;
     }
-    return `<div class="track">${cover(c.cover)}<div class="tinfo">
-      <div class="ttitle">${esc(c.title)}</div><div class="tartist">${esc(c.artist)}${c.album ? ' · ' + esc(c.album) : ''}</div>${note}</div>${btn}</div>`;
+    return `<li>${cover(c.cover)}<div class="tinfo"><div class="ttitle">${esc(c.title)}</div>
+      <div class="tartist">${esc(c.artist)}${c.album ? ' · ' + esc(c.album) : ''}</div>${note}</div>${btn}</li>`;
   };
   const exact = r.exact_first && !S.showVersions;
   const shown = exact ? r.candidates.slice(0, 1) : r.candidates;
-  box.innerHTML = linkBox + `<div class="stack">` + shown.map(rowHtml).join('') + `</div>` +
-    (exact && r.candidates.length > 1 ? `<button class="btn ghost small" id="versions" style="margin:12px auto 0">${esc(L('versions'))}</button>` : '') + `
-    <button class="btn ghost small" id="notit" style="margin:16px auto 0">${esc(L('not_it'))}</button>
+  box.innerHTML = linkBox + `<ul class="res">${shown.map(row).join('')}</ul>
+    <div style="display:flex;gap:22px;flex-wrap:wrap;margin-top:22px">
+      ${exact && r.candidates.length > 1 ? `<button class="link" id="versions">${esc(L('versions'))} ↓</button>` : ''}
+      <button class="link" id="notit">${esc(L('not_it'))}</button>
+    </div>
     <div id="manualslot"></div>`;
+  box.querySelectorAll('.add[data-i]').forEach(b => b.onclick = () => submitRequest({ token: r.candidates[+b.dataset.i].token, q: S.query }, b));
   const v = $('#versions'); if (v) v.onclick = () => { S.showVersions = true; drawResults(); };
-  box.querySelectorAll('.add[data-i]').forEach(b => b.onclick = () => addCandidate(r.candidates[+b.dataset.i], b));
   $('#notit').onclick = () => {
     $('#notit').remove();
     $('#manualslot').innerHTML = manualForm(r.link_text || (/https?:\/\//i.test(S.query) ? '' : S.query));
@@ -723,10 +713,10 @@ function drawResults() {
 }
 
 function manualForm(prefill) {
-  return `<div class="card" style="margin-top:12px">
+  return `<div class="manual">
     <label class="field"><input id="manual" type="text" autocomplete="off" placeholder="${esc(L('manual_ph'))}" value="${esc(prefill || '')}"></label>
-    <p class="hint" id="manualerr" hidden></p>
-    <button class="btn primary" id="manualgo" style="margin-top:12px">${esc(L('manual_btn'))}</button></div>`;
+    <p class="err" id="manualerr" hidden></p>
+    <button class="btn" id="manualgo" style="margin-top:18px">${esc(L('manual_btn'))}</button></div>`;
 }
 function bindManual(focus) {
   const input = $('#manual'); if (!input) return;
@@ -742,10 +732,6 @@ function bindManual(focus) {
   };
   $('#manualgo').onclick = submit;
   input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
-}
-
-async function addCandidate(c, button) {
-  await submitRequest({ token: c.token, q: S.query }, button);
 }
 
 async function submitRequest(body, button) {
@@ -764,98 +750,88 @@ async function submitRequest(body, button) {
     haptic('error');
     return;
   }
-  if (res.status === 'LIMIT_REACHED') { haptic('warning'); await refreshMe(); renderAdd(); return; }
-  if (res.status === 'EVENT_CLOSED') { haptic('warning'); await refreshMe(); renderAdd(); return; }
+  if (res.status === 'LIMIT_REACHED' || res.status === 'EVENT_CLOSED') { haptic('warning'); await refreshMe(); renderAdd(); return; }
   if (res.status === 'ALREADY_REQUESTED') { haptic('warning'); toast(L('already')); if (button) button.disabled = false; return; }
 
   haptic('ok');
   S.query = ''; S.search = null;
   await refreshMe();
+  rerender();
   const track = res.track || {};
   const n = res.requests_count || 1;
   const canBoost = tonight().boosts_used < rules().boosts_max && S.me.user.points >= rules().cost_boost;
-  view.innerHTML = `
+  view.innerHTML = topline() + `
     <div class="done">
-      <div class="big-emoji">🔥</div>
-      <div class="kicker" style="margin-top:14px">${esc(L('added_t'))}</div>
-      <div class="tt">${esc(track.title || '')}</div>
-      <div class="ta">${esc(track.artist || '')}</div>
-      <p class="sub" style="margin-top:18px">${esc(n <= 1 ? L('added_first') : L('added_nth', { n }))}<br>${esc(L('added_s'))}</p>
+      <span class="label">${esc(L('added_t'))}</span>
+      <div class="title">${esc(track.title || '')}</div>
+      <div class="artist">${esc(track.artist || '')}</div>
+      <div class="rule"></div>
+      <p>${esc(n <= 1 ? L('added_first') : L('added_nth', { n }))}</p>
+      <p class="muted" style="margin-top:4px">${esc(L('added_s'))}</p>
     </div>
-    <div class="stack" style="margin-top:22px">
-      ${canBoost && res.event_track_id ? `<button class="btn gold" id="boostnew">${esc(L('boost_it', { c: rules().cost_boost }))}</button>` : ''}
-      <button class="btn primary" id="totop">${esc(L('to_top'))}</button>
-      ${tonight().requests_used < rules().requests_max ? `<button class="btn ghost" id="more">${esc(L('add_more'))}</button>` : ''}
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:32px">
+      ${canBoost && res.event_track_id ? `<button class="btn" id="boostnew">${esc(L('boost_it', { c: rules().cost_boost }))}</button>` : ''}
+      <button class="btn${canBoost ? ' plain' : ''}" id="totop" ${canBoost ? 'style="background:none;color:var(--ink);border:2px solid var(--ink)"' : ''}>${esc(L('to_top'))}</button>
     </div>
-    <div class="tagline">FEEL THE LYFE</div>`;
+    ${tonight().requests_used < rules().requests_max ? `<div style="margin-top:24px"><button class="link" id="more">${esc(L('add_more'))} +</button></div>` : ''}`;
   $('#totop').onclick = () => go('top');
   const m = $('#more'); if (m) m.onclick = () => go('add');
   const b = $('#boostnew');
   if (b) b.onclick = async () => {
-    const ok = await doBoost({ id: res.event_track_id, title: track.title, artist: track.artist });
-    if (ok) go('top');
+    if (await doBoost({ id: res.event_track_id, title: track.title, artist: track.artist })) go('top');
   };
-}
-
-function noticeBlock(emoji, title, sub) {
-  return `<div class="center"><div class="empty-emoji">${emoji}</div>
-    <div class="h-screen" style="margin-top:16px;letter-spacing:.12em">${esc(title)}</div>
-    <p class="sub">${esc(sub)}</p></div>`;
 }
 
 /* ---------------- TOP ---------------- */
 
 async function loadTop(append, silent) {
-  if (!append && !silent) {
-    view.innerHTML = topHeader() + `<div class="chart">${'<div class="skeleton"></div>'.repeat(5)}</div>`;
-  }
+  if (!append && !silent) view.innerHTML = topHeader() + '<div class="loading"></div><div class="loading"></div><div class="loading"></div>';
   const offset = append && S.top ? S.top.items.length : 0;
   let res;
   try { res = await api('/api/app/top?offset=' + offset); } catch (e) { return; }
   if (S.tab !== 'top') return;
-  if (append && S.top) { res.items = S.top.items.concat(res.items); }
+  if (append && S.top) res.items = S.top.items.concat(res.items);
   S.top = res;
   renderTop();
 }
 
 function topHeader() {
   const ev = S.me.event;
-  return `<div class="top-head"><div>
-      <h2 class="h-screen">🔥 ${esc(L('top_title'))}</h2>
-      ${ev ? `<p class="sub" style="font-size:13px;letter-spacing:.12em;text-transform:uppercase">${esc(ev.title)} · ${esc(ev.date)}</p>` : ''}
-    </div><span class="spacer"></span><span class="points num" id="pts">⭐ ${S.me.user.points}</span></div>
+  return topline(`<span class="label num" id="pts">${S.me.user.points} LYFE POINTS</span>`) + `
+    <h1 class="mega" style="font-size:clamp(32px,10.5vw,56px)">TOP<br>REQUESTS</h1>
+    ${ev ? `<div class="meta"><span>${esc(ev.title)}</span><span>${esc(ev.date)}</span></div>` : ''}
     <div class="legend"><span>${esc(L('legend_vote'))}</span><span>${esc(L('legend_boost', { c: rules().cost_boost }))}</span></div>`;
 }
 
 function renderTop() {
   const t = S.top;
   if (!t.event || !t.items.length) {
-    view.innerHTML = topHeader() + noticeBlock('🔥', L(t.event ? 'top_empty_t' : 'no_event_t'), L(t.event ? 'top_empty_s' : 'no_event_s')) +
-      (t.event && t.event.accepts_requests ? `<button class="btn primary" id="first">${esc(L('add_track'))}</button>` : '');
+    view.innerHTML = topHeader() + say(L(t.event ? 'top_empty_t' : 'no_event_t'), L(t.event ? 'top_empty_s' : 'no_event_s')) +
+      (t.event && t.event.accepts_requests ? `<button class="btn" id="first" style="margin-top:20px">${esc(L('add_track'))}</button>` : '');
     const f = $('#first'); if (f) f.onclick = () => go('add');
     return;
   }
   const open = t.event.accepts_requests;
   const boostsLeft = rules().boosts_max - tonight().boosts_used;
-  view.innerHTML = topHeader() + `<div class="chart">` + t.items.map((it, i) => {
+  const c = rules().cost_boost;
+  view.innerHTML = topHeader() + `<ul class="board">` + t.items.map((it, i) => {
     const played = it.status === 'PLAYED';
-    const cls = ['entry', it.mine ? 'mine' : '', it.priority ? 'priority' : '', played ? 'played' : ''].join(' ');
-    const badges = (it.priority ? `<span class="badge pri">${esc(L('priority'))}</span>` : '') +
-      (played ? `<span class="badge played">${esc(L('played'))}</span>` : '') +
-      (it.mine ? `<span class="badge you">${esc(L('you'))}</span>` : '');
+    const cls = [it.priority ? 'pri' : '', played ? 'played' : ''].join(' ');
+    const tags = (it.priority ? `<span class="tag">${esc(L('priority'))}</span>` : '') +
+      (played ? `<span class="tag">${esc(L('played'))}</span>` : '') +
+      (it.mine ? `<span class="tag">${esc(L('you'))}</span>` : '');
     const canVote = open && !played && !it.mine && !it.voted;
     const canBoost = open && !played && boostsLeft > 0;
-    return `<div class="${cls}">
-      <div class="rank num">${it.position}</div>
-      ${cover(it.cover, true)}
-      <div class="tinfo"><div class="ttitle clamp">${esc(it.title)}</div><div class="tartist">${badges}${esc(it.artist)}</div></div>
-      <div class="score num">${it.score}</div>
-      <div class="acts">
-        <button class="act${it.voted ? ' on' : ''}" data-vote="${i}" ${canVote ? '' : 'disabled'} aria-label="like">${it.voted || it.mine ? '❤️' : '🤍'}</button>
-        <button class="act bolt" data-boost="${i}" ${canBoost ? '' : 'disabled'} aria-label="boost">⚡</button>
-      </div></div>`;
-  }).join('') + `</div>` +
-    (t.items.length < t.total ? `<button class="btn ghost" id="more" style="margin-top:14px">${esc(L('more'))}</button>` : '');
+    return `<li class="${cls}">
+      <span class="pos num">${pad(it.position)}</span>
+      <div class="tinfo"><div class="ttitle">${esc(it.title)}</div><div class="tartist">${tags}${esc(it.artist)}</div></div>
+      <div class="right">
+        <span class="score num">${it.score}</span>
+        <button class="act" data-vote="${i}" ${canVote ? '' : 'disabled'} aria-label="like">${it.voted || it.mine ? '♥' : '♡'}</button>
+        <button class="act boost" data-boost="${i}" ${canBoost ? '' : 'disabled'} aria-label="boost">+${c}</button>
+      </div></li>`;
+  }).join('') + `</ul>` +
+    (t.items.length < t.total ? `<div style="margin-top:22px"><button class="link" id="more">${esc(L('more'))} ↓</button></div>` : '');
 
   view.querySelectorAll('[data-vote]').forEach(b => b.onclick = () => doVote(t.items[+b.dataset.vote], b));
   view.querySelectorAll('[data-boost]').forEach(b => b.onclick = async () => { if (await doBoost(t.items[+b.dataset.boost])) loadTop(false, true); });
@@ -879,8 +855,7 @@ async function doBoost(item) {
   if (left <= 0) { toast(L('boost_limit')); haptic('warning'); return false; }
   if (S.me.user.points < c) { toast(L('boost_poor', { c, have: S.me.user.points })); haptic('warning'); return false; }
   const name = [item.artist, item.title].filter(Boolean).join(' - ');
-  const ok = await confirmBox(L('boost_q_t'), L('boost_q', { c, track: name, left }), L('boost_go'));
-  if (!ok) return false;
+  if (!await confirmBox(L('boost_q_t'), L('boost_q', { c, track: name, left }), L('boost_go'))) return false;
   let res;
   try { res = await api('/api/app/boost/' + item.id, { method: 'POST' }); } catch (e) { return false; }
   if (res.status === 'BOOSTED') {
@@ -890,72 +865,59 @@ async function doBoost(item) {
     return true;
   }
   haptic('warning');
-  const msg = {
+  toast({
     NOT_ENOUGH_POINTS: L('boost_poor', { c, have: res.points }), LIMIT_REACHED: L('boost_limit'),
     PLAYED: L('boost_played'), EVENT_CLOSED: L('vote_closed'),
-  }[res.status];
-  toast(msg || L('error'));
+  }[res.status] || L('error'));
   return false;
 }
 
 /* ---------------- MY LYFE ---------------- */
 
-async function renderMe(opts = {}) {
+function renderMe(opts = {}) {
   const { user } = S.me;
   const r = rules();
   const tn = tonight();
   const ev = S.me.event;
-  view.innerHTML = `
-    <div class="kicker">MY LYFE</div>
-    <div class="who" style="margin-top:10px">${esc(user.name)}</div>
-    <div class="lid">LYFE #${esc(user.lyfe_id)}</div>
+  view.innerHTML = topline(`<span class="label">LYFE #${esc(user.lyfe_id)}</span>`) + `
+    <span class="label">MY LYFE</span>
+    <h1 class="mega" style="margin-top:10px">${esc(user.name)}</h1>
     <div class="stats">
-      <div class="stat"><b class="num">${user.requests}</b><span>${esc(L('requests'))}</span></div>
-      <div class="stat"><b class="num">${user.played}</b><span>${esc(L('played_n'))}</span></div>
-      <div class="stat"><b class="num">${user.nights}</b><span>${esc(L('nights'))}</span></div>
+      <div><b class="num">${user.requests}</b><span class="label">${esc(L('requests'))}</span></div>
+      <div><b class="num">${user.played}</b><span class="label">${esc(L('played_n'))}</span></div>
+      <div><b class="num">${user.nights}</b><span class="label">${esc(L('nights'))}</span></div>
     </div>
-    <button class="btn primary" id="pass" style="margin-top:14px">${esc(L('pass_btn'))}</button>
+    <button class="btn" id="pass" style="margin-top:30px">${esc(L('pass_btn'))}</button>
 
-    <div class="section" id="spend">
-      <span class="kicker">${esc(L('spend_title'))}</span>
-      <div class="card wallet" style="margin-bottom:10px">
-        <div><div class="big num">${user.points}</div><div class="lbl">LYFE POINTS</div></div>
-      </div>
-      <div class="stack">
-        <div class="card spend">
-          <div class="ic">⚡</div>
-          <div class="tinfo"><div class="nm">${esc(L('boost_nm'))}</div>
-            <div class="ds">${esc(L('boost_ds', { c: r.cost_boost, max: r.boosts_max }))}</div>
-            ${ev ? `<div class="tnote">${esc(L('boost_left', { n: Math.max(0, r.boosts_max - tn.boosts_used) }))}</div>` : ''}
-            <button class="btn ghost small" id="boostgo" style="margin-top:10px">${esc(L('boost_how'))}</button>
-          </div>
-          <div class="price num">${r.cost_boost}</div>
-        </div>
-        <div class="card spend" id="pricard">
-          <div class="ic">🎯</div>
-          <div class="tinfo"><div class="nm">${esc(L('pri_nm'))}</div>
-            <div class="ds">${esc(L('pri_ds', { max: 2 }))}</div>
-            <div id="pristate"><div class="tnote">…</div></div>
-          </div>
-          <div class="price num">${r.cost_priority}</div>
-        </div>
-      </div>
+    <div class="rule" id="spend"></div>
+    <span class="label">${esc(L('spend_title'))}</span>
+    <div class="wallet" style="margin-top:8px"><span class="big-num num">${user.points}</span><span class="label" style="margin-bottom:12px">LYFE POINTS</span></div>
+
+    <div class="offer" style="margin-top:12px;border-top:1px solid var(--ink)">
+      <div class="nm">${esc(L('boost_nm'))}</div>
+      <div class="price num">${r.cost_boost}<small>POINTS</small></div>
+      <p class="ds">${esc(L('boost_ds', { c: r.cost_boost, max: r.boosts_max }))}</p>
+      <div class="state"><span>${ev ? esc(L('boost_left', { n: Math.max(0, r.boosts_max - tn.boosts_used) })) : ''}</span>
+        <button class="link" id="boostgo">${esc(L('boost_how'))} →</button></div>
+    </div>
+    <div class="offer">
+      <div class="nm">${esc(L('pri_nm'))}</div>
+      <div class="price num">${r.cost_priority}<small>POINTS</small></div>
+      <p class="ds">${esc(L('pri_ds', { max: 2 }))}</p>
+      <div class="state" id="pristate"><span class="faint">…</span></div>
     </div>
 
-    <div class="section">
-      <span class="kicker">${esc(L('earn_title'))}</span>
-      <div class="card">
-        <div class="earn"><span>🎵 ${esc(L('earn_req'))}</span><span class="v">+${r.points_request}</span></div>
-        ${r.points_vote ? `<div class="earn"><span>❤️ ${esc(L('earn_vote'))}</span><span class="v">+${r.points_vote}</span></div>` : ''}
-        <div class="earn"><span>🌙 ${esc(L('earn_att'))}</span><span class="v">+${r.points_attendance}</span></div>
-      </div>
-    </div>
+    <div class="rule"></div>
+    <span class="label">${esc(L('earn_title'))}</span>
+    <ul class="ledger earn" style="margin-top:8px">
+      <li><span>${esc(L('earn_req'))}</span><span class="v">${r.points_request}</span></li>
+      ${r.points_vote ? `<li><span>${esc(L('earn_vote'))}</span><span class="v">${r.points_vote}</span></li>` : ''}
+      <li><span>${esc(L('earn_att'))}</span><span class="v">${r.points_attendance}</span></li>
+    </ul>
 
-    <div class="section">
-      <span class="kicker">${esc(L('hist_title'))}</span>
-      <div class="card" id="hist"><div class="tnote">…</div></div>
-    </div>
-    <div class="tagline">FEEL THE LYFE</div>`;
+    <div class="rule"></div>
+    <span class="label">${esc(L('hist_title'))}</span>
+    <ul class="ledger" id="hist" style="margin-top:8px"><li class="faint">…</li></ul>`;
 
   $('#pass').onclick = openPass;
   $('#boostgo').onclick = () => go('top');
@@ -964,33 +926,32 @@ async function renderMe(opts = {}) {
   api('/api/app/history').then(h => {
     const box = $('#hist'); if (!box) return;
     box.innerHTML = h.items.length ? h.items.map(x => {
-      const d = new Date(x.at);
-      const when = d.toLocaleDateString(lang === 'uk' ? 'uk-UA' : 'ru-RU', { day: '2-digit', month: '2-digit' });
-      const label = (L('reason')[x.reason]) || x.reason;
-      return `<div class="hist"><span>${esc(label)} <span class="muted">· ${when}</span></span><span class="d num ${x.delta > 0 ? 'plus' : 'minus'}">${x.delta > 0 ? '+' : ''}${x.delta}</span></div>`;
-    }).join('') : `<div class="tnote">${esc(L('hist_empty'))}</div>`;
+      const when = new Date(x.at).toLocaleDateString(lang === 'uk' ? 'uk-UA' : 'ru-RU', { day: '2-digit', month: '2-digit' });
+      return `<li><span>${esc(L('reason')[x.reason] || x.reason)} <span class="faint">${when}</span></span><span class="v num">${x.delta > 0 ? '+' : '−'}${Math.abs(x.delta)}</span></li>`;
+    }).join('') : `<li class="faint">${esc(L('hist_empty'))}</li>`;
   }).catch(() => {});
 
   api('/api/app/priority').then(p => {
     const box = $('#pristate'); if (!box) return;
-    if (!p.available) { box.innerHTML = `<div class="tnote">${esc(L('pri_off'))}</div>`; return; }
-    if (p.has_one) { box.innerHTML = `<div class="tnote yours">${esc(L('pri_have'))}</div>`; return; }
-    if (!p.left) { box.innerHTML = `<div class="tnote">${esc(L('pri_full'))}</div>`; return; }
-    if (!p.tracks.length) { box.innerHTML = `<div class="tnote">${esc(L('pri_none'))}</div>`; return; }
-    box.innerHTML = `<div class="tnote">${esc(L('pri_left', { n: p.left }))}</div>
-      <button class="btn gold small" id="prigo" style="margin-top:10px" ${S.me.user.points < p.cost ? 'disabled' : ''}>${esc(L('pri_btn'))}</button>`;
+    let text = '';
+    if (!p.available) text = L('pri_off');
+    else if (p.has_one) text = L('pri_have');
+    else if (!p.left) text = L('pri_full');
+    else if (!p.tracks.length) text = L('pri_none');
+    if (text) { box.innerHTML = `<span>${esc(text)}</span>`; return; }
+    box.innerHTML = `<span>${esc(L('pri_left', { n: p.left }))}</span>
+      <button class="link" id="prigo" ${S.me.user.points < p.cost ? 'disabled' : ''}>${esc(L('pri_btn'))} →</button>`;
     $('#prigo').onclick = () => pickPriority(p);
   }).catch(() => {});
 }
 
 function pickPriority(p) {
-  openSheet(`<div class="kicker" style="text-align:center">🎯 ${esc(L('pri_nm'))} · ${p.cost}</div>
-    <h3 style="text-align:center;margin:10px 0 16px">${esc(L('pri_pick'))}</h3>
-    <div class="stack">${p.tracks.map((t, i) => `<button class="track" data-p="${i}">${cover(null, true)}<div class="tinfo"><div class="ttitle">${esc(t.title)}</div><div class="tartist">${esc(t.artist)}</div></div><span>›</span></button>`).join('')}</div>`);
+  openSheet(`<span class="label">${esc(L('pri_nm'))} · ${p.cost} POINTS</span>
+    <div class="say" style="padding-top:12px"><div class="h">${esc(L('pri_pick'))}</div></div>
+    <ul class="res">${p.tracks.map((t, i) => `<li><div class="tinfo"><div class="ttitle">${esc(t.title)}</div><div class="tartist">${esc(t.artist)}</div></div><button class="add" data-p="${i}">${esc(L('pri_go'))}</button></li>`).join('')}</ul>`);
   document.querySelectorAll('[data-p]').forEach(b => b.onclick = async () => {
     const t = p.tracks[+b.dataset.p];
-    const ok = await confirmBox('🎯 ' + L('pri_nm'), L('pri_q', { c: p.cost, track: t.artist + ' - ' + t.title }), L('pri_go'));
-    if (!ok) return;
+    if (!await confirmBox(L('pri_nm'), L('pri_q', { c: p.cost, track: t.artist + ' - ' + t.title }), L('pri_go'))) return;
     let res;
     try { res = await api('/api/app/priority/' + t.id, { method: 'POST' }); } catch (e) { return; }
     closeSheet();
@@ -1005,25 +966,25 @@ function pickPriority(p) {
 
 async function openPass() {
   haptic('light');
-  openSheet(`<div class="center" style="padding:20px 0">…</div>`);
+  openSheet('<div class="loading"></div>');
   let p;
   try { p = await api('/api/app/pass'); } catch (e) { closeSheet(); return; }
-  $('#sheet').innerHTML = `<div class="grab"></div>
-    <div style="text-align:center">
-      <div class="kicker">🎟 LYFE PASS</div>
-      <div class="who" style="font-size:24px;margin-top:10px">${esc(p.name)}</div>
-      <div class="lid">LYFE #${esc(p.lyfe_id)}</div>
-      <div class="qr">${p.svg}</div>
-      <p class="sub">${esc(L('pass_s'))}</p>
-    </div>`;
+  $('#sheet').innerHTML = `<button class="close" id="sheetclose" aria-label="close">×</button>
+    <span class="label">LYFE PASS</span>
+    <div class="mega" style="font-size:clamp(28px,9vw,44px);margin-top:10px">${esc(p.name)}</div>
+    <div class="meta" style="margin-top:8px"><span>LYFE #${esc(p.lyfe_id)}</span></div>
+    <div class="qr">${p.svg}</div>
+    <p class="muted" style="text-align:center;margin-top:14px">${esc(L('pass_s'))}</p>`;
+  $('#sheetclose').onclick = closeSheet;
 }
 
 /* ---------------- sheet ---------------- */
 
 function openSheet(html) {
-  $('#sheet').innerHTML = `<div class="grab"></div>` + html;
+  $('#sheet').innerHTML = `<button class="close" id="sheetclose" aria-label="close">×</button>` + html;
+  $('#sheetclose').onclick = closeSheet;
   $('#scrim').classList.add('show'); $('#sheet').classList.add('show');
-  if (tg && tg.BackButton) { tg.BackButton.show(); }
+  if (tg && tg.BackButton) tg.BackButton.show();
 }
 function closeSheet() {
   $('#scrim').classList.remove('show'); $('#sheet').classList.remove('show');
@@ -1037,11 +998,59 @@ if (tg && tg.BackButton) tg.BackButton.onClick(closeSheet);
 function renderOutside() {
   $('#tabbar').hidden = true;
   const link = BOT_USERNAME && !BOT_USERNAME.startsWith('__') ? `https://t.me/${BOT_USERNAME}` : null;
-  view.innerHTML = `<div class="center"><div class="kicker">LYFEPARTY</div>
-    <div class="h-event" style="font-size:30px;margin-top:16px">${esc(L('open_tg_t'))}</div>
-    <p class="sub">${esc(L('open_tg_s'))}</p>
-    ${link ? `<a class="btn primary" style="margin-top:20px;text-decoration:none" href="${link}">${esc(L('open_bot'))}</a>` : ''}
-    <div class="tagline">FEEL THE LYFE</div></div>`;
+  view.innerHTML = topline() + `<h1 class="mega">${esc(L('open_tg_t'))}</h1>
+    <p class="muted" style="margin:16px 0 28px">${esc(L('open_tg_s'))}</p>
+    ${link ? `<a class="btn" style="text-decoration:none" href="${link}">${esc(L('open_bot'))}</a>` : ''}`;
+}
+
+/* ---------------- splash ----------------
+   The mark is cut into its two letters. Each flies in from its own side,
+   smeared by a turbulence filter, while a haze copy drifts behind. Over the
+   flight the displacement and blur fall to zero, so the smoke condenses into
+   the logo exactly where it sits on the poster. Pure SVG filters, no library. */
+
+function playSplash() {
+  const splash = $('#splash');
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const DURATION = reduce ? 400 : 2200;
+  const disp = $('#smokeDisp'), blur = $('#smokeBlur'), noise = $('#smokeNoise'), hazeNoise = $('#hazeNoise');
+  const partL = $('#partL'), partP = $('#partP'), haze = $('#hazeImg'), whole = $('#wholeImg');
+  const ease = t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const start = performance.now();
+
+  return new Promise(resolve => {
+    function frame(now) {
+      const t = Math.min(1, (now - start) / DURATION);
+      const k = ease(t);
+      const inv = 1 - k;
+      // letters travel in on gentle arcs, opposite directions, and untwist
+      partL.style.transform = `translate(${-430 * inv}px, ${-120 * inv + Math.sin(t * Math.PI * 1.5) * -60 * inv}px) rotate(${-70 * inv}deg) scale(${1 + .6 * inv})`;
+      partP.style.transform = `translate(${430 * inv}px, ${140 * inv + Math.sin(t * Math.PI * 1.5) * 50 * inv}px) rotate(${55 * inv}deg) scale(${1 + .6 * inv})`;
+      partL.style.opacity = partP.style.opacity = Math.min(1, t * 2.2);
+      disp.setAttribute('scale', (170 * inv).toFixed(1));
+      blur.setAttribute('stdDeviation', (16 * inv * inv).toFixed(2));
+      // the smoke keeps moving while it settles
+      const f = 0.012 + 0.006 * Math.sin(t * 6);
+      noise.setAttribute('baseFrequency', `${f.toFixed(4)} ${(f * 1.6).toFixed(4)}`);
+      hazeNoise.setAttribute('baseFrequency', `${(0.008 + t * 0.004).toFixed(4)} ${(0.016 - t * 0.004).toFixed(4)}`);
+      haze.setAttribute('opacity', (Math.sin(t * Math.PI) * 0.35).toFixed(3));
+      const settle = Math.max(0, (t - 0.82) / 0.18);
+      whole.setAttribute('opacity', settle.toFixed(3));
+      if (settle > 0) partL.style.opacity = partP.style.opacity = (1 - settle).toFixed(3);
+      if (t < 1) requestAnimationFrame(frame);
+      else {
+        partL.remove(); partP.remove(); haze.remove();
+        whole.setAttribute('opacity', '1');
+        resolve();
+      }
+    }
+    requestAnimationFrame(frame);
+  }).then(() => new Promise(r => setTimeout(r, reduce ? 0 : 450)));
+}
+function hideSplash() {
+  const splash = $('#splash');
+  splash.classList.add('out');
+  setTimeout(() => splash.remove(), 700);
 }
 
 /* ---------------- boot ---------------- */
@@ -1050,14 +1059,20 @@ function renderOutside() {
   if (tg) {
     tg.ready();
     tg.expand();
-    try { tg.setHeaderColor('#0a0a0b'); tg.setBackgroundColor('#0a0a0b'); } catch (e) {}
+    try { tg.setHeaderColor('#ffffff'); tg.setBackgroundColor('#ffffff'); tg.setBottomBarColor && tg.setBottomBarColor('#ffffff'); } catch (e) {}
     try { if (tg.isVersionAtLeast('7.7')) tg.disableVerticalSwipes(); } catch (e) {}
   }
-  if (!INIT_DATA) { renderOutside(); return; }
-  try { await refreshMe(); } catch (e) { return; }
+  const splashDone = playSplash();
+  if (!INIT_DATA) { await splashDone; renderOutside(); hideSplash(); return; }
+
+  // The animation and the first request run side by side; whichever is slower decides.
+  const loaded = refreshMe().then(() => true, () => false);
+  const [ok] = await Promise.all([loaded, splashDone]);
+  if (!ok) { hideSplash(); return; }
   $('#tabbar').hidden = false;
   const start = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
   go(['add', 'top', 'me'].includes(start) ? start : 'home');
+  hideSplash();
 
   // Keep the chart honest while it is on screen.
   setInterval(() => {
