@@ -7,6 +7,7 @@ so the bot and the Mini App can never disagree about the rules.
 Every request carries Telegram's signed initData in a header; that signature is
 the only thing that says who the guest is.
 """
+import hashlib
 import io
 import logging
 from datetime import datetime, timezone
@@ -47,6 +48,20 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 PAGE = Path(__file__).parent / "static" / "app" / "index.html"
+
+
+def _asset_version() -> str:
+    """A short hash of every Mini App file. Asset URLs carry it, so a new
+    deploy always reaches phones whose webview cached the previous files."""
+    digest = hashlib.sha256()
+    for path in sorted(PAGE.parent.rglob("*")):
+        if path.is_file():
+            digest.update(path.name.encode())
+            digest.update(path.read_bytes())
+    return digest.hexdigest()[:10]
+
+
+ASSET_VERSION = _asset_version()
 TOP_PAGE_SIZE = 30
 MAX_QUERY_LENGTH = 200
 HISTORY_LIMIT = 30
@@ -93,7 +108,11 @@ async def current_user(
 async def page():
     # The page is small and changes with every release; never let Telegram's
     # webview hold on to an old copy.
-    html = PAGE.read_text(encoding="utf-8").replace("__BOT_USERNAME__", settings.bot_username)
+    html = (
+        PAGE.read_text(encoding="utf-8")
+        .replace("__BOT_USERNAME__", settings.bot_username)
+        .replace("__ASSET_V__", ASSET_VERSION)
+    )
     return HTMLResponse(html, headers={"Cache-Control": "no-cache"})
 
 
