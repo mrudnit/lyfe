@@ -218,7 +218,7 @@ async def me(user: User = Depends(current_user), session: AsyncSession = Depends
         },
         "event": _event_json(event),
         "tonight": tonight,
-        "season": await _season_json(session, user, event),
+        "season": await _season_json(session, user, await event_service.get_season_anchor(session)),
         "ticket": await _ticket_json(session, user, event),
         "rules": {
             "requests_max": settings.max_requests_per_user_per_event,
@@ -580,8 +580,12 @@ async def buy_priority(
 
 
 async def _season_json(session: AsyncSession, user: User, event: Event | None) -> dict | None:
-    if not settings.season or event is None:
+    """The skin depends only on the season; the hunt and the game need an
+    event to keep score against, so without any event at all they are off."""
+    if not settings.season:
         return None
+    if event is None:
+        return {"name": settings.season, "pumpkins": [], "found": [], "game": None}
     best = await season_service.best_score(session, user_id=user.id, event_id=event.id)
     return {
         "name": settings.season,
@@ -609,8 +613,8 @@ async def pumpkin(
     user: User = Depends(current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    event = await _require_event(session)
-    if not settings.season:
+    event = await event_service.get_season_anchor(session)
+    if not settings.season or event is None:
         return {"status": "OFF"}
     outcome = await season_service.find_pumpkin(session, user=user, event=event, pumpkin=pumpkin)
     return {
@@ -624,7 +628,7 @@ async def pumpkin(
 
 @router.get("/api/app/game")
 async def game_board(user: User = Depends(current_user), session: AsyncSession = Depends(get_session)):
-    event = await event_service.get_next_event(session)
+    event = await event_service.get_season_anchor(session)
     if event is None or not settings.season:
         return {"available": False}
     board = await season_service.leaderboard(session, event_id=event.id)
@@ -640,8 +644,8 @@ async def game_board(user: User = Depends(current_user), session: AsyncSession =
 
 @router.post("/api/app/game/start")
 async def game_start(user: User = Depends(current_user), session: AsyncSession = Depends(get_session)):
-    event = await _require_event(session)
-    if not settings.season:
+    event = await event_service.get_season_anchor(session)
+    if not settings.season or event is None:
         return {"status": "OFF"}
     game = await season_service.start_game(session, user=user, event=event)
     if game is None:
