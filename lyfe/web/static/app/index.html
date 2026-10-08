@@ -265,19 +265,16 @@
   @keyframes scan { from { transform: translateX(-100%); } to { transform: translateX(400%); } }
 
   /* ---------- splash ----------
-     The outro of the LYFE promo, cut to 3.4 s and played as a video: a
-     decoded stream costs the phone almost nothing, unlike live SVG filters.
-     Its first frame is white, so the page behind never flashes. */
+     The outro of the LYFE promo, drawn frame by frame on a canvas from four
+     JPEG sheets. Images are not subject to the autoplay rules that stop a
+     <video> inside Telegram's webview, so the animation always runs. */
   .splash {
     position: fixed; inset: 0; z-index: 100; background: var(--paper);
     overflow: hidden;
     transition: opacity .45s ease, transform .55s cubic-bezier(.7,0,.3,1);
   }
   .splash.out { opacity: 0; transform: scale(1.04); pointer-events: none; }
-  .splash video {
-    position: absolute; inset: 0; width: 100%; height: 100%;
-    object-fit: cover; object-position: 50% 42%; background: var(--paper);
-  }
+  .splash canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .splash .sound {
     position: absolute; right: 14px; bottom: calc(18px + var(--safe-b));
     font-family: var(--font-display); font-size: 10px; font-weight: 700; letter-spacing: .16em;
@@ -290,7 +287,8 @@
 
 <!-- Launch: the outro of the promo — smoke, glitch, the mark, FEEL THE LYFE. -->
 <div class="splash" id="splash" aria-hidden="true">
-  <video id="splashVideo" src="/static/app/splash.mp4" playsinline webkit-playsinline preload="auto" muted></video>
+  <canvas id="splashCanvas"></canvas>
+  <audio id="splashAudio" src="/static/app/splash/sound.m4a" preload="auto"></audio>
   <button class="sound" id="splashSound" type="button">ЗВУК</button>
 </div>
 
@@ -1049,63 +1047,128 @@ function renderOutside() {
 }
 
 /* ---------------- splash ----------------
-   Sound first if the phone allows it. Webviews only allow audible autoplay
-   after a tap inside the page, and opening a Mini App is a tap in Telegram,
-   not in the page — so on most phones this falls back to muted, and a small
-   ЗВУК button lets the guest hear it. Tapping anywhere else skips. Whatever
-   happens (no video support, slow network), the launch is never held up. */
+   68 frames at 20 fps, 20 per sheet (5x4, 405x720 each), then a crisp full
+   resolution final frame for the hold. The clock only runs while the frame
+   it needs is loaded, so a slow sheet pauses the picture instead of skipping.
+   Sound plays if the webview allows it; otherwise a small ЗВУК button.
+   Tap to skip. If nothing has loaded within 2.5 s the launch goes straight on. */
+
+const SPLASH = { fps: 20, frames: 68, cols: 5, perSheet: 20, fw: 405, fh: 720, sheets: 4, hold: 550 };
+
+// Next frame from requestAnimationFrame, or from a timer if the webview is
+// not painting (opening animation, background): the splash must never freeze.
+function nextFrame(cb) {
+  let fired = false;
+  const run = () => { if (!fired) { fired = true; cb(performance.now()); } };
+  requestAnimationFrame(run);
+  setTimeout(run, 40);
+}
+
+function loadImage(src) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => (img.decode ? img.decode().catch(() => {}) : Promise.resolve()).then(() => resolve(img));
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
 
 function playSplash() {
   const splash = $('#splash');
-  const video = $('#splashVideo');
+  const canvas = $('#splashCanvas');
+  const audio = $('#splashAudio');
   const soundBtn = $('#splashSound');
+  const ctx = canvas.getContext('2d');
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  function fitCanvas() {
+    canvas.width = Math.round(innerWidth * dpr);
+    canvas.height = Math.round(innerHeight * dpr);
+  }
+  fitCanvas();
+  // object-fit: cover, with the mark kept slightly above centre like the poster
+  function draw(img, sx, sy, sw, sh) {
+    const cw = canvas.width, ch = canvas.height;
+    const scale = Math.max(cw / sw, ch / sh);
+    const dw = sw * scale, dh = sh * scale;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, cw, ch);
+    ctx.drawImage(img, sx, sy, sw, sh, (cw - dw) / 2, (ch - dh) * 0.42, dw, dh);
+  }
+
+  const sheets = [];
+  const loading = [];
+  for (let i = 0; i < SPLASH.sheets; i++) {
+    loading[i] = loadImage(`/static/app/splash/s${i + 1}.jpg`).then(img => (sheets[i] = img));
+  }
+  const finalLoad = loadImage('/static/app/splash/final.jpg');
+
+  let clock = 0, last = 0, started = false;
   return new Promise(resolve => {
-    let finished = false;
-    const finish = () => { if (!finished) { finished = true; resolve(); } };
-    if (reduce || !video || !video.canPlayType || !video.canPlayType('video/mp4')) { setTimeout(finish, 300); return; }
+    let done = false;
+    const finish = () => { if (!done) { done = true; resolve(); } };
 
-    video.addEventListener('ended', finish);
-    video.addEventListener('error', finish);
-    // hard ceiling: a stalled download must not trap the guest on a white screen
-    const ceiling = setTimeout(finish, 6000);
-    video.addEventListener('ended', () => clearTimeout(ceiling));
-
-    // if playback has not started soon, skip the splash rather than wait
-    const startGuard = setTimeout(() => { if (video.paused || video.currentTime === 0) finish(); }, 2000);
-    video.addEventListener('playing', () => clearTimeout(startGuard), { once: true });
-
-    splash.addEventListener('click', e => {
-      if (e.target === soundBtn) return;
-      finish();
-    });
+    splash.addEventListener('click', e => { if (e.target !== soundBtn) finish(); });
     soundBtn.addEventListener('click', e => {
       e.stopPropagation();
-      video.muted = false;
-      video.volume = 1;
       soundBtn.classList.remove('show');
+      try { audio.currentTime = Math.min(clock, 3.3); } catch (err) {}
+      audio.play().catch(() => {});
     });
 
-    video.muted = false;
-    video.play().catch(() => {
-      video.muted = true;
-      soundBtn.classList.add('show');
-      video.play().catch(finish);
+    if (reduce) {
+      finalLoad.then(img => { if (img) draw(img, 0, 0, img.width, img.height); setTimeout(finish, img ? 900 : 0); });
+      return;
+    }
+
+    const firstGuard = setTimeout(() => { if (!started) finish(); }, 2500);
+    setTimeout(finish, 7000);   // absolute ceiling, whatever happens
+
+    loading[0].then(first => {
+      if (!first || done) { finish(); return; }
+      started = true;
+      clearTimeout(firstGuard);
+      audio.play().catch(() => soundBtn.classList.add('show'));
+      last = performance.now();
+      nextFrame(tick);
     });
+
+    function tick(now) {
+      if (done) return;
+      const frame = Math.min(SPLASH.frames - 1, Math.floor(clock * SPLASH.fps));
+      const sheetIndex = Math.floor(frame / SPLASH.perSheet);
+      const sheet = sheets[sheetIndex];
+      if (sheet) {
+        const n = frame % SPLASH.perSheet;
+        draw(sheet, (n % SPLASH.cols) * SPLASH.fw, Math.floor(n / SPLASH.cols) * SPLASH.fh, SPLASH.fw, SPLASH.fh);
+        clock += Math.min(0.1, (now - last) / 1000);
+        // a sheet that is fully behind us can be let go
+        if (sheetIndex > 0 && sheets[sheetIndex - 1]) sheets[sheetIndex - 1] = null;
+      }
+      // else: that sheet is still loading — hold the picture, the clock waits
+      last = now;
+      if (frame >= SPLASH.frames - 1) {
+        finalLoad.then(img => {
+          if (img) draw(img, 0, 0, img.width, img.height);
+          setTimeout(finish, SPLASH.hold);
+        });
+        return;
+      }
+      nextFrame(tick);
+    }
   });
 }
 function hideSplash() {
   const splash = $('#splash');
   if (!splash) return;
-  const video = $('#splashVideo');
+  const audio = $('#splashAudio');
   splash.classList.add('out');
-  // let the last sound tail fade with the picture
-  if (video && !video.muted) {
-    let v = video.volume;
-    const fade = setInterval(() => { v = Math.max(0, v - 0.12); video.volume = v; if (v === 0) clearInterval(fade); }, 40);
+  if (audio && !audio.paused) {
+    let v = audio.volume;
+    const fade = setInterval(() => { v = Math.max(0, v - 0.12); audio.volume = v; if (v === 0) clearInterval(fade); }, 40);
   }
-  setTimeout(() => { if (video) video.pause(); splash.remove(); }, 600);
+  setTimeout(() => { if (audio) audio.pause(); splash.remove(); }, 600);
 }
 
 /* ---------------- boot ---------------- */
