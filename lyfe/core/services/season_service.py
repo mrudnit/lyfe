@@ -59,6 +59,10 @@ async def find_pumpkin(
     if pumpkin not in PUMPKINS:
         return PumpkinOutcome(status="UNKNOWN", found=[])
 
+    from lyfe.core.services import user_service
+
+    await user_service.lock_user(session, user.id)
+
     tx = await points_service.award(
         session,
         user_id=user.id,
@@ -284,6 +288,10 @@ async def attach_ticket(session: AsyncSession, *, user: User, event: Event, code
     if not _TICKET_CODE.match(code):
         return "FORMAT"
 
+    from lyfe.core.services import user_service
+
+    await user_service.lock_user(session, user.id)
+
     other = await session.scalar(
         select(Ticket).where(Ticket.provider == TicketProvider.GOOUT, Ticket.code == code)
     )
@@ -291,15 +299,15 @@ async def attach_ticket(session: AsyncSession, *, user: User, event: Event, code
         return "TAKEN"
 
     ticket = await ticket_for(session, user_id=user.id, event_id=event.id)
-    if ticket is None:
-        ticket = Ticket(event_id=event.id, user_id=user.id, provider=TicketProvider.GOOUT, code=code)
-        session.add(ticket)
-    else:
-        ticket.code = code
     try:
-        await session.flush()
+        async with session.begin_nested():
+            if ticket is None:
+                session.add(Ticket(event_id=event.id, user_id=user.id, provider=TicketProvider.GOOUT, code=code))
+            else:
+                ticket.code = code
+            await session.flush()
     except IntegrityError:
-        await session.rollback()
+        # Someone attached the same code a moment earlier.
         return "TAKEN"
     return "OK"
 

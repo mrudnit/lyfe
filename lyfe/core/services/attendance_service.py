@@ -65,6 +65,11 @@ async def check_in(
     if user.is_blocked:
         return CheckinOutcome(status=CheckinResult.BLOCKED, lyfe_id=user.lyfe_id, name=user.name)
 
+    from lyfe.core.services import user_service
+
+    # Two door phones scanning the same guest: one at a time.
+    await user_service.lock_user(session, user.id)
+
     if not checkin_open(event, now):
         return CheckinOutcome(
             status=CheckinResult.WINDOW_CLOSED, lyfe_id=user.lyfe_id, name=user.name
@@ -91,12 +96,12 @@ async def check_in(
         admin_id=admin_id,
         scan_device=(device or "")[:64] or None,
     )
-    session.add(attendance)
     try:
-        await session.flush()
+        async with session.begin_nested():
+            session.add(attendance)
+            await session.flush()
     except IntegrityError:
         # Two scans landed at the same moment. The constraint did its job.
-        await session.rollback()
         return CheckinOutcome(
             status=CheckinResult.ALREADY, lyfe_id=user.lyfe_id, name=user.name
         )

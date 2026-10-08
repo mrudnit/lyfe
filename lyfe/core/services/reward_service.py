@@ -159,14 +159,17 @@ async def purchase(
         payload=payload,
         status=RedemptionStatus.ISSUED,
     )
-    session.add(redemption)
-    try:
-        await session.flush()
-    except IntegrityError:
-        await session.rollback()
-        redemption.code = generate_code()
-        session.add(redemption)
-        await session.flush()
+    for attempt in range(5):
+        try:
+            async with session.begin_nested():
+                session.add(redemption)
+                await session.flush()
+            break
+        except IntegrityError:
+            # A 4-character code clashed with an existing one; draw again.
+            redemption.code = generate_code()
+    else:
+        raise RuntimeError("could not generate a unique redemption code")
 
     await points_service.award(
         session,
