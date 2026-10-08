@@ -24,6 +24,7 @@ from lyfe.core.services import (
     attendance_service,
     dj_service,
     reward_service,
+    season_service,
 )
 from lyfe.core.services.attendance_service import CheckinResult
 from lyfe.db import SessionFactory
@@ -301,8 +302,11 @@ async def api_checkin(
         )
     ]
 
+    ticket = await season_service.ticket_for(session, user_id=user_id, event_id=event.id)
+
     return {
         "status": outcome.status,
+        "ticket": ticket.code if ticket else None,
         "lyfe_id": outcome.lyfe_id,
         "name": outcome.name,
         "points": outcome.points,

@@ -23,6 +23,8 @@ class PointsReason:
     REWARD_REDEMPTION = "REWARD_REDEMPTION"
     BOOST = "BOOST"
     GIFT = "GIFT"
+    PUMPKIN = "PUMPKIN"
+    GAME_PRIZE = "GAME_PRIZE"
 
 
 class PointTransaction(PKMixin, TimestampMixin, Base):

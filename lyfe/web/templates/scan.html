@@ -244,16 +244,21 @@ async function submit(payload) {
   }
 }
 
+// GoOut ticket the guest attached in the app, to compare with the GoOut list.
+function ticketLine(data) {
+  return data.ticket ? ' · билет GoOut ' + data.ticket : ' · билета в LYFE нет';
+}
+
 function render(data) {
   if (typeof data.total === 'number') countEl.textContent = data.total;
   const who = data.name ? data.name + ' · LYFE #' + data.lyfe_id : '';
   switch (data.status) {
     case 'OK':
-      return show('ok', '✓', who, '+' + data.points + ' LYFE POINTS', data.pending);
+      return show('ok', '✓', who, '+' + data.points + ' LYFE POINTS' + ticketLine(data), data.pending);
     case 'ALREADY':
       return show('already', '↺', who, 'Уже отмечен' +
         (data.checked_in_at ? ' в ' + new Date(data.checked_in_at)
-          .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''),
+          .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '') + ticketLine(data),
         data.pending);
     case 'WINDOW_CLOSED':
       return show('bad', '✕', who, 'Check-in закрыт');

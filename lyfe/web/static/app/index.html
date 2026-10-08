@@ -264,12 +264,91 @@
   .loading::after { content: ""; position: absolute; left: 0; top: 50%; height: 2px; width: 30%; background: var(--ink); animation: scan 1s ease-in-out infinite; }
   @keyframes scan { from { transform: translateX(-100%); } to { transform: translateX(400%); } }
 
+  /* ---------- season ----------
+     Everything seasonal hangs off one attribute on <html>, so switching
+     SEASON off in the config brings back the plain black and white. */
+  :root { --accent: var(--ink); --on-accent: var(--paper); }
+  :root[data-season="halloween"] {
+    --paper: #fffaf3;
+    --rule: #eee2d3;
+    --accent: #ff6a13;
+    --accent-deep: #c2410c;
+    --on-accent: #160b03;
+  }
+  :root[data-season="halloween"] .tabbar { background: rgba(255, 250, 243, .94); }
+  :root[data-season="halloween"] .tab.on::before,
+  :root[data-season="halloween"] .slot.on { background: var(--accent); }
+  :root[data-season="halloween"] .wallet .big-num,
+  :root[data-season="halloween"] .label.accent { color: var(--accent); }
+  :root[data-season="halloween"] .link { border-bottom-color: var(--accent); }
+  :root[data-season="halloween"] .btn::after { color: var(--accent); }
+  :root[data-season="halloween"] .board li.pri { background: var(--accent); color: var(--on-accent); border-bottom-color: var(--accent); }
+  :root[data-season="halloween"] .board li.pri .tartist { color: #5a2a06; }
+  :root[data-season="halloween"] .board li.pri .act.boost { border-color: var(--on-accent); }
+  :root[data-season="halloween"] ::selection { background: var(--accent); color: var(--on-accent); }
+
+  /* hidden pumpkins: small, slightly crooked, easy to miss */
+  .hp { display: inline-grid; place-items: center; width: 30px; height: 30px; vertical-align: middle;
+        margin: 0 4px; transform: rotate(-12deg); transition: transform .2s; animation: wobble 4s ease-in-out infinite; }
+  .hp svg { width: 100%; height: 100%; }
+  .hp.got { animation: gotcha .6s ease-in forwards; }
+  @keyframes wobble { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(8deg) translateY(-2px); } }
+  @keyframes gotcha { to { transform: scale(2.4) rotate(30deg); opacity: 0; } }
+
+  .season-card { position: relative; }
+  .season-card .title { font-family: var(--font-display); font-weight: 900; font-size: clamp(34px, 11vw, 56px); line-height: .9; letter-spacing: -.03em; margin-top: 10px; }
+  .season-card .facts { display: flex; gap: 22px; margin: 16px 0 18px; }
+  .season-card .facts b { display: block; font-family: var(--font-display); font-weight: 900; font-size: 26px; line-height: 1; }
+  .season-card .facts span { display: block; margin-top: 6px; }
+  .hunt { display: flex; align-items: center; gap: 10px; margin-top: 18px; font-size: 14px; color: var(--ink-2); }
+  .hunt .dots { display: flex; gap: 4px; }
+  .hunt .dots i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--accent); }
+  .hunt .dots i.on { background: var(--accent); }
+
+  .ticket-have { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 4px 0 2px; }
+  .ticket-have b { font-family: var(--font-display); font-weight: 800; font-size: 18px; text-transform: uppercase; }
+  .pass-extra { margin-top: 26px; }
+  .pass-extra .qr { width: min(48vw, 180px); }
+  .qr svg { aspect-ratio: 1; height: auto; }
+  .held { list-style: none; margin: 10px 0 0; padding: 0; }
+  .held li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--rule); font-weight: 600; }
+  .held li span:last-child { font-family: var(--font-display); font-size: 12px; letter-spacing: .08em; }
+  .sfx-row { display: flex; justify-content: space-between; align-items: center; margin-top: 26px; }
+
+  /* ---------- PUMPKIN RUSH ---------- */
+  .game { position: fixed; inset: 0; z-index: 90; background: var(--paper); display: flex; flex-direction: column;
+          padding: 14px var(--gutter) calc(14px + var(--safe-b)); touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  .game-top { display: flex; align-items: center; justify-content: space-between; }
+  .game-top .g-score { font-family: var(--font-display); font-weight: 900; font-size: 34px; letter-spacing: -.03em; }
+  .game-top .g-close { font-size: 28px; line-height: 1; padding: 4px 0 4px 12px; }
+  .g-timer { height: 3px; background: var(--rule); margin: 10px 0 0; }
+  .g-timer i { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; }
+  .g-field { position: relative; flex: 1; overflow: hidden; }
+  .gp { position: absolute; width: 68px; height: 68px; margin: -34px 0 0 -34px; animation: rise .18s ease-out both; }
+  .gp svg { width: 100%; height: 100%; pointer-events: none; }
+  .gp.hit { animation: popout .28s ease-out forwards; }
+  .gp.gone { animation: sink .2s ease-in forwards; }
+  @keyframes rise { from { transform: scale(.2) translateY(20px); opacity: 0; } }
+  @keyframes popout { to { transform: scale(1.7); opacity: 0; } }
+  @keyframes sink { to { transform: scale(.4); opacity: 0; } }
+  .g-float { position: absolute; font-family: var(--font-display); font-weight: 900; font-size: 20px; pointer-events: none; animation: floatup .7s ease-out forwards; }
+  @keyframes floatup { to { transform: translateY(-40px); opacity: 0; } }
+  .g-center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; pointer-events: none; }
+  .g-center .n { font-family: var(--font-display); font-weight: 900; font-size: 120px; line-height: 1; color: var(--accent); }
+  .g-result { flex: 1; overflow-y: auto; padding-top: 10px; }
+  .g-result .big-num { color: var(--accent); }
+  .board-mini { list-style: none; margin: 14px 0 0; padding: 0; border-top: 1px solid var(--ink); }
+  .board-mini li { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
+  .board-mini li.me { font-weight: 800; }
+  .board-mini .p { font-family: var(--font-display); font-weight: 900; }
+  .board-mini .s { font-family: var(--font-display); font-weight: 800; }
+
   /* ---------- splash ----------
      The outro of the LYFE promo, drawn frame by frame on a canvas from four
      JPEG sheets. Images are not subject to the autoplay rules that stop a
      <video> inside Telegram's webview, so the animation always runs. */
   .splash {
-    position: fixed; inset: 0; z-index: 100; background: var(--paper);
+    position: fixed; inset: 0; z-index: 100; background: #fff;
     overflow: hidden;
     transition: opacity .45s ease, transform .55s cubic-bezier(.7,0,.3,1);
   }
@@ -369,12 +448,30 @@ const COPY = {
     reason: {
       MUSIC_REQUEST: 'Трек', VOTE: 'Лайк', EVENT_ATTENDANCE: 'Ночь на LYFEPARTY',
       REWARD_REDEMPTION: 'Гарантия трека', BOOST: 'Boost', GIFT: 'Подарок от LYFE',
-      MANUAL_ADJUSTMENT: 'Возврат', REFERRAL: 'Друг', ACTIVITY: 'Активность',
+      MANUAL_ADJUSTMENT: 'Возврат', REFERRAL: 'Друг', ACTIVITY: 'Активность', PUMPKIN: 'Тыква', GAME_PRIZE: 'PUMPKIN RUSH',
     },
     hist_empty: 'Пока пусто.',
     error: 'Что-то сломалось. Минуту.', offline: 'Нет связи. Попробуй ещё раз.',
     open_tg_t: 'Открой LYFE в Telegram', open_tg_s: 'Эта страница работает только внутри бота.',
     open_bot: 'Открыть бота',
+    ticket_label: 'Билет', ticket_buy: 'Купить билет · GoOut',
+    ticket_how: 'Билеты продаются через GoOut. Купи и добавь код билета сюда — он будет рядом с LYFE PASS, и на входе хватит одного экрана.',
+    ticket_attach: 'У меня есть билет', ticket_have: 'Билет в LYFE', ticket_show: 'Показать на входе',
+    ticket_sheet_t: 'Код билета GoOut', ticket_sheet_s: 'Он напечатан на билете под QR-кодом — в письме от GoOut или в их приложении.',
+    ticket_ph: 'Например: GO-8F3K2Q', ticket_save: 'Сохранить', ticket_remove: 'Убрать билет',
+    ticket_ok: 'Билет добавлен.', ticket_format: 'Не похоже на код билета. Проверь и попробуй ещё раз.',
+    ticket_taken: 'Этот билет уже привязан к другому LYFE ID.', ticket_removed: 'Билет убран.',
+    ticket_qr: 'Билет GoOut', held_title: 'Покажи на входе',
+    season_label: 'HALLOWEEN', game_name: 'PUMPKIN<br>RUSH',
+    game_rules: '{s} секунд. Лови тыквы: обычная +1, золотая +3. Призрак −2. Топ-3 ночи получают {p1} / {p2} / {p3} LYFE POINTS.',
+    game_attempts: 'Попыток', game_best: 'Рекорд', game_play: 'Играть', game_board: 'Таблица',
+    game_none: 'Попытки на эту ночь закончились.', game_go: 'GO',
+    game_result: 'Твой счёт', game_place: 'Место в таблице: {n}', game_again: 'Ещё попытка', game_close: 'Закрыть',
+    game_board_t: 'PUMPKIN RUSH · таблица', game_empty: 'Пока никто не играл. Будь первым.',
+    hunt: 'Найди {n} тыкв в приложении: +{p} за каждую, +{b} за все.', hunt_found: 'Тыква! +{p} LYFE POINTS · {k}/{n}',
+    hunt_all: 'Все тыквы найдены! Бонус +{b}', door_title: 'На входе', door_take: 'Взять', door_yours: 'Твоё',
+    door_q: '{c} LYFE POINTS — {name}.\n\nПокажи LYFE PASS на входе, тебе выдадут.', door_ok: 'Готово. Покажи LYFE PASS на входе.',
+    sfx: 'Звуки', sfx_on: 'Вкл', sfx_off: 'Выкл',
   },
   uk: {
     tab_home: 'НІЧ', tab_add: 'ТРЕК', tab_top: 'TOP', tab_me: 'MY LYFE',
@@ -429,12 +526,30 @@ const COPY = {
     reason: {
       MUSIC_REQUEST: 'Трек', VOTE: 'Лайк', EVENT_ATTENDANCE: 'Ніч на LYFEPARTY',
       REWARD_REDEMPTION: 'Гарантія треку', BOOST: 'Boost', GIFT: 'Подарунок від LYFE',
-      MANUAL_ADJUSTMENT: 'Повернення', REFERRAL: 'Друг', ACTIVITY: 'Активність',
+      MANUAL_ADJUSTMENT: 'Повернення', REFERRAL: 'Друг', ACTIVITY: 'Активність', PUMPKIN: 'Гарбуз', GAME_PRIZE: 'PUMPKIN RUSH',
     },
     hist_empty: 'Поки порожньо.',
     error: 'Щось пішло не так. Хвилину.', offline: 'Немає зв’язку. Спробуй ще раз.',
     open_tg_t: 'Відкрий LYFE у Telegram', open_tg_s: 'Ця сторінка працює лише всередині бота.',
     open_bot: 'Відкрити бота',
+    ticket_label: 'Квиток', ticket_buy: 'Купити квиток · GoOut',
+    ticket_how: 'Квитки продаються через GoOut. Купи й додай код квитка сюди — він буде поруч із LYFE PASS, і на вході вистачить одного екрана.',
+    ticket_attach: 'У мене є квиток', ticket_have: 'Квиток у LYFE', ticket_show: 'Показати на вході',
+    ticket_sheet_t: 'Код квитка GoOut', ticket_sheet_s: 'Він надрукований на квитку під QR-кодом — у листі від GoOut або в їхньому застосунку.',
+    ticket_ph: 'Наприклад: GO-8F3K2Q', ticket_save: 'Зберегти', ticket_remove: 'Прибрати квиток',
+    ticket_ok: 'Квиток додано.', ticket_format: 'Не схоже на код квитка. Перевір і спробуй ще раз.',
+    ticket_taken: 'Цей квиток уже прив’язаний до іншого LYFE ID.', ticket_removed: 'Квиток прибрано.',
+    ticket_qr: 'Квиток GoOut', held_title: 'Покажи на вході',
+    season_label: 'HALLOWEEN', game_name: 'PUMPKIN<br>RUSH',
+    game_rules: '{s} секунд. Лови гарбузи: звичайний +1, золотий +3. Привид −2. Топ-3 ночі отримують {p1} / {p2} / {p3} LYFE POINTS.',
+    game_attempts: 'Спроб', game_best: 'Рекорд', game_play: 'Грати', game_board: 'Таблиця',
+    game_none: 'Спроби на цю ніч закінчились.', game_go: 'GO',
+    game_result: 'Твій рахунок', game_place: 'Місце в таблиці: {n}', game_again: 'Ще спроба', game_close: 'Закрити',
+    game_board_t: 'PUMPKIN RUSH · таблиця', game_empty: 'Поки ніхто не грав. Будь першим.',
+    hunt: 'Знайди {n} гарбузів у застосунку: +{p} за кожен, +{b} за всі.', hunt_found: 'Гарбуз! +{p} LYFE POINTS · {k}/{n}',
+    hunt_all: 'Усі гарбузи знайдено! Бонус +{b}', door_title: 'На вході', door_take: 'Взяти', door_yours: 'Твоє',
+    door_q: '{c} LYFE POINTS — {name}.\n\nПокажи LYFE PASS на вході, тобі видадуть.', door_ok: 'Готово. Покажи LYFE PASS на вході.',
+    sfx: 'Звуки', sfx_on: 'Увімк', sfx_off: 'Вимк',
   },
 };
 
@@ -465,7 +580,74 @@ function esc(s) {
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 function pad(n) { return String(n).padStart(2, '0'); }
+/* ---------------- sound ----------------
+   Small, soft interface sounds synthesised on the fly with Web Audio: no
+   files to download, nothing louder than a fingertip. Off switch in MY LYFE. */
+const SFX = (() => {
+  let ctx = null;
+  let on = true;
+  try { on = localStorage.getItem('lyfe_sfx') !== '0'; } catch (e) {}
+  function audio() {
+    if (!ctx) {
+      const C = window.AudioContext || window.webkitAudioContext;
+      if (!C) return null;
+      ctx = new C();
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function tone(c, { f = 440, f2 = null, type = 'sine', dur = 0.12, vol = 0.12, delay = 0, lp = 4000 }) {
+    const t = c.currentTime + delay;
+    const o = c.createOscillator(), g = c.createGain(), filt = c.createBiquadFilter();
+    o.type = type;
+    o.frequency.setValueAtTime(f, t);
+    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    filt.type = 'lowpass'; filt.frequency.value = lp;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(filt); filt.connect(g); g.connect(c.destination);
+    o.start(t); o.stop(t + dur + 0.02);
+  }
+  function noise(c, { dur = 0.05, vol = 0.08, f = 2500, q = 1.2, f2 = null, delay = 0 }) {
+    const t = c.currentTime + delay;
+    const len = Math.max(1, Math.floor(c.sampleRate * dur));
+    const buf = c.createBuffer(1, len, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const src = c.createBufferSource(), filt = c.createBiquadFilter(), g = c.createGain();
+    src.buffer = buf;
+    filt.type = 'bandpass'; filt.Q.value = q;
+    filt.frequency.setValueAtTime(f, t);
+    if (f2) filt.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    g.gain.value = vol;
+    src.connect(filt); filt.connect(g); g.connect(c.destination);
+    src.start(t);
+  }
+  const lib = {
+    tap:     c => noise(c, { dur: .025, vol: .09, f: 3200, q: 2.5 }),
+    tab:     c => { noise(c, { dur: .04, vol: .07, f: 1600, q: 1.5 }); tone(c, { f: 740, dur: .06, vol: .025 }); },
+    open:    c => noise(c, { dur: .22, vol: .05, f: 700, f2: 2600, q: .7 }),
+    pop:     c => tone(c, { f: 420, f2: 900, dur: .09, vol: .14, type: 'triangle', lp: 2500 }),
+    success: c => { tone(c, { f: 660, dur: .14, vol: .07 }); tone(c, { f: 990, dur: .22, vol: .07, delay: .07 }); },
+    heart:   c => { tone(c, { f: 360, f2: 520, dur: .08, vol: .1, type: 'triangle', lp: 1800 }); tone(c, { f: 520, dur: .1, vol: .05, delay: .08 }); },
+    boost:   c => { tone(c, { f: 220, f2: 880, dur: .32, vol: .07, type: 'sawtooth', lp: 1400 }); tone(c, { f: 1320, dur: .18, vol: .04, delay: .26 }); },
+    coin:    c => { tone(c, { f: 988, dur: .07, vol: .08, type: 'triangle' }); tone(c, { f: 1480, dur: .16, vol: .07, type: 'triangle', delay: .06 }); },
+    spooky:  c => { [392, 466, 587].forEach((f, i) => tone(c, { f, f2: f * .94, dur: .7, vol: .05, delay: i * .06 })); noise(c, { dur: .4, vol: .03, f: 500, f2: 1400, q: .5 }); },
+    ghost:   c => tone(c, { f: 320, f2: 110, dur: .28, vol: .09, type: 'sawtooth', lp: 900 }),
+    error:   c => tone(c, { f: 190, f2: 130, dur: .14, vol: .09, type: 'triangle', lp: 800 }),
+    tick:    c => tone(c, { f: 1100, dur: .035, vol: .05, type: 'triangle' }),
+    go:      c => { tone(c, { f: 523, dur: .1, vol: .08 }); tone(c, { f: 784, dur: .2, vol: .08, delay: .08 }); },
+  };
+  return {
+    play(name) { if (!on) return; try { const c = audio(); if (c && lib[name]) lib[name](c); } catch (e) {} },
+    get on() { return on; },
+    set(value) { on = value; try { localStorage.setItem('lyfe_sfx', value ? '1' : '0'); } catch (e) {} },
+  };
+})();
+
 function haptic(kind) {
+  SFX.play(kind === 'ok' ? 'success' : (kind === 'error' || kind === 'warning') ? 'error' : 'tap');
   try {
     if (!tg || !tg.HapticFeedback) return;
     if (kind === 'ok' || kind === 'error' || kind === 'warning') tg.HapticFeedback.notificationOccurred(kind === 'ok' ? 'success' : kind);
@@ -560,12 +742,14 @@ function go(tab, opts = {}) {
   if (tab === 'top') loadTop();
   if (tab === 'me') renderMe();
 }
-document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { haptic('light'); go(b.dataset.tab); }));
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { SFX.play('tab'); try { tg && tg.HapticFeedback && tg.HapticFeedback.selectionChanged(); } catch (e) {} go(b.dataset.tab); }));
 
 async function refreshMe() {
   S.me = await api('/api/app/me');
   lang = S.me.user.language === 'uk' ? 'uk' : 'ru';
   document.documentElement.lang = lang;
+  if (S.me.season) document.documentElement.dataset.season = S.me.season.name;
+  else delete document.documentElement.dataset.season;
   document.querySelectorAll('[data-l]').forEach(el => { el.textContent = L(el.dataset.l); });
 }
 
@@ -598,11 +782,12 @@ function renderHome() {
   const slots = Array.from({ length: rules().requests_max }, (_, i) => `<span class="slot${i < tn.requests_used ? ' on' : ''}"></span>`).join('');
   const canAdd = ev.accepts_requests && tn.requests_used < rules().requests_max;
 
-  view.innerHTML = topline(ev.ticket_url ? `<button class="link" id="ticket">${esc(L('ticket'))} ↗</button>` : '') + `
+  view.innerHTML = topline(S.me.season ? `<span class="label accent">${esc(L('season_label'))}</span>` : '') + `
     <div class="label">${esc(L('presents'))}</div>
     <h1 class="mega" style="margin-top:10px">${esc(ev.title)}</h1>
     <div class="meta">${[ev.date, ev.time, ev.venue, ev.city].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('')}</div>
-    ${when}
+    <div style="display:flex;align-items:flex-end;justify-content:space-between">${when}${hiddenPumpkin('home')}</div>
+    ${ticketBlock(ev)}
 
     <div class="rule"></div>
     <div class="topline" style="margin:0 0 6px"><span class="label">${esc(L('your_tracks'))}</span><span class="label num">${esc(L('slots', { used: tn.requests_used, max: rules().requests_max }))}</span></div>
@@ -610,10 +795,12 @@ function renderHome() {
     <div class="slots">${slots}</div>
     ${canAdd ? `<button class="btn" id="goadd">${esc(L('add_track'))}</button>` : ''}
 
+    ${seasonBlock()}
     ${walletBlock(user)}`;
 
-  const t = $('#ticket'); if (t) t.onclick = () => (tg && tg.openLink ? tg.openLink(ev.ticket_url) : window.open(ev.ticket_url));
   const a = $('#goadd'); if (a) a.onclick = () => go('add');
+  bindTicket(ev);
+  bindSeason();
   bindWallet();
 }
 function walletBlock(user) {
@@ -691,7 +878,7 @@ async function runSearch() {
 function drawResults() {
   const box = $('#results'); if (!box) return;
   const r = S.search;
-  if (!r) { box.innerHTML = `<p class="hint">${esc(L('req_hint'))}</p>`; return; }
+  if (!r) { box.innerHTML = `<p class="hint">${esc(L('req_hint'))} ${hiddenPumpkin('add')}</p>`; return; }
   if (r.status === 'loading') { box.innerHTML = '<div class="loading"></div><div class="loading"></div><div class="loading"></div>'; return; }
   if (r.status === 'link_unreadable') { box.innerHTML = say(L('link_bad_t'), L('link_bad_s')); return; }
 
@@ -779,6 +966,7 @@ async function submitRequest(body, button) {
   if (res.status === 'ALREADY_REQUESTED') { haptic('warning'); toast(L('already')); if (button) button.disabled = false; return; }
 
   haptic('ok');
+  SFX.play('pop');
   S.query = ''; S.search = null;
   await refreshMe();
   rerender();
@@ -855,7 +1043,7 @@ function renderTop() {
         <button class="act" data-vote="${i}" ${canVote ? '' : 'disabled'} aria-label="like">${it.voted || it.mine ? '♥' : '♡'}</button>
         <button class="act boost" data-boost="${i}" ${canBoost ? '' : 'disabled'} aria-label="boost">+${c}</button>
       </div></li>`;
-  }).join('') + `</ul>` +
+  }).join('') + `</ul>` + `<div style="text-align:right;margin-top:10px">${hiddenPumpkin('top')}</div>` +
     (t.items.length < t.total ? `<div style="margin-top:22px"><button class="link" id="more">${esc(L('more'))} ↓</button></div>` : '');
 
   view.querySelectorAll('[data-vote]').forEach(b => b.onclick = () => doVote(t.items[+b.dataset.vote], b));
@@ -871,7 +1059,7 @@ async function doVote(item, button) {
   setPoints(res.points);
   const msg = { VOTED: 'vote_done', ALREADY_VOTED: 'vote_already', OWN_TRACK: 'vote_own', EVENT_CLOSED: 'vote_closed' }[res.status];
   if (msg) toast(L(msg));
-  if (res.status === 'VOTED') { haptic('ok'); item.voted = true; item.score += 1; item.votes += 1; renderTop(); }
+  if (res.status === 'VOTED') { SFX.play('heart'); item.voted = true; item.score += 1; item.votes += 1; renderTop(); }
 }
 
 async function doBoost(item) {
@@ -884,7 +1072,7 @@ async function doBoost(item) {
   let res;
   try { res = await api('/api/app/boost/' + item.id, { method: 'POST' }); } catch (e) { return false; }
   if (res.status === 'BOOSTED') {
-    haptic('ok'); toast(L('boost_done', { c }));
+    SFX.play('boost'); toast(L('boost_done', { c }));
     setPoints(res.points);
     if (S.me.tonight) S.me.tonight.boosts_used = res.boosts_used;
     return true;
@@ -912,13 +1100,31 @@ function renderMe() {
 
     <div class="pass">
       <div class="qr" id="qr"><div class="loading"></div></div>
-      <p class="label" style="text-align:center;margin-top:14px">LYFE PASS · ${esc(L('pass_s'))}</p>
+      <p class="label" style="text-align:center;margin-top:14px">LYFE PASS · ${esc(L('pass_s'))} ${hiddenPumpkin('me')}</p>
     </div>
+    <div id="passExtra"></div>
 
-    ${walletBlock(user)}`;
+    ${walletBlock(user)}
+    <div class="sfx-row"><span class="label">${esc(L('sfx'))}</span><button class="link" id="sfx">${esc(SFX.on ? L('sfx_on') : L('sfx_off'))}</button></div>`;
   bindWallet();
+  $('#sfx').onclick = () => { SFX.set(!SFX.on); $('#sfx').textContent = SFX.on ? L('sfx_on') : L('sfx_off'); SFX.play('tap'); };
 
-  api('/api/app/pass').then(p => { const box = $('#qr'); if (box) box.innerHTML = p.svg; }).catch(() => {});
+  api('/api/app/pass').then(p => {
+    const box = $('#qr'); if (box) box.innerHTML = p.svg;
+    const extra = $('#passExtra'); if (!extra) return;
+    let html = '';
+    if (p.ticket) {
+      html += `<div class="pass-extra"><div class="rule soft" style="margin-top:0"></div>
+        <span class="label">${esc(L('ticket_qr'))}</span>
+        <div class="qr" style="margin-top:12px">${p.ticket.svg}</div>
+        <p class="label" style="text-align:center;margin-top:10px">${esc(p.ticket.code)}</p></div>`;
+    }
+    if (p.held && p.held.length) {
+      html += `<div class="pass-extra"><span class="label">${esc(L('held_title'))}</span>
+        <ul class="held">${p.held.map(h => `<li><span>${esc(h.name)}</span><span>${esc(h.code)}</span></li>`).join('')}</ul></div>`;
+    }
+    extra.innerHTML = html;
+  }).catch(() => {});
 }
 
 /* ---------------- LYFE POINTS (sheet) ----------------
@@ -956,7 +1162,8 @@ function openPoints() {
       <div class="state" id="pristate"><span class="faint">…</span></div>
     </div>
 
-    <p class="earnline">${earn.map(esc).join('<br>')}</p>
+    <div id="doorRewards"></div>
+    <p class="earnline">${earn.map(esc).join('<br>')} ${hiddenPumpkin('points')}</p>
     <button class="link" id="histgo" style="margin-top:18px">${esc(L('hist_title'))} ↓</button>
     <ul class="ledger" id="hist" hidden style="margin-top:10px"></ul>`);
 
@@ -971,6 +1178,8 @@ function openPoints() {
       }).join('') : `<li class="faint">${esc(L('hist_empty'))}</li>`;
     }).catch(() => {});
   };
+
+  loadDoorRewards();
 
   api('/api/app/priority').then(p => {
     const box = $('#pristate'); if (!box) return;
@@ -1024,6 +1233,7 @@ async function openPass() {
 /* ---------------- sheet ---------------- */
 
 function openSheet(html) {
+  SFX.play('open');
   $('#sheet').innerHTML = `<button class="close" id="sheetclose" aria-label="close">×</button>` + html;
   $('#sheetclose').onclick = closeSheet;
   $('#scrim').classList.add('show'); $('#sheet').classList.add('show');
@@ -1046,14 +1256,289 @@ function renderOutside() {
     ${link ? `<a class="btn" style="text-decoration:none" href="${link}">${esc(L('open_bot'))}</a>` : ''}`;
 }
 
+/* ---------------- season: art ---------------- */
+
+const ART = {
+  pumpkin: `<svg viewBox="0 0 64 64"><path d="M31 15c0-5 3-9 9-10l1 3c-4 1-6 4-6 7z" fill="#2f4f1a"/><ellipse cx="20" cy="38" rx="14" ry="18" fill="#e8590c"/><ellipse cx="44" cy="38" rx="14" ry="18" fill="#e8590c"/><ellipse cx="32" cy="38" rx="13" ry="20" fill="#ff7a1a"/><path d="M23 33l5-6 4 6zM36 33l4-6 5 6zM21 43c7 7 15 7 22 0h-3l-2 3-3-3-3 3-3-3-3 3-2-3z" fill="#160b03"/></svg>`,
+  gold: `<svg viewBox="0 0 64 64"><path d="M31 15c0-5 3-9 9-10l1 3c-4 1-6 4-6 7z" fill="#2f4f1a"/><ellipse cx="20" cy="38" rx="14" ry="18" fill="#d99a06"/><ellipse cx="44" cy="38" rx="14" ry="18" fill="#d99a06"/><ellipse cx="32" cy="38" rx="13" ry="20" fill="#fcc419"/><path d="M23 33l5-6 4 6zM36 33l4-6 5 6zM21 43c7 7 15 7 22 0h-3l-2 3-3-3-3 3-3-3-3 3-2-3z" fill="#160b03"/><path d="M10 14l2 4 4 2-4 2-2 4-2-4-4-2 4-2zM54 8l1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z" fill="#fcc419"/></svg>`,
+  ghost: `<svg viewBox="0 0 64 64"><path d="M14 56V30a18 18 0 0 1 36 0v26l-6-5-6 5-6-5-6 5-6-5z" fill="#fff" stroke="#160b03" stroke-width="3" stroke-linejoin="round"/><ellipse cx="25" cy="30" rx="3.5" ry="5" fill="#160b03"/><ellipse cx="39" cy="30" rx="3.5" ry="5" fill="#160b03"/><ellipse cx="32" cy="41" rx="4" ry="3" fill="#160b03"/></svg>`,
+};
+
+/* ---------------- season: pumpkin hunt ---------------- */
+
+function hiddenPumpkin(id) {
+  const sn = S.me && S.me.season;
+  if (!sn || !S.me.event || sn.found.includes(id)) return '';
+  return `<button class="hp" data-pumpkin="${id}" aria-label="pumpkin">${ART.pumpkin}</button>`;
+}
+
+document.addEventListener('click', async e => {
+  const el = e.target.closest && e.target.closest('[data-pumpkin]');
+  if (!el || el.dataset.busy) return;
+  e.stopPropagation();
+  el.dataset.busy = '1';
+  let res;
+  try { res = await api('/api/app/pumpkin/' + el.dataset.pumpkin, { method: 'POST' }); }
+  catch (err) { delete el.dataset.busy; return; }
+  const sn = S.me.season;
+  if (sn) sn.found = res.found || sn.found;
+  setPoints(res.points);
+  el.classList.add('got');
+  setTimeout(() => el.remove(), 650);
+  if (res.status === 'FOUND') {
+    SFX.play('spooky');
+    try { tg && tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success'); } catch (err) {}
+    toast(res.bonus
+      ? L('hunt_all', { b: res.bonus })
+      : L('hunt_found', { p: res.gained, k: res.found.length, n: sn.pumpkins.length }));
+  }
+  if (S.tab === 'home') setTimeout(renderHome, 700);
+}, true);
+
+/* ---------------- tickets (GoOut) ---------------- */
+
+function ticketBlock(ev) {
+  const t = S.me.ticket;
+  if (!ev.ticket_url && !t) return '';
+  if (t) {
+    return `<div class="rule"></div><span class="label">${esc(L('ticket_label'))}</span>
+      <div class="ticket-have" style="margin-top:8px"><b>${esc(L('ticket_have'))} ✓</b><button class="link" id="ticketEdit">GoOut · ${esc(t.code)}</button></div>
+      <div style="margin-top:14px"><button class="link" id="ticketShow">${esc(L('ticket_show'))} →</button></div>`;
+  }
+  return `<div class="rule"></div><span class="label">${esc(L('ticket_label'))}</span>
+    <p class="muted" style="margin:8px 0 16px">${esc(L('ticket_how'))}</p>
+    <button class="btn" id="ticketBuy">${esc(L('ticket_buy'))}</button>
+    <div style="margin-top:16px"><button class="link" id="ticketAttach">${esc(L('ticket_attach'))} +</button></div>`;
+}
+
+function bindTicket(ev) {
+  const buy = $('#ticketBuy');
+  if (buy) buy.onclick = () => {
+    // Telegram's in-app browser: the guest pays on GoOut and swipes back here.
+    if (tg && tg.openLink) tg.openLink(ev.ticket_url, { try_instant_view: false });
+    else window.open(ev.ticket_url, '_blank');
+  };
+  const attach = $('#ticketAttach'); if (attach) attach.onclick = openTicketSheet;
+  const edit = $('#ticketEdit'); if (edit) edit.onclick = openTicketSheet;
+  const show = $('#ticketShow'); if (show) show.onclick = () => go('me');
+}
+
+function openTicketSheet() {
+  const t = S.me.ticket;
+  openSheet(`<span class="label">${esc(L('ticket_label'))}</span>
+    <div class="say" style="padding-top:10px"><div class="h">${esc(L('ticket_sheet_t'))}</div><p class="s">${esc(L('ticket_sheet_s'))}</p></div>
+    <label class="field" style="margin-top:8px"><input id="ticketCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"
+      placeholder="${esc(L('ticket_ph'))}" value="${esc(t ? t.code : '')}"></label>
+    <p class="err" id="ticketErr" hidden></p>
+    <button class="btn" id="ticketSave" style="margin-top:18px">${esc(L('ticket_save'))}</button>
+    ${t ? `<div style="margin-top:18px"><button class="link" id="ticketRemove">${esc(L('ticket_remove'))}</button></div>` : ''}`);
+  setTimeout(() => { const i = $('#ticketCode'); if (i && !t) i.focus(); }, 300);
+  $('#ticketSave').onclick = async () => {
+    const code = $('#ticketCode').value.trim();
+    let res;
+    try { res = await api('/api/app/ticket', { body: { code } }); } catch (e) { return; }
+    if (res.status !== 'OK') {
+      const err = $('#ticketErr'); err.hidden = false;
+      err.textContent = L(res.status === 'TAKEN' ? 'ticket_taken' : 'ticket_format');
+      haptic('error');
+      return;
+    }
+    haptic('ok'); toast(L('ticket_ok'));
+    closeSheet(); await refreshMe(); if (S.tab === 'home') renderHome();
+  };
+  const rm = $('#ticketRemove');
+  if (rm) rm.onclick = async () => {
+    try { await api('/api/app/ticket', { method: 'DELETE' }); } catch (e) { return; }
+    toast(L('ticket_removed'));
+    closeSheet(); await refreshMe(); if (S.tab === 'home') renderHome();
+  };
+}
+
+/* ---------------- door rewards (in the LYFE POINTS sheet) ---------------- */
+
+function loadDoorRewards() {
+  api('/api/app/rewards').then(r => {
+    const box = $('#doorRewards'); if (!box || !r.items.length) return;
+    box.innerHTML = r.items.map(it => `
+      <div class="offer">
+        <div class="nm">${esc(it.name.replace(/^\S+\s/, ''))}</div>
+        <div class="price num">${it.cost}<small>POINTS</small></div>
+        <p class="ds">${esc(it.description || '')}</p>
+        <div class="state"><span class="faint">${esc(L('door_title'))}</span>
+          ${it.held ? `<span>${esc(L('door_yours'))} ✓</span>`
+                    : `<button class="link" data-door="${it.id}" ${S.me.user.points < it.cost ? 'disabled' : ''}>${esc(L('door_take'))} →</button>`}
+        </div>
+      </div>`).join('');
+    box.querySelectorAll('[data-door]').forEach(b => b.onclick = async () => {
+      const it = r.items.find(x => String(x.id) === b.dataset.door);
+      if (!await confirmBox(it.name, L('door_q', { c: it.cost, name: it.name }), L('door_take'))) return;
+      let res;
+      try { res = await api(`/api/app/rewards/${it.id}/buy`, { method: 'POST' }); } catch (e) { return; }
+      if (res.status === 'OK') { SFX.play('coin'); toast(L('door_ok')); setPoints(res.points); }
+      else {
+        haptic('warning');
+        toast({ NOT_ENOUGH_POINTS: L('boost_poor', { c: it.cost, have: res.points }), LIMIT_REACHED: L('door_yours') + ' ✓' }[res.status] || L('error'));
+      }
+      await refreshMe();
+      closeSheet(); openPoints();
+    });
+  }).catch(() => {});
+}
+
+/* ---------------- season: PUMPKIN RUSH ---------------- */
+
+function seasonBlock() {
+  const sn = S.me.season;
+  if (!sn) return '';
+  const g = sn.game;
+  const dots = sn.pumpkins.map(p => `<i class="${sn.found.includes(p) ? 'on' : ''}"></i>`).join('');
+  return `<div class="rule"></div>
+    <div class="season-card">
+      <span class="label accent">${esc(L('season_label'))}</span>
+      <div class="title">${L('game_name')}</div>
+      <p class="muted" style="margin-top:12px">${esc(L('game_rules', { s: g.seconds, p1: g.prizes[0], p2: g.prizes[1], p3: g.prizes[2] }))}</p>
+      <div class="facts">
+        <div><b class="num">${g.attempts_left}/${g.attempts}</b><span class="label">${esc(L('game_attempts'))}</span></div>
+        <div><b class="num">${g.best == null ? '—' : g.best}</b><span class="label">${esc(L('game_best'))}</span></div>
+      </div>
+      <button class="btn" id="gamePlay" ${g.attempts_left ? '' : 'disabled'}>${esc(g.attempts_left ? L('game_play') : L('game_none'))}</button>
+      <div style="margin-top:16px"><button class="link" id="gameBoard">${esc(L('game_board'))} →</button></div>
+      <div class="hunt"><span class="dots">${dots}</span><span>${esc(L('hunt', { n: sn.pumpkins.length, p: sn.pumpkin_points, b: sn.pumpkin_bonus }))}</span></div>
+    </div>`;
+}
+
+function bindSeason() {
+  const play = $('#gamePlay'); if (play) play.onclick = startGame;
+  const board = $('#gameBoard'); if (board) board.onclick = openBoard;
+}
+
+function boardList(rows) {
+  if (!rows.length) return `<p class="muted" style="margin-top:12px">${esc(L('game_empty'))}</p>`;
+  return `<ul class="board-mini">${rows.map((r, i) => `<li class="${r.me ? 'me' : ''}"><span class="p num">${pad(i + 1)}</span><span>${esc(r.name)}</span><span class="s num">${r.score}</span></li>`).join('')}</ul>`;
+}
+
+async function openBoard() {
+  openSheet('<div class="loading"></div>');
+  let res;
+  try { res = await api('/api/app/game'); } catch (e) { closeSheet(); return; }
+  $('#sheet').innerHTML = `<button class="close" id="sheetclose" aria-label="close">×</button>
+    <span class="label accent">${esc(L('game_board_t'))}</span>${boardList(res.board || [])}`;
+  $('#sheetclose').onclick = closeSheet;
+}
+
+async function startGame() {
+  if (S.busy) return;
+  S.busy = true;
+  let res;
+  try { res = await api('/api/app/game/start', { method: 'POST' }); } catch (e) { S.busy = false; return; }
+  S.busy = false;
+  if (res.status !== 'OK') { toast(L('game_none')); haptic('warning'); return; }
+
+  const el = document.createElement('div');
+  el.className = 'game';
+  el.innerHTML = `<div class="game-top"><span class="label accent">PUMPKIN RUSH</span><span class="g-score num" id="gScore">0</span><button class="g-close" id="gClose">×</button></div>
+    <div class="g-timer"><i id="gTimer"></i></div>
+    <div class="g-field" id="gField"><div class="g-center"><div class="n" id="gCount">3</div></div></div>`;
+  document.body.appendChild(el);
+  try { tg && tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch (e) {}
+
+  const field = $('#gField'), scoreEl = $('#gScore'), timer = $('#gTimer');
+  const pieces = res.pieces, seconds = res.seconds;
+  const hits = [], live = new Map();
+  let score = 0, t0 = 0, next = 0, over = false, aborted = false;
+
+  $('#gClose').onclick = () => { aborted = true; over = true; el.remove(); renderHome(); };
+
+  field.addEventListener('pointerdown', e => {
+    const node = e.target.closest('.gp');
+    if (!node || over || !t0) return;
+    const piece = live.get(+node.dataset.id);
+    if (!piece) return;
+    live.delete(piece.id);
+    hits.push({ id: piece.id, t: +((performance.now() - t0) / 1000).toFixed(3) });
+    score = Math.max(0, score + piece.value);
+    scoreEl.textContent = score;
+    node.classList.add('hit');
+    setTimeout(() => node.remove(), 300);
+    const f = document.createElement('div');
+    f.className = 'g-float';
+    f.style.left = node.style.left; f.style.top = node.style.top;
+    f.style.color = piece.value < 0 ? 'var(--ink)' : 'var(--accent)';
+    f.textContent = (piece.value > 0 ? '+' : '−') + Math.abs(piece.value);
+    field.appendChild(f); setTimeout(() => f.remove(), 700);
+    SFX.play(piece.kind === 'ghost' ? 'ghost' : piece.kind === 'gold' ? 'coin' : 'pop');
+    try { tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred(piece.kind === 'ghost' ? 'heavy' : 'light'); } catch (err) {}
+  });
+
+  // 3-2-1
+  for (const n of [3, 2, 1]) {
+    if (aborted) return;
+    $('#gCount').textContent = n; SFX.play('tick');
+    await new Promise(r => setTimeout(r, 650));
+  }
+  if (aborted) return;
+  $('#gCount').textContent = L('game_go'); SFX.play('go');
+  await new Promise(r => setTimeout(r, 350));
+  field.innerHTML = '';
+  t0 = performance.now();
+
+  function frame() {
+    if (over) return;
+    const t = (performance.now() - t0) / 1000;
+    timer.style.transform = `scaleX(${Math.max(0, 1 - t / seconds)})`;
+    while (next < pieces.length && pieces[next].at <= t) {
+      const p = pieces[next++];
+      const node = document.createElement('button');
+      node.className = 'gp';
+      node.dataset.id = p.id;
+      node.style.left = (p.x * 100) + '%';
+      node.style.top = (p.y * 100) + '%';
+      node.innerHTML = ART[p.kind];
+      field.appendChild(node);
+      live.set(p.id, p);
+      setTimeout(() => {
+        if (live.has(p.id)) { live.delete(p.id); node.classList.add('gone'); setTimeout(() => node.remove(), 220); }
+      }, p.ttl * 1000);
+    }
+    if (t >= seconds) { over = true; finishGame(); return; }
+    nextFrame(frame);
+  }
+  nextFrame(frame);
+
+  async function finishGame() {
+    let r;
+    try { r = await api(`/api/app/game/${res.id}/finish`, { body: { hits } }); } catch (e) { r = { score, best: score }; }
+    SFX.play('success');
+    let board = [];
+    try { board = (await api('/api/app/game')).board || []; } catch (e) {}
+    await refreshMe();
+    const left = S.me.season ? S.me.season.game.attempts_left : 0;
+    el.innerHTML = `<div class="game-top"><span class="label accent">PUMPKIN RUSH</span><button class="g-close" id="gClose">×</button></div>
+      <div class="g-result">
+        <span class="label">${esc(L('game_result'))}</span>
+        <div class="big-num num" style="margin-top:8px">${r.score}</div>
+        <p style="margin-top:12px;font-weight:600">${esc(L('game_best'))}: ${r.best ?? r.score}${r.place ? ' · ' + esc(L('game_place', { n: r.place })) : ''}</p>
+        ${boardList(board)}
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:26px">
+          ${left ? `<button class="btn" id="gAgain">${esc(L('game_again'))} (${left})</button>` : ''}
+          <button class="btn plain" id="gDone" style="background:none;color:var(--ink);border:2px solid var(--ink)">${esc(L('game_close'))}</button>
+        </div>
+      </div>`;
+    const close = () => { el.remove(); if (S.tab === 'home') renderHome(); };
+    $('#gClose').onclick = close;
+    $('#gDone').onclick = close;
+    const again = $('#gAgain'); if (again) again.onclick = () => { el.remove(); startGame(); };
+  }
+}
+
 /* ---------------- splash ----------------
-   68 frames at 20 fps, 20 per sheet (5x4, 405x720 each), then a crisp full
+   32 frames at 20 fps (the logo moment only), 20 per sheet (5x4, 405x720 each), then a crisp full
    resolution final frame for the hold. The clock only runs while the frame
    it needs is loaded, so a slow sheet pauses the picture instead of skipping.
    Sound plays if the webview allows it; otherwise a small ЗВУК button.
    Tap to skip. If nothing has loaded within 2.5 s the launch goes straight on. */
 
-const SPLASH = { fps: 20, frames: 68, cols: 5, perSheet: 20, fw: 405, fh: 720, sheets: 4, hold: 550 };
+const SPLASH = { fps: 20, frames: 32, cols: 5, perSheet: 20, fw: 405, fh: 720, sheets: 2, hold: 450 };
 
 // Next frame from requestAnimationFrame, or from a timer if the webview is
 // not painting (opening animation, background): the splash must never freeze.
@@ -1113,7 +1598,7 @@ function playSplash() {
     soundBtn.addEventListener('click', e => {
       e.stopPropagation();
       soundBtn.classList.remove('show');
-      try { audio.currentTime = Math.min(clock, 3.3); } catch (err) {}
+      try { audio.currentTime = Math.min(clock, 2.0); } catch (err) {}
       audio.play().catch(() => {});
     });
 

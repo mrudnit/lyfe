@@ -19,6 +19,7 @@ from lyfe.models.reward import (
     RewardKind,
     RewardRedemption,
 )
+from lyfe.models.ticket import GameSession, Ticket, TicketProvider
 from lyfe.models.user import User
 
 __all__ = [
@@ -32,6 +33,7 @@ __all__ = [
     "Event",
     "EventStatus",
     "EventTrack",
+    "GameSession",
     "PointTransaction",
     "PointsReason",
     "RedemptionStatus",
@@ -40,6 +42,8 @@ __all__ = [
     "RewardRedemption",
     "RequestSource",
     "Track",
+    "Ticket",
+    "TicketProvider",
     "TrackRequest",
     "TrackStatus",
     "TrackVote",
