@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light">
 <title>LYFE</title>
-<link rel="preload" href="/static/app/logo.jpg" as="image">
-<link rel="stylesheet" href="/static/app/fonts/fonts.css">
+<link rel="preload" href="/static/app/logo-ink.png?v=__ASSET_V__" as="image">
+<link rel="stylesheet" href="/static/app/fonts/fonts.css?v=__ASSET_V__">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   /* Paper and ink. No cards, no frames: hierarchy comes from type size,
@@ -73,7 +73,8 @@
     margin-bottom: 26px;
   }
   /* the logo file has a lot of white around the mark; crop to the letters */
-  .mark { width: 92px; height: 36px; background: url(/static/app/logo.jpg) 50% 53% / 106px auto no-repeat; mix-blend-mode: multiply; margin-left: -6px; }
+  /* ink on transparency: sits on any paper colour without a white box */
+  .mark { width: 88px; height: 44px; background: url(/static/app/logo-ink.png?v=__ASSET_V__) 0 50% / contain no-repeat; }
 
   .meta {
     font-family: var(--font-display); font-size: 11px; font-weight: 600;
@@ -269,23 +270,52 @@
      SEASON off in the config brings back the plain black and white. */
   :root { --accent: var(--ink); --on-accent: var(--paper); }
   :root[data-season="halloween"] {
-    --paper: #fffaf3;
-    --rule: #eee2d3;
-    --accent: #ff6a13;
-    --accent-deep: #c2410c;
-    --on-accent: #160b03;
+    --paper: #fff1e0;          /* pumpkin cream, clearly not white */
+    --rule: #f2d4b4;
+    --ink-2: #6b4a32;
+    --ink-3: #b0876a;
+    --accent: #ff5a00;
+    --accent-deep: #c24100;
+    --on-accent: #1a0c02;
   }
-  :root[data-season="halloween"] .tabbar { background: rgba(255, 250, 243, .94); }
+  /* primary actions turn pumpkin */
+  :root[data-season="halloween"] .btn { background: var(--accent); color: var(--on-accent); }
+  :root[data-season="halloween"] .btn::after { color: var(--on-accent); }
+  :root[data-season="halloween"] .add { background: var(--accent); color: var(--on-accent); }
+  :root[data-season="halloween"] .add:disabled { background: none; color: var(--ink); }
+  /* the big numbers and the main rules carry the colour */
+  :root[data-season="halloween"] .count .big-num,
+  :root[data-season="halloween"] .wallet .big-num,
+  :root[data-season="halloween"] .sheet .big-num,
+  :root[data-season="halloween"] .stats b,
+  :root[data-season="halloween"] .tracks-mine .p,
+  :root[data-season="halloween"] .board li:nth-child(-n+3) .pos,
+  :root[data-season="halloween"] .label.accent,
+  :root[data-season="halloween"] .live { color: var(--accent); }
+  :root[data-season="halloween"] .live::before { background: var(--accent); }
+  :root[data-season="halloween"] .rule:not(.soft),
+  :root[data-season="halloween"] .board,
+  :root[data-season="halloween"] .stats,
+  :root[data-season="halloween"] .res li:first-child { border-color: var(--accent); }
+  :root[data-season="halloween"] .rule:not(.soft) { background: var(--accent); height: 2px; }
+  :root[data-season="halloween"] .field { border-bottom-color: var(--accent); }
+  :root[data-season="halloween"] .tabbar { background: rgba(255, 241, 224, .95); border-top: 2px solid var(--accent); }
+  :root[data-season="halloween"] .tab.on { color: var(--accent); }
   :root[data-season="halloween"] .tab.on::before,
   :root[data-season="halloween"] .slot.on { background: var(--accent); }
-  :root[data-season="halloween"] .wallet .big-num,
-  :root[data-season="halloween"] .label.accent { color: var(--accent); }
   :root[data-season="halloween"] .link { border-bottom-color: var(--accent); }
-  :root[data-season="halloween"] .btn::after { color: var(--accent); }
-  :root[data-season="halloween"] .board li.pri { background: var(--accent); color: var(--on-accent); border-bottom-color: var(--accent); }
-  :root[data-season="halloween"] .board li.pri .tartist { color: #5a2a06; }
-  :root[data-season="halloween"] .board li.pri .act.boost { border-color: var(--on-accent); }
+  :root[data-season="halloween"] .board li.pri { background: var(--ink); color: var(--paper); border-bottom-color: var(--ink); }
+  :root[data-season="halloween"] .board li.pri .pos,
+  :root[data-season="halloween"] .board li.pri .tag { color: var(--accent); }
+  :root[data-season="halloween"] .toast { background: var(--ink); color: var(--accent); }
+  :root[data-season="halloween"] .sheet { border-top-color: var(--accent); }
   :root[data-season="halloween"] ::selection { background: var(--accent); color: var(--on-accent); }
+  .season-pill {
+    display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 6px;
+    background: var(--ink); color: var(--accent);
+    font-family: var(--font-display); font-size: 10px; font-weight: 800; letter-spacing: .16em;
+  }
+  .season-pill svg { width: 18px; height: 18px; }
 
   /* hidden pumpkins: small, slightly crooked, easy to miss */
   .hp { display: inline-grid; place-items: center; width: 30px; height: 30px; vertical-align: middle;
@@ -313,7 +343,6 @@
   .held { list-style: none; margin: 10px 0 0; padding: 0; }
   .held li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--rule); font-weight: 600; }
   .held li span:last-child { font-family: var(--font-display); font-size: 12px; letter-spacing: .08em; }
-  .sfx-row { display: flex; justify-content: space-between; align-items: center; margin-top: 26px; }
 
   /* ---------- PUMPKIN RUSH ---------- */
   .game { position: fixed; inset: 0; z-index: 90; background: var(--paper); display: flex; flex-direction: column;
@@ -367,7 +396,7 @@
 <!-- Launch: the outro of the promo — smoke, glitch, the mark, FEEL THE LYFE. -->
 <div class="splash" id="splash" aria-hidden="true">
   <canvas id="splashCanvas"></canvas>
-  <audio id="splashAudio" src="/static/app/splash/sound.m4a" preload="auto"></audio>
+  <audio id="splashAudio" src="/static/app/splash/sound.m4a?v=__ASSET_V__" preload="auto"></audio>
   <button class="sound" id="splashSound" type="button">ЗВУК</button>
 </div>
 
@@ -455,10 +484,11 @@ const COPY = {
     open_tg_t: 'Открой LYFE в Telegram', open_tg_s: 'Эта страница работает только внутри бота.',
     open_bot: 'Открыть бота',
     ticket_label: 'Билет', ticket_buy: 'Купить билет · GoOut',
+    ticket_soon: 'Билеты на эту ночь появятся здесь — через GoOut. Купишь, добавишь код, и на входе хватит одного экрана.',
     ticket_how: 'Билеты продаются через GoOut. Купи и добавь код билета сюда — он будет рядом с LYFE PASS, и на входе хватит одного экрана.',
     ticket_attach: 'У меня есть билет', ticket_have: 'Билет в LYFE', ticket_show: 'Показать на входе',
     ticket_sheet_t: 'Код билета GoOut', ticket_sheet_s: 'Он напечатан на билете под QR-кодом — в письме от GoOut или в их приложении.',
-    ticket_ph: 'Например: GO-8F3K2Q', ticket_save: 'Сохранить', ticket_remove: 'Убрать билет',
+    ticket_ph: 'Например: GO-8F3K2Q', ticket_save: 'Сохранить', ticket_remove: 'Убрать билет', ticket_change: 'Изменить',
     ticket_ok: 'Билет добавлен.', ticket_format: 'Не похоже на код билета. Проверь и попробуй ещё раз.',
     ticket_taken: 'Этот билет уже привязан к другому LYFE ID.', ticket_removed: 'Билет убран.',
     ticket_qr: 'Билет GoOut', held_title: 'Покажи на входе',
@@ -471,7 +501,6 @@ const COPY = {
     hunt: 'Найди {n} тыкв в приложении: +{p} за каждую, +{b} за все.', hunt_found: 'Тыква! +{p} LYFE POINTS · {k}/{n}',
     hunt_all: 'Все тыквы найдены! Бонус +{b}', door_title: 'На входе', door_take: 'Взять', door_yours: 'Твоё',
     door_q: '{c} LYFE POINTS — {name}.\n\nПокажи LYFE PASS на входе, тебе выдадут.', door_ok: 'Готово. Покажи LYFE PASS на входе.',
-    sfx: 'Звуки', sfx_on: 'Вкл', sfx_off: 'Выкл',
   },
   uk: {
     tab_home: 'НІЧ', tab_add: 'ТРЕК', tab_top: 'TOP', tab_me: 'MY LYFE',
@@ -533,10 +562,11 @@ const COPY = {
     open_tg_t: 'Відкрий LYFE у Telegram', open_tg_s: 'Ця сторінка працює лише всередині бота.',
     open_bot: 'Відкрити бота',
     ticket_label: 'Квиток', ticket_buy: 'Купити квиток · GoOut',
+    ticket_soon: 'Квитки на цю ніч з’являться тут — через GoOut. Купиш, додаси код, і на вході вистачить одного екрана.',
     ticket_how: 'Квитки продаються через GoOut. Купи й додай код квитка сюди — він буде поруч із LYFE PASS, і на вході вистачить одного екрана.',
     ticket_attach: 'У мене є квиток', ticket_have: 'Квиток у LYFE', ticket_show: 'Показати на вході',
     ticket_sheet_t: 'Код квитка GoOut', ticket_sheet_s: 'Він надрукований на квитку під QR-кодом — у листі від GoOut або в їхньому застосунку.',
-    ticket_ph: 'Наприклад: GO-8F3K2Q', ticket_save: 'Зберегти', ticket_remove: 'Прибрати квиток',
+    ticket_ph: 'Наприклад: GO-8F3K2Q', ticket_save: 'Зберегти', ticket_remove: 'Прибрати квиток', ticket_change: 'Змінити',
     ticket_ok: 'Квиток додано.', ticket_format: 'Не схоже на код квитка. Перевір і спробуй ще раз.',
     ticket_taken: 'Цей квиток уже прив’язаний до іншого LYFE ID.', ticket_removed: 'Квиток прибрано.',
     ticket_qr: 'Квиток GoOut', held_title: 'Покажи на вході',
@@ -549,11 +579,13 @@ const COPY = {
     hunt: 'Знайди {n} гарбузів у застосунку: +{p} за кожен, +{b} за всі.', hunt_found: 'Гарбуз! +{p} LYFE POINTS · {k}/{n}',
     hunt_all: 'Усі гарбузи знайдено! Бонус +{b}', door_title: 'На вході', door_take: 'Взяти', door_yours: 'Твоє',
     door_q: '{c} LYFE POINTS — {name}.\n\nПокажи LYFE PASS на вході, тобі видадуть.', door_ok: 'Готово. Покажи LYFE PASS на вході.',
-    sfx: 'Звуки', sfx_on: 'Увімк', sfx_off: 'Вимк',
   },
 };
 
 const BOT_USERNAME = '__BOT_USERNAME__';
+// Changes with every deploy: asset URLs carry it, so Telegram's webview cannot
+// keep showing last week's splash frames from its cache.
+const ASSET_V = '__ASSET_V__';
 const tg = window.Telegram && window.Telegram.WebApp;
 const INIT_DATA = (tg && tg.initData) || '';
 
@@ -580,74 +612,7 @@ function esc(s) {
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 function pad(n) { return String(n).padStart(2, '0'); }
-/* ---------------- sound ----------------
-   Small, soft interface sounds synthesised on the fly with Web Audio: no
-   files to download, nothing louder than a fingertip. Off switch in MY LYFE. */
-const SFX = (() => {
-  let ctx = null;
-  let on = true;
-  try { on = localStorage.getItem('lyfe_sfx') !== '0'; } catch (e) {}
-  function audio() {
-    if (!ctx) {
-      const C = window.AudioContext || window.webkitAudioContext;
-      if (!C) return null;
-      ctx = new C();
-    }
-    if (ctx.state === 'suspended') ctx.resume();
-    return ctx;
-  }
-  function tone(c, { f = 440, f2 = null, type = 'sine', dur = 0.12, vol = 0.12, delay = 0, lp = 4000 }) {
-    const t = c.currentTime + delay;
-    const o = c.createOscillator(), g = c.createGain(), filt = c.createBiquadFilter();
-    o.type = type;
-    o.frequency.setValueAtTime(f, t);
-    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
-    filt.type = 'lowpass'; filt.frequency.value = lp;
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(vol, t + 0.006);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(filt); filt.connect(g); g.connect(c.destination);
-    o.start(t); o.stop(t + dur + 0.02);
-  }
-  function noise(c, { dur = 0.05, vol = 0.08, f = 2500, q = 1.2, f2 = null, delay = 0 }) {
-    const t = c.currentTime + delay;
-    const len = Math.max(1, Math.floor(c.sampleRate * dur));
-    const buf = c.createBuffer(1, len, c.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
-    const src = c.createBufferSource(), filt = c.createBiquadFilter(), g = c.createGain();
-    src.buffer = buf;
-    filt.type = 'bandpass'; filt.Q.value = q;
-    filt.frequency.setValueAtTime(f, t);
-    if (f2) filt.frequency.exponentialRampToValueAtTime(f2, t + dur);
-    g.gain.value = vol;
-    src.connect(filt); filt.connect(g); g.connect(c.destination);
-    src.start(t);
-  }
-  const lib = {
-    tap:     c => noise(c, { dur: .025, vol: .09, f: 3200, q: 2.5 }),
-    tab:     c => { noise(c, { dur: .04, vol: .07, f: 1600, q: 1.5 }); tone(c, { f: 740, dur: .06, vol: .025 }); },
-    open:    c => noise(c, { dur: .22, vol: .05, f: 700, f2: 2600, q: .7 }),
-    pop:     c => tone(c, { f: 420, f2: 900, dur: .09, vol: .14, type: 'triangle', lp: 2500 }),
-    success: c => { tone(c, { f: 660, dur: .14, vol: .07 }); tone(c, { f: 990, dur: .22, vol: .07, delay: .07 }); },
-    heart:   c => { tone(c, { f: 360, f2: 520, dur: .08, vol: .1, type: 'triangle', lp: 1800 }); tone(c, { f: 520, dur: .1, vol: .05, delay: .08 }); },
-    boost:   c => { tone(c, { f: 220, f2: 880, dur: .32, vol: .07, type: 'sawtooth', lp: 1400 }); tone(c, { f: 1320, dur: .18, vol: .04, delay: .26 }); },
-    coin:    c => { tone(c, { f: 988, dur: .07, vol: .08, type: 'triangle' }); tone(c, { f: 1480, dur: .16, vol: .07, type: 'triangle', delay: .06 }); },
-    spooky:  c => { [392, 466, 587].forEach((f, i) => tone(c, { f, f2: f * .94, dur: .7, vol: .05, delay: i * .06 })); noise(c, { dur: .4, vol: .03, f: 500, f2: 1400, q: .5 }); },
-    ghost:   c => tone(c, { f: 320, f2: 110, dur: .28, vol: .09, type: 'sawtooth', lp: 900 }),
-    error:   c => tone(c, { f: 190, f2: 130, dur: .14, vol: .09, type: 'triangle', lp: 800 }),
-    tick:    c => tone(c, { f: 1100, dur: .035, vol: .05, type: 'triangle' }),
-    go:      c => { tone(c, { f: 523, dur: .1, vol: .08 }); tone(c, { f: 784, dur: .2, vol: .08, delay: .08 }); },
-  };
-  return {
-    play(name) { if (!on) return; try { const c = audio(); if (c && lib[name]) lib[name](c); } catch (e) {} },
-    get on() { return on; },
-    set(value) { on = value; try { localStorage.setItem('lyfe_sfx', value ? '1' : '0'); } catch (e) {} },
-  };
-})();
-
 function haptic(kind) {
-  SFX.play(kind === 'ok' ? 'success' : (kind === 'error' || kind === 'warning') ? 'error' : 'tap');
   try {
     if (!tg || !tg.HapticFeedback) return;
     if (kind === 'ok' || kind === 'error' || kind === 'warning') tg.HapticFeedback.notificationOccurred(kind === 'ok' ? 'success' : kind);
@@ -742,7 +707,7 @@ function go(tab, opts = {}) {
   if (tab === 'top') loadTop();
   if (tab === 'me') renderMe();
 }
-document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { SFX.play('tab'); try { tg && tg.HapticFeedback && tg.HapticFeedback.selectionChanged(); } catch (e) {} go(b.dataset.tab); }));
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { try { tg && tg.HapticFeedback && tg.HapticFeedback.selectionChanged(); } catch (e) {} go(b.dataset.tab); }));
 
 async function refreshMe() {
   S.me = await api('/api/app/me');
@@ -750,6 +715,11 @@ async function refreshMe() {
   document.documentElement.lang = lang;
   if (S.me.season) document.documentElement.dataset.season = S.me.season.name;
   else delete document.documentElement.dataset.season;
+  try {
+    const paper = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim() || '#ffffff';
+    tg && tg.setHeaderColor(paper); tg && tg.setBackgroundColor(paper);
+    tg && tg.setBottomBarColor && tg.setBottomBarColor(paper);
+  } catch (e) {}
   document.querySelectorAll('[data-l]').forEach(el => { el.textContent = L(el.dataset.l); });
 }
 
@@ -782,7 +752,7 @@ function renderHome() {
   const slots = Array.from({ length: rules().requests_max }, (_, i) => `<span class="slot${i < tn.requests_used ? ' on' : ''}"></span>`).join('');
   const canAdd = ev.accepts_requests && tn.requests_used < rules().requests_max;
 
-  view.innerHTML = topline(S.me.season ? `<span class="label accent">${esc(L('season_label'))}</span>` : '') + `
+  view.innerHTML = topline(S.me.season ? `<span class="season-pill">${ART.pumpkin}${esc(L('season_label'))}</span>` : '') + `
     <div class="label">${esc(L('presents'))}</div>
     <h1 class="mega" style="margin-top:10px">${esc(ev.title)}</h1>
     <div class="meta">${[ev.date, ev.time, ev.venue, ev.city].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('')}</div>
@@ -966,7 +936,6 @@ async function submitRequest(body, button) {
   if (res.status === 'ALREADY_REQUESTED') { haptic('warning'); toast(L('already')); if (button) button.disabled = false; return; }
 
   haptic('ok');
-  SFX.play('pop');
   S.query = ''; S.search = null;
   await refreshMe();
   rerender();
@@ -1059,7 +1028,7 @@ async function doVote(item, button) {
   setPoints(res.points);
   const msg = { VOTED: 'vote_done', ALREADY_VOTED: 'vote_already', OWN_TRACK: 'vote_own', EVENT_CLOSED: 'vote_closed' }[res.status];
   if (msg) toast(L(msg));
-  if (res.status === 'VOTED') { SFX.play('heart'); item.voted = true; item.score += 1; item.votes += 1; renderTop(); }
+  if (res.status === 'VOTED') { item.voted = true; item.score += 1; item.votes += 1; renderTop(); }
 }
 
 async function doBoost(item) {
@@ -1071,8 +1040,7 @@ async function doBoost(item) {
   if (!await confirmBox(L('boost_q_t'), L('boost_q', { c, track: name, left }), L('boost_go'))) return false;
   let res;
   try { res = await api('/api/app/boost/' + item.id, { method: 'POST' }); } catch (e) { return false; }
-  if (res.status === 'BOOSTED') {
-    SFX.play('boost'); toast(L('boost_done', { c }));
+  if (res.status === 'BOOSTED') { toast(L('boost_done', { c }));
     setPoints(res.points);
     if (S.me.tonight) S.me.tonight.boosts_used = res.boosts_used;
     return true;
@@ -1105,9 +1073,8 @@ function renderMe() {
     <div id="passExtra"></div>
 
     ${walletBlock(user)}
-    <div class="sfx-row"><span class="label">${esc(L('sfx'))}</span><button class="link" id="sfx">${esc(SFX.on ? L('sfx_on') : L('sfx_off'))}</button></div>`;
+`;
   bindWallet();
-  $('#sfx').onclick = () => { SFX.set(!SFX.on); $('#sfx').textContent = SFX.on ? L('sfx_on') : L('sfx_off'); SFX.play('tap'); };
 
   api('/api/app/pass').then(p => {
     const box = $('#qr'); if (box) box.innerHTML = p.svg;
@@ -1233,7 +1200,6 @@ async function openPass() {
 /* ---------------- sheet ---------------- */
 
 function openSheet(html) {
-  SFX.play('open');
   $('#sheet').innerHTML = `<button class="close" id="sheetclose" aria-label="close">×</button>` + html;
   $('#sheetclose').onclick = closeSheet;
   $('#scrim').classList.add('show'); $('#sheet').classList.add('show');
@@ -1286,7 +1252,6 @@ document.addEventListener('click', async e => {
   el.classList.add('got');
   setTimeout(() => el.remove(), 650);
   if (res.status === 'FOUND') {
-    SFX.play('spooky');
     try { tg && tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success'); } catch (err) {}
     toast(res.bonus
       ? L('hunt_all', { b: res.bonus })
@@ -1299,11 +1264,21 @@ document.addEventListener('click', async e => {
 
 function ticketBlock(ev) {
   const t = S.me.ticket;
-  if (!ev.ticket_url && !t) return '';
+  if (!ev.ticket_url && !t) {
+    // No GoOut page yet: say where tickets will be, and let anyone who
+    // already has one attach it.
+    return `<div class="rule"></div><span class="label">${esc(L('ticket_label'))}</span>
+      <p class="muted" style="margin:8px 0 14px">${esc(L('ticket_soon'))}</p>
+      <button class="link" id="ticketAttach">${esc(L('ticket_attach'))} +</button>`;
+  }
   if (t) {
     return `<div class="rule"></div><span class="label">${esc(L('ticket_label'))}</span>
-      <div class="ticket-have" style="margin-top:8px"><b>${esc(L('ticket_have'))} ✓</b><button class="link" id="ticketEdit">GoOut · ${esc(t.code)}</button></div>
-      <div style="margin-top:14px"><button class="link" id="ticketShow">${esc(L('ticket_show'))} →</button></div>`;
+      <div class="ticket-have" style="margin-top:8px"><b>${esc(L('ticket_have'))} ✓</b></div>
+      <p class="muted" style="margin-top:4px">GoOut · ${esc(t.code)}</p>
+      <div style="display:flex;gap:22px;flex-wrap:wrap;margin-top:14px">
+        <button class="link" id="ticketShow">${esc(L('ticket_show'))} →</button>
+        <button class="link" id="ticketEdit">${esc(L('ticket_change'))}</button>
+      </div>`;
   }
   return `<div class="rule"></div><span class="label">${esc(L('ticket_label'))}</span>
     <p class="muted" style="margin:8px 0 16px">${esc(L('ticket_how'))}</p>
@@ -1374,7 +1349,7 @@ function loadDoorRewards() {
       if (!await confirmBox(it.name, L('door_q', { c: it.cost, name: it.name }), L('door_take'))) return;
       let res;
       try { res = await api(`/api/app/rewards/${it.id}/buy`, { method: 'POST' }); } catch (e) { return; }
-      if (res.status === 'OK') { SFX.play('coin'); toast(L('door_ok')); setPoints(res.points); }
+      if (res.status === 'OK') { toast(L('door_ok')); setPoints(res.points); }
       else {
         haptic('warning');
         toast({ NOT_ENOUGH_POINTS: L('boost_poor', { c: it.cost, have: res.points }), LIMIT_REACHED: L('door_yours') + ' ✓' }[res.status] || L('error'));
@@ -1466,19 +1441,16 @@ async function startGame() {
     f.style.color = piece.value < 0 ? 'var(--ink)' : 'var(--accent)';
     f.textContent = (piece.value > 0 ? '+' : '−') + Math.abs(piece.value);
     field.appendChild(f); setTimeout(() => f.remove(), 700);
-    SFX.play(piece.kind === 'ghost' ? 'ghost' : piece.kind === 'gold' ? 'coin' : 'pop');
     try { tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred(piece.kind === 'ghost' ? 'heavy' : 'light'); } catch (err) {}
   });
 
   // 3-2-1
   for (const n of [3, 2, 1]) {
     if (aborted) return;
-    $('#gCount').textContent = n; SFX.play('tick');
-    await new Promise(r => setTimeout(r, 650));
+    $('#gCount').textContent = n; await new Promise(r => setTimeout(r, 650));
   }
   if (aborted) return;
-  $('#gCount').textContent = L('game_go'); SFX.play('go');
-  await new Promise(r => setTimeout(r, 350));
+  $('#gCount').textContent = L('game_go'); await new Promise(r => setTimeout(r, 350));
   field.innerHTML = '';
   t0 = performance.now();
 
@@ -1508,7 +1480,6 @@ async function startGame() {
   async function finishGame() {
     let r;
     try { r = await api(`/api/app/game/${res.id}/finish`, { body: { hits } }); } catch (e) { r = { score, best: score }; }
-    SFX.play('success');
     let board = [];
     try { board = (await api('/api/app/game')).board || []; } catch (e) {}
     await refreshMe();
@@ -1585,9 +1556,9 @@ function playSplash() {
   const sheets = [];
   const loading = [];
   for (let i = 0; i < SPLASH.sheets; i++) {
-    loading[i] = loadImage(`/static/app/splash/s${i + 1}.jpg`).then(img => (sheets[i] = img));
+    loading[i] = loadImage(`/static/app/splash/s${i + 1}.jpg?v=${ASSET_V}`).then(img => (sheets[i] = img));
   }
-  const finalLoad = loadImage('/static/app/splash/final.jpg');
+  const finalLoad = loadImage(`/static/app/splash/final.jpg?v=${ASSET_V}`);
 
   let clock = 0, last = 0, started = false;
   return new Promise(resolve => {
