@@ -265,101 +265,33 @@
   @keyframes scan { from { transform: translateX(-100%); } to { transform: translateX(400%); } }
 
   /* ---------- splash ----------
-     Everything that moves here is transform or opacity, which the phone's GPU
-     composites on its own thread. The smoke is an SVG filter rendered exactly
-     once, at half resolution (it is blurry anyway), and never re-computed. */
+     The outro of the LYFE promo, cut to 3.4 s and played as a video: a
+     decoded stream costs the phone almost nothing, unlike live SVG filters.
+     Its first frame is white, so the page behind never flashes. */
   .splash {
     position: fixed; inset: 0; z-index: 100; background: var(--paper);
-    display: grid; place-items: center; overflow: hidden;
+    overflow: hidden;
     transition: opacity .45s ease, transform .55s cubic-bezier(.7,0,.3,1);
   }
-  .splash.out { opacity: 0; transform: scale(1.06); pointer-events: none; }
-  .stage { position: relative; width: min(86vw, 420px); aspect-ratio: 1; }
-  .stage > * { position: absolute; inset: 0; will-change: transform, opacity; opacity: 0; }
-  .stage img, .stage .sharp { width: 100%; height: 100%; display: block; }
-  .stage .smoke { position: absolute; left: 0; top: 0; width: 50%; height: 50%; transform: scale(2); transform-origin: 0 0; will-change: opacity; overflow: visible; }
-  .stage .sharp { position: absolute; inset: 0; opacity: 0; will-change: opacity; }
-  .partL .sharp { -webkit-mask-image: linear-gradient(90deg, #000 36%, transparent 62%); mask-image: linear-gradient(90deg, #000 36%, transparent 62%); }
-  .partP .sharp { -webkit-mask-image: linear-gradient(90deg, transparent 42%, #000 66%); mask-image: linear-gradient(90deg, transparent 42%, #000 66%); }
-
-  .splash.go .partL { animation: flyL 2.1s cubic-bezier(.22,.68,.18,1) both; }
-  .splash.go .partP { animation: flyP 2.1s cubic-bezier(.22,.68,.18,1) both; }
-  .splash.go .partL .smoke, .splash.go .partP .smoke { animation: smokeOut 2.1s ease-in both; }
-  .splash.go .partL .sharp, .splash.go .partP .sharp { animation: sharpIn 2.1s ease-in both; }
-  .splash.go .haze { animation: haze 2.4s ease-out both; }
-  .splash.go .whole { animation: wholeIn .4s 1.9s ease both; }
-  .splash.go .partL, .splash.go .partP { animation-fill-mode: both; }
-  .splash.done .partL, .splash.done .partP, .splash.done .haze { visibility: hidden; }
-
-  @keyframes flyL {
-    0%   { opacity: 0; transform: translate(-78%, -26%) rotate(-74deg) scale(1.7); }
-    12%  { opacity: 1; }
-    55%  { transform: translate(-14%, 6%) rotate(-12deg) scale(1.12); }
-    100% { opacity: 1; transform: none; }
+  .splash.out { opacity: 0; transform: scale(1.04); pointer-events: none; }
+  .splash video {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; object-position: 50% 42%; background: var(--paper);
   }
-  @keyframes flyP {
-    0%   { opacity: 0; transform: translate(78%, 30%) rotate(60deg) scale(1.7); }
-    12%  { opacity: 1; }
-    55%  { transform: translate(12%, -8%) rotate(10deg) scale(1.12); }
-    100% { opacity: 1; transform: none; }
+  .splash .sound {
+    position: absolute; right: 14px; bottom: calc(18px + var(--safe-b));
+    font-family: var(--font-display); font-size: 10px; font-weight: 700; letter-spacing: .16em;
+    padding: 10px 12px; color: var(--ink-2); opacity: 0; transition: opacity .3s;
   }
-  @keyframes smokeOut { 0%, 45% { opacity: 1; } 100% { opacity: 0; } }
-  @keyframes sharpIn { 0%, 40% { opacity: 0; } 100% { opacity: 1; } }
-  @keyframes haze {
-    0%   { opacity: 0; transform: translate(-6%, 4%) scale(1.3); }
-    40%  { opacity: .4; }
-    100% { opacity: 0; transform: translate(10%, -6%) scale(1.6); }
-  }
-  @keyframes wholeIn { from { opacity: 0; } to { opacity: 1; } }
-  @media (prefers-reduced-motion: reduce) {
-    .splash.go .partL, .splash.go .partP, .splash.go .haze { animation: none; opacity: 0; }
-    .splash.go .whole { animation: wholeIn .3s both; }
-  }
-
-  .splash .word {
-    position: absolute; bottom: calc(48px + var(--safe-b)); left: 0; right: 0; text-align: center;
-    font-family: var(--font-display); font-weight: 700; font-size: 10px; letter-spacing: .5em;
-    opacity: 0;
-  }
-  .splash.go .word { animation: fade .6s 1.7s ease forwards; }
-  @keyframes fade { to { opacity: 1; } }
+  .splash .sound.show { opacity: 1; }
 </style>
 </head>
 <body>
 
-<!-- Launch: the two letters fly in through smoke and settle into the mark. -->
+<!-- Launch: the outro of the promo — smoke, glitch, the mark, FEEL THE LYFE. -->
 <div class="splash" id="splash" aria-hidden="true">
-  <svg width="0" height="0" style="position:absolute">
-    <defs>
-      <filter id="smokeA" x="-40%" y="-40%" width="180%" height="180%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.024 0.04" numOctaves="2" seed="7" result="n"/>
-        <feDisplacementMap in="SourceGraphic" in2="n" scale="80" xChannelSelector="R" yChannelSelector="G" result="m"/>
-        <feGaussianBlur in="m" stdDeviation="5"/>
-      </filter>
-      <filter id="smokeB" x="-60%" y="-60%" width="220%" height="220%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.016 0.03" numOctaves="2" seed="3" result="n"/>
-        <feDisplacementMap in="SourceGraphic" in2="n" scale="110" xChannelSelector="R" yChannelSelector="G" result="m"/>
-        <feGaussianBlur in="m" stdDeviation="10"/>
-      </filter>
-      <linearGradient id="fadeL" x1="0" x2="1"><stop offset="0.36" stop-color="#fff"/><stop offset="0.62" stop-color="#fff" stop-opacity="0"/></linearGradient>
-      <linearGradient id="fadeP" x1="0" x2="1"><stop offset="0.42" stop-color="#fff" stop-opacity="0"/><stop offset="0.66" stop-color="#fff"/></linearGradient>
-      <mask id="maskL" maskUnits="userSpaceOnUse" x="0" y="0" width="320" height="320"><rect width="320" height="320" fill="url(#fadeL)"/></mask>
-      <mask id="maskP" maskUnits="userSpaceOnUse" x="0" y="0" width="320" height="320"><rect width="320" height="320" fill="url(#fadeP)"/></mask>
-    </defs>
-  </svg>
-  <div class="stage">
-    <div class="haze"><svg class="smoke" viewBox="0 0 320 320"><image class="logo-src" width="320" height="320" filter="url(#smokeB)"/></svg></div>
-    <div class="partL">
-      <svg class="smoke" viewBox="0 0 320 320"><g filter="url(#smokeA)"><image class="logo-src" width="320" height="320" mask="url(#maskL)"/></g></svg>
-      <img class="sharp logo-src" alt="">
-    </div>
-    <div class="partP">
-      <svg class="smoke" viewBox="0 0 320 320"><g filter="url(#smokeA)"><image class="logo-src" width="320" height="320" mask="url(#maskP)"/></g></svg>
-      <img class="sharp logo-src" alt="">
-    </div>
-    <img class="whole logo-src" alt="LYFE">
-  </div>
-  <div class="word">FEEL THE LYFE</div>
+  <video id="splashVideo" src="/static/app/splash.mp4" playsinline webkit-playsinline preload="auto" muted></video>
+  <button class="sound" id="splashSound" type="button">ЗВУК</button>
 </div>
 
 <main class="view" id="view"></main>
@@ -1117,64 +1049,63 @@ function renderOutside() {
 }
 
 /* ---------------- splash ----------------
-   The mark is cut into its two letters. Each flies in from its own side as a
-   smoke-smeared copy and sharpens as it lands; a haze copy drifts behind.
-   The logo file has a white background, so it is first turned into black ink
-   on transparency once, which lets the layers overlap without blend modes. */
+   Sound first if the phone allows it. Webviews only allow audible autoplay
+   after a tap inside the page, and opening a Mini App is a tap in Telegram,
+   not in the page — so on most phones this falls back to muted, and a small
+   ЗВУК button lets the guest hear it. Tapping anywhere else skips. Whatever
+   happens (no video support, slow network), the launch is never held up. */
 
-function inkLogo() {
-  return new Promise(resolve => {
-    setTimeout(() => resolve('/static/app/logo.jpg'), 1200);
-    const img = new Image();
-    img.onload = () => {
-      try {
-        const size = 640;
-        const c = document.createElement('canvas');
-        c.width = c.height = size;
-        const ctx = c.getContext('2d');
-        ctx.drawImage(img, 0, 0, size, size);
-        const data = ctx.getImageData(0, 0, size, size);
-        const px = data.data;
-        for (let i = 0; i < px.length; i += 4) {
-          const lum = (px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114);
-          px[i + 3] = Math.max(0, Math.min(255, (255 - lum) * 1.08));
-          px[i] = px[i + 1] = px[i + 2] = 10;
-        }
-        ctx.putImageData(data, 0, 0);
-        c.toBlob(blob => resolve(blob ? URL.createObjectURL(blob) : img.src), 'image/png');
-      } catch (e) { resolve(img.src); }
-    };
-    img.onerror = () => resolve(null);
-    img.src = '/static/app/logo.jpg';
-  });
-}
-
-async function playSplash() {
+function playSplash() {
   const splash = $('#splash');
-  const src = await inkLogo();
-  if (src) {
-    splash.querySelectorAll('.logo-src').forEach(el => {
-      if (el.tagName.toLowerCase() === 'img') el.src = src;
-      else el.setAttribute('href', src);
-    });
-    // never let a slow decode hold the launch hostage
-    await Promise.race([
-      Promise.all([...splash.querySelectorAll('img.logo-src')].map(i => i.decode ? i.decode().catch(() => {}) : null)),
-      new Promise(r => setTimeout(r, 400)),
-    ]);
-  }
-  // two frames so the first paint (and the one-time smoke render) happens
-  // before the clock starts
-  await new Promise(r => { requestAnimationFrame(() => requestAnimationFrame(r)); setTimeout(r, 80); });
-  splash.classList.add('go');
+  const video = $('#splashVideo');
+  const soundBtn = $('#splashSound');
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  await new Promise(r => setTimeout(r, reduce ? 350 : 2350));
-  splash.classList.add('done');
+
+  return new Promise(resolve => {
+    let finished = false;
+    const finish = () => { if (!finished) { finished = true; resolve(); } };
+    if (reduce || !video || !video.canPlayType || !video.canPlayType('video/mp4')) { setTimeout(finish, 300); return; }
+
+    video.addEventListener('ended', finish);
+    video.addEventListener('error', finish);
+    // hard ceiling: a stalled download must not trap the guest on a white screen
+    const ceiling = setTimeout(finish, 6000);
+    video.addEventListener('ended', () => clearTimeout(ceiling));
+
+    // if playback has not started soon, skip the splash rather than wait
+    const startGuard = setTimeout(() => { if (video.paused || video.currentTime === 0) finish(); }, 2000);
+    video.addEventListener('playing', () => clearTimeout(startGuard), { once: true });
+
+    splash.addEventListener('click', e => {
+      if (e.target === soundBtn) return;
+      finish();
+    });
+    soundBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      video.muted = false;
+      video.volume = 1;
+      soundBtn.classList.remove('show');
+    });
+
+    video.muted = false;
+    video.play().catch(() => {
+      video.muted = true;
+      soundBtn.classList.add('show');
+      video.play().catch(finish);
+    });
+  });
 }
 function hideSplash() {
   const splash = $('#splash');
+  if (!splash) return;
+  const video = $('#splashVideo');
   splash.classList.add('out');
-  setTimeout(() => splash.remove(), 600);
+  // let the last sound tail fade with the picture
+  if (video && !video.muted) {
+    let v = video.volume;
+    const fade = setInterval(() => { v = Math.max(0, v - 0.12); video.volume = v; if (v === 0) clearInterval(fade); }, 40);
+  }
+  setTimeout(() => { if (video) video.pause(); splash.remove(); }, 600);
 }
 
 /* ---------------- boot ---------------- */
