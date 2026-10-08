@@ -133,12 +133,12 @@ async def _get_or_create_track(session: AsyncSession, resolved: ResolvedTrack) -
         normalized_key=key,
         needs_review=resolved.provider == "manual",
     )
-    session.add(track)
     try:
-        await session.flush()
+        async with session.begin_nested():
+            session.add(track)
+            await session.flush()
     except IntegrityError:
-        # Another request created the same track a millisecond earlier.
-        await session.rollback()
+        # Another guest created the same track a millisecond earlier.
         track = await session.scalar(select(Track).where(Track.normalized_key == key))
         if track is None:
             raise
@@ -157,11 +157,11 @@ async def _get_or_create_event_track(
         return event_track
 
     event_track = EventTrack(event_id=event_id, track_id=track_id, status=TrackStatus.NEW)
-    session.add(event_track)
     try:
-        await session.flush()
+        async with session.begin_nested():
+            session.add(event_track)
+            await session.flush()
     except IntegrityError:
-        await session.rollback()
         event_track = await session.scalar(
             select(EventTrack).where(
                 EventTrack.event_id == event_id, EventTrack.track_id == track_id
@@ -186,6 +186,11 @@ async def add_request(
     if not event.accepts_requests(now):
         return AddOutcome(status=AddResult.EVENT_CLOSED)
 
+    from lyfe.core.services import user_service
+
+    # One guest's adds run one at a time, so two quick taps cannot both slip
+    # under the three-track limit.
+    await user_service.lock_user(session, user_id)
     used = await count_user_requests(session, user_id=user_id, event_id=event.id)
 
     event_track = await find_in_event(session, event_id=event.id, resolved=resolved)
@@ -348,6 +353,9 @@ async def add_vote(session: AsyncSession, *, user_id: int, event_track_id: int) 
     if event is None or not event.accepts_requests(datetime.now(timezone.utc)):
         return VoteResult.EVENT_CLOSED
 
+    from lyfe.core.services import user_service
+
+    await user_service.lock_user(session, user_id)
     own = await session.scalar(
         select(TrackRequest.id).where(
             TrackRequest.event_track_id == event_track_id,
@@ -368,13 +376,13 @@ async def add_vote(session: AsyncSession, *, user_id: int, event_track_id: int) 
         return VoteResult.ALREADY_VOTED
 
     vote = TrackVote(event_track_id=event_track_id, user_id=user_id)
-    session.add(vote)
-    event_track.votes_count += 1
     try:
-        await session.flush()
+        async with session.begin_nested():
+            session.add(vote)
+            await session.flush()
     except IntegrityError:
-        await session.rollback()
         return VoteResult.ALREADY_VOTED
+    event_track.votes_count += 1
 
     # Points for the first few likes only.
     paid_votes = await session.scalar(

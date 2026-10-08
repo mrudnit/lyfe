@@ -745,10 +745,8 @@ function renderHome() {
       <p class="muted" style="margin-top:16px">${esc(L('no_event_s'))}</p>
       <div class="rule"></div><span class="label">${esc(L('ticket_label'))}</span>
       <p class="muted" style="margin-top:8px">${esc(L('ticket_no_date'))}</p>
-      ${seasonBlock()}
-      ${walletBlock(user)}`;
+      ${seasonBlock()}`;
     bindSeason();
-    bindWallet();
     return;
   }
 
@@ -776,13 +774,11 @@ function renderHome() {
     <div class="slots">${slots}</div>
     ${canAdd ? `<button class="btn" id="goadd">${esc(L('add_track'))}</button>` : ''}
 
-    ${seasonBlock()}
-    ${walletBlock(user)}`;
+    ${seasonBlock()}`;
 
   const a = $('#goadd'); if (a) a.onclick = () => go('add');
   bindTicket(ev);
   bindSeason();
-  bindWallet();
 }
 function walletBlock(user) {
   // the whole row is the button: a big target for a thumb
@@ -1244,7 +1240,7 @@ const ART = {
 /* ---------------- season: pumpkin hunt ---------------- */
 
 function seasonPill() {
-  return S.me.season ? `<span class="season-pill">${ART.pumpkin}${esc(L('season_label'))}</span>` : '';
+  return '';
 }
 
 function hiddenPumpkin(id) {

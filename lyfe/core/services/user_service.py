@@ -7,6 +7,7 @@ possible to add the Mini App in Phase 2 without rewriting anything.
 from datetime import datetime, timezone
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from lyfe.core.lyfe_id import next_lyfe_id
@@ -48,9 +49,26 @@ async def get_or_create(
         language=resolve_language(language_code),
         last_seen_at=now,
     )
-    session.add(user)
-    await session.flush()
+    try:
+        # A brand-new guest often arrives twice at once (bot + Mini App).
+        async with session.begin_nested():
+            session.add(user)
+            await session.flush()
+    except IntegrityError:
+        existing = await get_by_telegram_id(session, tg_user_id)
+        if existing is None:
+            raise
+        return existing, False
     return user, True
+
+
+async def lock_user(session: AsyncSession, user_id: int) -> None:
+    """Make everything one guest does with points run one at a time.
+
+    Without it, two taps that arrive together both pass "is there room left?"
+    before either has written anything. The lock is a row lock on the guest,
+    held until the transaction ends."""
+    await session.execute(select(User.id).where(User.id == user_id).with_for_update())
 
 
 async def get_points_balance(session: AsyncSession, user_id: int) -> int:
