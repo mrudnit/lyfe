@@ -58,6 +58,10 @@ class Settings(BaseSettings):
     # Empty means the bot keeps working with chat buttons only.
     webapp_url: str = ""
 
+    # Seasonal skin and seasonal content (pumpkin hunt, mini game).
+    # "halloween" or empty for the plain look.
+    season: str = "halloween"
+
     # Web admin / DJ screen
     admin_secret_key: str = "change-me"
     web_host: str = "0.0.0.0"

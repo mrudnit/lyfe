@@ -21,7 +21,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from lyfe.config import get_settings
 from lyfe.core import pass_token, telegram_auth, track_resolver
-from lyfe.core.services import event_service, request_service, reward_service, user_service
+from lyfe.core.services import (
+    event_service,
+    request_service,
+    reward_service,
+    season_service,
+    user_service,
+)
 from lyfe.core.services.request_service import AddResult
 from lyfe.db import SessionFactory
 from lyfe.models import (
@@ -193,6 +199,8 @@ async def me(user: User = Depends(current_user), session: AsyncSession = Depends
         },
         "event": _event_json(event),
         "tonight": tonight,
+        "season": await _season_json(session, user, event),
+        "ticket": await _ticket_json(session, user, event),
         "rules": {
             "requests_max": settings.max_requests_per_user_per_event,
             "boosts_max": settings.max_boosts_per_event,
@@ -205,13 +213,34 @@ async def me(user: User = Depends(current_user), session: AsyncSession = Depends
     }
 
 
-@router.get("/api/app/pass")
-async def lyfe_pass(user: User = Depends(current_user)):
-    qr = segno.make(pass_token.build(user.id, settings.admin_secret_key), error="h")
+def _qr_svg(payload: str, scale: int = 8) -> str:
+    qr = segno.make(payload, error="m")
     buffer = io.BytesIO()
     # Black on white whatever the theme: a camera in a dark doorway needs contrast.
-    qr.save(buffer, kind="svg", scale=8, border=3, dark="#000000", light="#ffffff", xmldecl=False)
-    return {"svg": buffer.getvalue().decode(), "lyfe_id": user.lyfe_id, "name": user.name}
+    qr.save(buffer, kind="svg", scale=scale, border=3, dark="#000000", light="#ffffff", xmldecl=False)
+    return buffer.getvalue().decode()
+
+
+@router.get("/api/app/pass")
+async def lyfe_pass(user: User = Depends(current_user), session: AsyncSession = Depends(get_session)):
+    event = await event_service.get_next_event(session)
+    ticket = None
+    held = []
+    if event is not None:
+        found = await season_service.ticket_for(session, user_id=user.id, event_id=event.id)
+        if found is not None:
+            ticket = {"code": found.code, "svg": _qr_svg(found.code, scale=6)}
+        held = [
+            {"name": r.reward.name, "code": r.code}
+            for r in await reward_service.held_by_user(session, user_id=user.id, event_id=event.id)
+        ]
+    return {
+        "svg": _qr_svg(pass_token.build(user.id, settings.admin_secret_key)),
+        "lyfe_id": user.lyfe_id,
+        "name": user.name,
+        "ticket": ticket,
+        "held": held,
+    }
 
 
 @router.get("/api/app/history")
@@ -524,3 +553,188 @@ async def buy_priority(
         payload={"event_track_id": event_track_id},
     )
     return {"status": outcome.status, "points": outcome.balance}
+
+
+# --------------------------------------------------------------------------
+# Season: pumpkin hunt and PUMPKIN RUSH
+# --------------------------------------------------------------------------
+
+
+async def _season_json(session: AsyncSession, user: User, event: Event | None) -> dict | None:
+    if not settings.season or event is None:
+        return None
+    best = await season_service.best_score(session, user_id=user.id, event_id=event.id)
+    return {
+        "name": settings.season,
+        "pumpkins": list(season_service.PUMPKINS),
+        "found": await season_service.pumpkins_found(session, user_id=user.id, event_id=event.id),
+        "pumpkin_points": season_service.POINTS_PER_PUMPKIN,
+        "pumpkin_bonus": season_service.ALL_PUMPKINS_BONUS,
+        "game": {
+            "attempts_left": max(
+                0,
+                season_service.ATTEMPTS_PER_EVENT
+                - await season_service.attempts_used(session, user_id=user.id, event_id=event.id),
+            ),
+            "attempts": season_service.ATTEMPTS_PER_EVENT,
+            "best": best,
+            "prizes": list(season_service.PRIZES),
+            "seconds": season_service.GAME_SECONDS,
+        },
+    }
+
+
+@router.post("/api/app/pumpkin/{pumpkin}")
+async def pumpkin(
+    pumpkin: str,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    event = await _require_event(session)
+    if not settings.season:
+        return {"status": "OFF"}
+    outcome = await season_service.find_pumpkin(session, user=user, event=event, pumpkin=pumpkin)
+    return {
+        "status": outcome.status,
+        "found": outcome.found,
+        "gained": outcome.gained,
+        "bonus": outcome.bonus,
+        "points": await user_service.get_points_balance(session, user.id),
+    }
+
+
+@router.get("/api/app/game")
+async def game_board(user: User = Depends(current_user), session: AsyncSession = Depends(get_session)):
+    event = await event_service.get_next_event(session)
+    if event is None or not settings.season:
+        return {"available": False}
+    board = await season_service.leaderboard(session, event_id=event.id)
+    return {
+        "available": True,
+        "season": await _season_json(session, user, event),
+        "board": [
+            {"name": row["name"], "lyfe_id": row["lyfe_id"], "score": row["score"], "me": row["user_id"] == user.id}
+            for row in board
+        ],
+    }
+
+
+@router.post("/api/app/game/start")
+async def game_start(user: User = Depends(current_user), session: AsyncSession = Depends(get_session)):
+    event = await _require_event(session)
+    if not settings.season:
+        return {"status": "OFF"}
+    game = await season_service.start_game(session, user=user, event=event)
+    if game is None:
+        return {"status": "NO_ATTEMPTS"}
+    return {
+        "status": "OK",
+        "id": game.id,
+        "seconds": season_service.GAME_SECONDS,
+        "pieces": [piece.__dict__ for piece in season_service.schedule(game.seed)],
+    }
+
+
+@router.post("/api/app/game/{game_id}/finish")
+async def game_finish(
+    game_id: int,
+    payload: dict = Body(...),
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    hits = payload.get("hits") if isinstance(payload.get("hits"), list) else []
+    game = await season_service.finish_game(session, user=user, game_id=game_id, hits=hits)
+    if game is None:
+        return {"status": "UNKNOWN"}
+    event = await session.get(Event, game.event_id)
+    board = await season_service.leaderboard(session, event_id=event.id, limit=50)
+    place = next((i + 1 for i, row in enumerate(board) if row["user_id"] == user.id), None)
+    return {
+        "status": "OK",
+        "score": game.score,
+        "best": await season_service.best_score(session, user_id=user.id, event_id=event.id),
+        "place": place,
+        "attempts_left": max(
+            0,
+            season_service.ATTEMPTS_PER_EVENT
+            - await season_service.attempts_used(session, user_id=user.id, event_id=event.id),
+        ),
+    }
+
+
+# --------------------------------------------------------------------------
+# Tickets (GoOut)
+# --------------------------------------------------------------------------
+
+
+async def _ticket_json(session: AsyncSession, user: User, event: Event | None) -> dict | None:
+    if event is None:
+        return None
+    ticket = await season_service.ticket_for(session, user_id=user.id, event_id=event.id)
+    return {"code": ticket.code} if ticket else None
+
+
+@router.post("/api/app/ticket")
+async def ticket_attach(
+    payload: dict = Body(...),
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    event = await _require_event(session)
+    status = await season_service.attach_ticket(
+        session, user=user, event=event, code=str(payload.get("code") or "")[:200]
+    )
+    return {"status": status}
+
+
+@router.delete("/api/app/ticket")
+async def ticket_detach(user: User = Depends(current_user), session: AsyncSession = Depends(get_session)):
+    event = await _require_event(session)
+    await season_service.detach_ticket(session, user=user, event=event)
+    return {"status": "OK"}
+
+
+# --------------------------------------------------------------------------
+# Door rewards: bought here, handed over by whoever scans the LYFE PASS
+# --------------------------------------------------------------------------
+
+
+@router.get("/api/app/rewards")
+async def rewards(user: User = Depends(current_user), session: AsyncSession = Depends(get_session)):
+    event = await event_service.get_next_event(session)
+    if event is None:
+        return {"items": [], "held": []}
+    held = await reward_service.held_by_user(session, user_id=user.id, event_id=event.id)
+    held_ids = {r.reward_id for r in held}
+    return {
+        "items": [
+            {
+                "id": r.id,
+                "name": r.name,
+                "description": r.description,
+                "cost": r.cost_points,
+                "held": r.id in held_ids,
+            }
+            for r in await reward_service.available_rewards(session, event=event)
+            if r.kind == RewardKind.DOOR
+        ],
+        "held": [{"name": r.reward.name, "code": r.code} for r in held],
+    }
+
+
+@router.post("/api/app/rewards/{reward_id}/buy")
+async def reward_buy(
+    reward_id: int,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    event = await _require_event(session)
+    reward = await session.get(Reward, reward_id)
+    if reward is None or reward.kind != RewardKind.DOOR:
+        return {"status": "UNAVAILABLE"}
+    outcome = await reward_service.purchase(session, user=user, reward=reward, event=event)
+    return {
+        "status": outcome.status,
+        "points": outcome.balance,
+        "code": outcome.redemption.code if outcome.redemption else None,
+    }
