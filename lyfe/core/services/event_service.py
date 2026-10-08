@@ -32,3 +32,20 @@ async def get_next_event(session: AsyncSession) -> Event | None:
         .limit(1)
     )
     return upcoming.scalar_one_or_none()
+
+
+async def get_season_anchor(session: AsyncSession) -> Event | None:
+    """The event seasonal fun hangs off: the next one if there is one,
+    otherwise the most recent. Between parties the pumpkin hunt and the game
+    keep running instead of disappearing with the last event."""
+    event = await get_next_event(session)
+    if event is not None:
+        return event
+    latest = await session.execute(
+        select(Event)
+        .options(joinedload(Event.venue), joinedload(Event.city))
+        .where(Event.status != EventStatus.DRAFT)
+        .order_by(Event.starts_at.desc())
+        .limit(1)
+    )
+    return latest.scalar_one_or_none()

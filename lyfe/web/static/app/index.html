@@ -484,6 +484,7 @@ const COPY = {
     open_tg_t: 'Открой LYFE в Telegram', open_tg_s: 'Эта страница работает только внутри бота.',
     open_bot: 'Открыть бота',
     ticket_label: 'Билет', ticket_buy: 'Купить билет · GoOut',
+    ticket_no_date: 'Как только объявим дату, билет через GoOut можно будет купить прямо здесь.',
     ticket_soon: 'Билеты на эту ночь появятся здесь — через GoOut. Купишь, добавишь код, и на входе хватит одного экрана.',
     ticket_how: 'Билеты продаются через GoOut. Купи и добавь код билета сюда — он будет рядом с LYFE PASS, и на входе хватит одного экрана.',
     ticket_attach: 'У меня есть билет', ticket_have: 'Билет в LYFE', ticket_show: 'Показать на входе',
@@ -562,6 +563,7 @@ const COPY = {
     open_tg_t: 'Відкрий LYFE у Telegram', open_tg_s: 'Ця сторінка працює лише всередині бота.',
     open_bot: 'Відкрити бота',
     ticket_label: 'Квиток', ticket_buy: 'Купити квиток · GoOut',
+    ticket_no_date: 'Щойно оголосимо дату, квиток через GoOut можна буде купити прямо тут.',
     ticket_soon: 'Квитки на цю ніч з’являться тут — через GoOut. Купиш, додаси код, і на вході вистачить одного екрана.',
     ticket_how: 'Квитки продаються через GoOut. Купи й додай код квитка сюди — він буде поруч із LYFE PASS, і на вході вистачить одного екрана.',
     ticket_attach: 'У мене є квиток', ticket_have: 'Квиток у LYFE', ticket_show: 'Показати на вході',
@@ -733,10 +735,19 @@ function renderHome() {
   const { event: ev, user } = S.me;
   const tn = tonight();
   if (!ev) {
-    view.innerHTML = topline() + `
-      <h1 class="mega">${esc(L('no_event_t'))}</h1>
+    // Between parties: no date yet, but the season, the hunt and the game
+    // are still on, and the guest learns where tickets will appear.
+    view.innerHTML = topline(seasonPill()) + `
+      <div class="label">${esc(L('presents'))}</div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px">
+        <h1 class="mega" style="margin-top:10px">${esc(L('no_event_t'))}</h1>${hiddenPumpkin('home')}
+      </div>
       <p class="muted" style="margin-top:16px">${esc(L('no_event_s'))}</p>
+      <div class="rule"></div><span class="label">${esc(L('ticket_label'))}</span>
+      <p class="muted" style="margin-top:8px">${esc(L('ticket_no_date'))}</p>
+      ${seasonBlock()}
       ${walletBlock(user)}`;
+    bindSeason();
     bindWallet();
     return;
   }
@@ -752,7 +763,7 @@ function renderHome() {
   const slots = Array.from({ length: rules().requests_max }, (_, i) => `<span class="slot${i < tn.requests_used ? ' on' : ''}"></span>`).join('');
   const canAdd = ev.accepts_requests && tn.requests_used < rules().requests_max;
 
-  view.innerHTML = topline(S.me.season ? `<span class="season-pill">${ART.pumpkin}${esc(L('season_label'))}</span>` : '') + `
+  view.innerHTML = topline(seasonPill()) + `
     <div class="label">${esc(L('presents'))}</div>
     <h1 class="mega" style="margin-top:10px">${esc(ev.title)}</h1>
     <div class="meta">${[ev.date, ev.time, ev.venue, ev.city].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('')}</div>
@@ -1232,9 +1243,13 @@ const ART = {
 
 /* ---------------- season: pumpkin hunt ---------------- */
 
+function seasonPill() {
+  return S.me.season ? `<span class="season-pill">${ART.pumpkin}${esc(L('season_label'))}</span>` : '';
+}
+
 function hiddenPumpkin(id) {
   const sn = S.me && S.me.season;
-  if (!sn || !S.me.event || sn.found.includes(id)) return '';
+  if (!sn || !sn.game || sn.found.includes(id)) return '';
   return `<button class="hp" data-pumpkin="${id}" aria-label="pumpkin">${ART.pumpkin}</button>`;
 }
 
@@ -1364,7 +1379,7 @@ function loadDoorRewards() {
 
 function seasonBlock() {
   const sn = S.me.season;
-  if (!sn) return '';
+  if (!sn || !sn.game) return '';
   const g = sn.game;
   const dots = sn.pumpkins.map(p => `<i class="${sn.found.includes(p) ? 'on' : ''}"></i>`).join('');
   return `<div class="rule"></div>
