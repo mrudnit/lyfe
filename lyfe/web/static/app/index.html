@@ -181,6 +181,12 @@
   .board .act { width: 38px; height: 38px; display: grid; place-items: center; font-size: 20px; }
   .board .act.boost { font-family: var(--font-display); font-size: 10px; font-weight: 800; letter-spacing: .02em; border: 1.5px solid var(--ink); width: 38px; height: 30px; }
   .board .act:disabled { opacity: .2; }
+  /* liked: a full orange heart, not a faded disabled one; the score jumps */
+  .board .act.on, .board .act.on:disabled { opacity: 1; color: var(--accent); }
+  .board .act.on.pop { animation: likepop .45s ease-out; }
+  .board .score.bump { animation: scorebump .55s ease-out; color: var(--accent); }
+  @keyframes likepop { 0% { transform: scale(.6); } 45% { transform: scale(1.45); } 100% { transform: scale(1); } }
+  @keyframes scorebump { 0% { transform: scale(1); } 35% { transform: scale(1.55); } 100% { transform: scale(1); } }
   .board .tag { font-family: var(--font-display); font-size: 9px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; margin-right: 8px; }
   .board li.pri { background: var(--ink); color: var(--paper); margin: 0 calc(var(--gutter) * -1); padding-left: var(--gutter); padding-right: var(--gutter); border-bottom-color: var(--ink); }
   .board li.pri .tartist { color: #bdbdbd; }
@@ -1012,8 +1018,8 @@ function renderTop() {
       <span class="pos num">${pad(it.position)}</span>
       <div class="tinfo"><div class="ttitle">${esc(it.title)}</div><div class="tartist">${tags}${esc(it.artist)}</div></div>
       <div class="right">
-        <span class="score num">${it.score}</span>
-        <button class="act" data-vote="${i}" ${canVote ? '' : 'disabled'} aria-label="like">${it.voted || it.mine ? '♥' : '♡'}</button>
+        <span class="score num${it.justVoted ? ' bump' : ''}">${it.score}</span>
+        <button class="act${it.voted || it.mine ? ' on' : ''}${it.justVoted ? ' pop' : ''}" data-vote="${i}" ${canVote ? '' : 'disabled'} aria-label="like">${it.voted || it.mine ? '♥' : '♡'}</button>
         <button class="act boost" data-boost="${i}" ${canBoost ? '' : 'disabled'} aria-label="boost">+${c}</button>
       </div></li>`;
   }).join('') + `</ul>` + `<div style="text-align:right;margin-top:10px">${hiddenPumpkin('top')}</div>` +
@@ -1032,7 +1038,10 @@ async function doVote(item, button) {
   setPoints(res.points);
   const msg = { VOTED: 'vote_done', ALREADY_VOTED: 'vote_already', OWN_TRACK: 'vote_own', EVENT_CLOSED: 'vote_closed' }[res.status];
   if (msg) toast(L(msg));
-  if (res.status === 'VOTED') { item.voted = true; item.score += 1; item.votes += 1; renderTop(); }
+  if (res.status === 'VOTED') {
+    item.voted = true; item.score += 1; item.votes += 1; item.justVoted = true;
+    renderTop(); item.justVoted = false;
+  }
 }
 
 async function doBoost(item) {
