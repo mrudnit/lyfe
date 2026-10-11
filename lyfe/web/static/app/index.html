@@ -501,6 +501,7 @@ const COPY = {
     season_label: 'HALLOWEEN', game_name: 'PUMPKIN<br>RUSH',
     game_rules: '{s} секунд. Тыква +1, золотая +3, призрак −{g}. Серия без промахов умножает очки: ×2 с {k} подряд, дальше до ×{m}. Быстрый тап — ещё +1. Топ-{n} получают бесплатный вход.',
     game_closes: 'Таблица закрывается {d}', game_closed: 'Игра закрыта · топ-{n} идут бесплатно',
+    game_wait: 'Откроется, когда объявим следующую ночь',
     game_attempts: 'Попыток', game_best: 'Рекорд', game_play: 'Играть', game_board: 'Таблица',
     game_none: 'Попытки на эту ночь закончились.', game_go: 'GO',
     game_result: 'Твой счёт', game_place: 'Место в таблице: {n}', game_again: 'Ещё попытка', game_close: 'Закрыть',
@@ -577,6 +578,7 @@ const COPY = {
     season_label: 'HALLOWEEN', game_name: 'PUMPKIN<br>RUSH',
     game_rules: '{s} секунд. Гарбуз +1, золотий +3, привид −{g}. Серія без промахів множить очки: ×2 з {k} поспіль, далі до ×{m}. Швидкий тап — ще +1. Топ-{n} отримують безкоштовний вхід.',
     game_closes: 'Таблиця закривається {d}', game_closed: 'Гру закрито · топ-{n} проходять безкоштовно',
+    game_wait: 'Відкриється, щойно оголосимо наступну ніч',
     game_attempts: 'Спроб', game_best: 'Рекорд', game_play: 'Грати', game_board: 'Таблиця',
     game_none: 'Спроби на цю ніч закінчились.', game_go: 'GO',
     game_result: 'Твій рахунок', game_place: 'Місце в таблиці: {n}', game_again: 'Ще спроба', game_close: 'Закрити',
@@ -1352,7 +1354,7 @@ function seasonBlock() {
         <div><b class="num">${g.attempts_left}/${g.attempts}</b><span class="label">${esc(L('game_attempts'))}</span></div>
         <div><b class="num">${g.best == null ? '—' : g.best}</b><span class="label">${esc(L('game_best'))}</span></div>
       </div>
-      <button class="btn" id="gamePlay" ${g.open && g.attempts_left ? '' : 'disabled'}>${esc(!g.open ? L('game_closed', { n: g.places }) : g.attempts_left ? L('game_play') : L('game_none'))}</button>
+      <button class="btn" id="gamePlay" ${g.open && g.attempts_left ? '' : 'disabled'}>${esc(!g.open ? (g.waiting ? L('game_wait') : L('game_closed', { n: g.places })) : g.attempts_left ? L('game_play') : L('game_none'))}</button>
       <div style="margin-top:16px"><button class="link" id="gameBoard">${esc(L('game_board'))} →</button></div>
       <div class="hunt"><span class="dots">${dots}</span><span>${esc(L('hunt', { n: sn.pumpkins.length, p: sn.pumpkin_points, b: sn.pumpkin_bonus }))}</span></div>
     </div>`;
@@ -1388,7 +1390,8 @@ async function startGame() {
   try { res = await api('/api/app/game/start', { method: 'POST' }); } catch (e) { S.busy = false; return; }
   S.busy = false;
   if (res.status !== 'OK') {
-    toast(res.status === 'CLOSED' ? L('game_closed', { n: (S.me.season && S.me.season.game.places) || 5 }) : L('game_none'));
+    const gm = S.me.season && S.me.season.game;
+    toast(res.status === 'CLOSED' ? (gm && gm.waiting ? L('game_wait') : L('game_closed', { n: (gm && gm.places) || 5 })) : L('game_none'));
     haptic('warning'); return;
   }
 

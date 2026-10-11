@@ -15,7 +15,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from lyfe.core.services import points_service
-from lyfe.models import Event, GameSession, PointsReason, PointTransaction, Ticket, TicketProvider, User
+from lyfe.models import Event, EventStatus, GameSession, PointsReason, PointTransaction, Ticket, TicketProvider, User
 
 # --------------------------------------------------------------------------
 # Pumpkin hunt
@@ -201,7 +201,16 @@ def closes_at(event: Event) -> datetime | None:
     return event.starts_at - CLOSES_BEFORE if event.starts_at else None
 
 
+def is_waiting(event: Event, now: datetime | None = None) -> bool:
+    """The anchor is a party that is over or already under way — the game
+    waits for the next one to be announced."""
+    now = now or datetime.now(timezone.utc)
+    return event.status == EventStatus.ENDED or bool(event.starts_at and event.starts_at <= now)
+
+
 def is_open(event: Event, now: datetime | None = None) -> bool:
+    if is_waiting(event, now):
+        return False
     end = closes_at(event)
     return end is None or (now or datetime.now(timezone.utc)) < end
 
