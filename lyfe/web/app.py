@@ -302,11 +302,11 @@ async def api_checkin(
         )
     ]
 
-    ticket = await season_service.ticket_for(session, user_id=user_id, event_id=event.id)
+    free_entry = await season_service.free_entry_for(session, user_id=user_id, event_id=event.id)
 
     return {
         "status": outcome.status,
-        "ticket": ticket.code if ticket else None,
+        "free_entry": free_entry,
         "lyfe_id": outcome.lyfe_id,
         "name": outcome.name,
         "points": outcome.points,

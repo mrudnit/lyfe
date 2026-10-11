@@ -219,7 +219,7 @@ async def me(user: User = Depends(current_user), session: AsyncSession = Depends
         "event": _event_json(event),
         "tonight": tonight,
         "season": await _season_json(session, user, await event_service.get_season_anchor(session)),
-        "ticket": await _ticket_json(session, user, event),
+        "free_entry": await _free_entry(session, user, event),
         "rules": {
             "requests_max": settings.max_requests_per_user_per_event,
             "boosts_max": settings.max_boosts_per_event,
@@ -243,12 +243,10 @@ def _qr_svg(payload: str, scale: int = 8) -> str:
 @router.get("/api/app/pass")
 async def lyfe_pass(user: User = Depends(current_user), session: AsyncSession = Depends(get_session)):
     event = await event_service.get_next_event(session)
-    ticket = None
+    free_entry = None
     held = []
     if event is not None:
-        found = await season_service.ticket_for(session, user_id=user.id, event_id=event.id)
-        if found is not None:
-            ticket = {"code": found.code, "svg": _qr_svg(found.code, scale=6)}
+        free_entry = await season_service.free_entry_for(session, user_id=user.id, event_id=event.id)
         held = [
             {"name": r.reward.name, "code": r.code}
             for r in await reward_service.held_by_user(session, user_id=user.id, event_id=event.id)
@@ -257,7 +255,7 @@ async def lyfe_pass(user: User = Depends(current_user), session: AsyncSession = 
         "svg": _qr_svg(pass_token.build(user.id, settings.admin_secret_key)),
         "lyfe_id": user.lyfe_id,
         "name": user.name,
-        "ticket": ticket,
+        "free_entry": free_entry,
         "held": held,
     }
 
@@ -601,8 +599,16 @@ async def _season_json(session: AsyncSession, user: User, event: Event | None) -
             ),
             "attempts": season_service.ATTEMPTS_PER_EVENT,
             "best": best,
-            "prizes": list(season_service.PRIZES),
+            "places": season_service.FREE_ENTRY_PLACES,
+            "open": season_service.is_open(event),
+            "closes_at": season_service.closes_at(event).isoformat() if season_service.closes_at(event) else None,
             "seconds": season_service.GAME_SECONDS,
+            "scoring": {
+                "streak_step": season_service.STREAK_STEP,
+                "max_mult": season_service.MAX_MULT,
+                "fast_share": season_service.FAST_SHARE,
+                "ghost": season_service.GHOST_PENALTY,
+            },
         },
     }
 
@@ -648,8 +654,8 @@ async def game_start(user: User = Depends(current_user), session: AsyncSession =
     if not settings.season or event is None:
         return {"status": "OFF"}
     game = await season_service.start_game(session, user=user, event=event)
-    if game is None:
-        return {"status": "NO_ATTEMPTS"}
+    if isinstance(game, str):
+        return {"status": game}
     return {
         "status": "OK",
         "id": game.id,
@@ -686,35 +692,14 @@ async def game_finish(
 
 
 # --------------------------------------------------------------------------
-# Tickets (GoOut)
+# Free entry (PUMPKIN RUSH top 5)
 # --------------------------------------------------------------------------
 
 
-async def _ticket_json(session: AsyncSession, user: User, event: Event | None) -> dict | None:
+async def _free_entry(session: AsyncSession, user: User, event: Event | None) -> str | None:
     if event is None:
         return None
-    ticket = await season_service.ticket_for(session, user_id=user.id, event_id=event.id)
-    return {"code": ticket.code} if ticket else None
-
-
-@router.post("/api/app/ticket")
-async def ticket_attach(
-    payload: dict = Body(...),
-    user: User = Depends(current_user),
-    session: AsyncSession = Depends(get_session),
-):
-    event = await _require_event(session)
-    status = await season_service.attach_ticket(
-        session, user=user, event=event, code=str(payload.get("code") or "")[:200]
-    )
-    return {"status": status}
-
-
-@router.delete("/api/app/ticket")
-async def ticket_detach(user: User = Depends(current_user), session: AsyncSession = Depends(get_session)):
-    event = await _require_event(session)
-    await season_service.detach_ticket(session, user=user, event=event)
-    return {"status": "OK"}
+    return await season_service.free_entry_for(session, user_id=user.id, event_id=event.id)
 
 
 # --------------------------------------------------------------------------

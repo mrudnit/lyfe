@@ -244,9 +244,9 @@ async function submit(payload) {
   }
 }
 
-// GoOut ticket the guest attached in the app, to compare with the GoOut list.
+// Top 5 of PUMPKIN RUSH get in free: say so loud on the same scan.
 function ticketLine(data) {
-  return data.ticket ? ' · билет GoOut ' + data.ticket : ' · билета в LYFE нет';
+  return data.free_entry ? ' · 🎟 БЕСПЛАТНЫЙ ВХОД (' + data.free_entry + ')' : '';
 }
 
 function render(data) {
