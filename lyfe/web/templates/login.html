@@ -2,6 +2,11 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
+<script>
+  // Opened from Telegram (bot profile "Open", menu button) with the site root instead of /app:
+  // the launch data rides in the #hash and survives the redirect here — send it on to the Mini App.
+  if (/tgWebAppData=/.test(location.hash)) location.replace('/app' + location.hash);
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>LYFE</title>
 <style>

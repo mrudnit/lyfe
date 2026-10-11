@@ -247,6 +247,8 @@ async def main() -> None:
 
     print("\n[free entry for the top 5]")
     me6 = (await c.get("/api/app/me", headers=guest(6))).json()
+    check("GoOut link for the Buy button", me6["event"]["ticket_url"] == "https://goout.net/sk/", me6["event"])
+    check("game open, not waiting", me6["season"]["game"]["waiting"] is False, me6["season"]["game"])
     check("game open two days ahead, top 5 announced", me6["season"]["game"]["open"] and me6["season"]["game"]["places"] == 5, me6["season"]["game"])
     check("GoOut code endpoint is gone", (await c.post("/api/app/ticket", headers=guest(1), json={"code": "GO-1"})).status_code in (404, 405))
     async with SessionFactory() as s:
@@ -315,11 +317,16 @@ async def main() -> None:
     await db("UPDATE events SET status='ENDED', starts_at=now() - interval '1 day' WHERE id=:id", id=event_id)
     me = (await c.get("/api/app/me", headers=guest(3))).json()
     check("no event, season + game still on", me["event"] is None and me["season"]["game"] is not None, me["season"])
+    check("between parties the game waits for the next one", me["season"]["game"]["waiting"] and not me["season"]["game"]["open"], me["season"]["game"])
+    check("start between parties → CLOSED", (await c.post("/api/app/game/start", headers=guest(3))).json()["status"] == "CLOSED")
     check("adding a track → 409", (await c.post("/api/app/request", headers=guest(3), json={"manual": "A - B"})).status_code == 409)
     check("top empty, no crash", (await c.get("/api/app/top", headers=guest(3))).json()["items"] == [])
     check("rewards empty, no crash", (await c.get("/api/app/rewards", headers=guest(3))).status_code == 200)
     check("pass works", (await c.get("/api/app/pass", headers=guest(3))).status_code == 200)
     check("page served with asset version", "__ASSET_V__" not in (await c.get("/app")).text)
+    root = await c.get("/", follow_redirects=True)
+    check("site root (bot 'Open' without /app) → login page that forwards Telegram to /app",
+          root.status_code == 200 and "tgWebAppData=" in root.text and "location.replace('/app'" in root.text, root.url)
 
     await c.aclose()
     await adm.aclose()

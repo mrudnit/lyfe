@@ -601,6 +601,8 @@ async def _season_json(session: AsyncSession, user: User, event: Event | None) -
             "best": best,
             "places": season_service.FREE_ENTRY_PLACES,
             "open": season_service.is_open(event),
+            # the anchor is a party that already happened: no upcoming one to play for yet
+            "waiting": season_service.is_waiting(event),
             "closes_at": season_service.closes_at(event).isoformat() if season_service.closes_at(event) else None,
             "seconds": season_service.GAME_SECONDS,
             "scoring": {
