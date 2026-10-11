@@ -17,7 +17,8 @@ from lyfe.models.base import Base, PKMixin, TimestampMixin
 
 
 class TicketProvider:
-    GOOUT = "GOOUT"
+    GOOUT = "GOOUT"     # old: a GoOut code the guest typed in (no longer offered)
+    PRIZE = "PRIZE"     # free entry won in PUMPKIN RUSH — shown on the LYFE PASS and at the door
 
 
 class Ticket(PKMixin, TimestampMixin, Base):

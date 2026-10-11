@@ -1,4 +1,4 @@
-"""Seasonal fun: the pumpkin hunt, PUMPKIN RUSH, and GoOut tickets.
+"""Seasonal fun: the pumpkin hunt and PUMPKIN RUSH (top 5 win free entry).
 
 PUMPKIN RUSH is scored by the server, not the phone. The server picks a seed,
 derives every pumpkin from it (when it appears, where, for how long, what it
@@ -8,12 +8,10 @@ drops any tap that could not have happened. A modified page can still play
 perfectly, but it cannot invent pumpkins or points.
 """
 import random
-import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from lyfe.core.services import points_service
@@ -98,10 +96,19 @@ async def find_pumpkin(
 GAME_KIND = "pumpkin_rush"
 GAME_SECONDS = 20.0
 ATTEMPTS_PER_EVENT = 2
-# Paid once the event is over, by scripts/award_game.py.
-PRIZES = (30, 20, 10)
+# The five best players get in free. The board freezes a day before the
+# party so the winners know in time; scripts/award_game.py hands out entries.
+FREE_ENTRY_PLACES = 5
+CLOSES_BEFORE = timedelta(hours=24)
 # Time a tap may arrive after the pumpkin vanished: finger and network lag.
 TAP_GRACE = 0.25
+# Scoring: a streak of good taps multiplies points (x2 from 5 in a row, up to
+# x5); a missed pumpkin or a ghost breaks the streak. A fast tap (in the first
+# 40% of the pumpkin's life) earns +1 before the multiplier.
+STREAK_STEP = 5
+MAX_MULT = 5
+FAST_SHARE = 0.4
+GHOST_PENALTY = 3
 
 
 @dataclass(frozen=True)
@@ -116,53 +123,87 @@ class Piece:
 
 
 def schedule(seed: int) -> list[Piece]:
-    """Every piece of one round, derived from the seed alone."""
+    """Every piece of one round, derived from the seed alone. It speeds up:
+    shorter life, shorter gaps, more ghosts, and later two at once."""
     rng = random.Random(seed)
     pieces: list[Piece] = []
-    t, i = 0.6, 0
+    t, i = 0.5, 0
     while t < GAME_SECONDS - 0.4:
         progress = t / GAME_SECONDS
-        # it gets faster: shorter gaps, shorter life
-        ttl = round(1.45 - 0.6 * progress + rng.uniform(-0.1, 0.1), 3)
-        roll = rng.random()
-        if roll < 0.10:
-            kind, value = "gold", 3
-        elif roll < 0.24:
-            kind, value = "ghost", -2
-        else:
-            kind, value = "pumpkin", 1
-        pieces.append(
-            Piece(
-                id=i,
-                at=round(t, 3),
-                ttl=max(0.55, ttl),
-                x=round(rng.uniform(0.12, 0.88), 3),
-                y=round(rng.uniform(0.14, 0.86), 3),
-                kind=kind,
-                value=value,
+        burst = 2 if progress > 0.4 and rng.random() < 0.15 + 0.3 * progress else 1
+        for _ in range(burst):
+            roll = rng.random()
+            if roll < 0.08:
+                kind, value = "gold", 3
+            elif roll < 0.08 + 0.14 + 0.22 * progress:
+                kind, value = "ghost", -GHOST_PENALTY
+            else:
+                kind, value = "pumpkin", 1
+            ttl = 1.35 - 0.8 * progress + rng.uniform(-0.08, 0.08)
+            if kind == "ghost":
+                ttl += 0.3                 # ghosts linger to bait a tap
+            pieces.append(
+                Piece(
+                    id=i,
+                    at=round(t, 3),
+                    ttl=round(max(0.5, ttl), 3),
+                    x=round(rng.uniform(0.12, 0.88), 3),
+                    y=round(rng.uniform(0.14, 0.86), 3),
+                    kind=kind,
+                    value=value,
+                )
             )
-        )
-        i += 1
-        t += 0.78 - 0.4 * progress + rng.uniform(-0.12, 0.12)
+            i += 1
+        t += max(0.2, 0.62 - 0.38 * progress + rng.uniform(-0.1, 0.1))
     return pieces
 
 
+def tap_points(piece: Piece, t: float, streak: int) -> int:
+    """What a good tap is worth: (value + fast bonus) × streak multiplier."""
+    fast = 1 if t - piece.at <= FAST_SHARE * piece.ttl else 0
+    mult = min(MAX_MULT, 1 + streak // STREAK_STEP)
+    return (piece.value + fast) * mult
+
+
 def score_hits(seed: int, hits: list[dict]) -> int:
-    by_id = {p.id: p for p in schedule(seed)}
-    seen: set[int] = set()
-    score = 0
-    for hit in hits[:200]:
+    """Replay the round on the server. Taps that could not have happened are
+    dropped; pumpkins nobody tapped break the streak when they vanish."""
+    pieces = schedule(seed)
+    by_id = {p.id: p for p in pieces}
+    taps: dict[int, float] = {}
+    for hit in hits[:300]:
         try:
             piece = by_id[int(hit["id"])]
             t = float(hit["t"])
         except (KeyError, TypeError, ValueError):
             continue
-        if piece.id in seen:
+        if piece.id in taps:
             continue
         if piece.at - 0.05 <= t <= piece.at + piece.ttl + TAP_GRACE:
-            seen.add(piece.id)
-            score += piece.value
-    return max(0, score)
+            taps[piece.id] = min(t, piece.at + piece.ttl)
+    events = [(t, 0, by_id[pid]) for pid, t in taps.items()]
+    events += [(p.at + p.ttl, 1, p) for p in pieces if p.value > 0 and p.id not in taps]
+    events.sort(key=lambda e: (e[0], e[1]))
+    score = streak = 0
+    for t, missed, piece in events:
+        if missed:
+            streak = 0
+        elif piece.value < 0:
+            score = max(0, score + piece.value)
+            streak = 0
+        else:
+            score += tap_points(piece, t, streak)
+            streak += 1
+    return score
+
+
+def closes_at(event: Event) -> datetime | None:
+    return event.starts_at - CLOSES_BEFORE if event.starts_at else None
+
+
+def is_open(event: Event, now: datetime | None = None) -> bool:
+    end = closes_at(event)
+    return end is None or (now or datetime.now(timezone.utc)) < end
 
 
 async def attempts_used(session: AsyncSession, *, user_id: int, event_id: int) -> int:
@@ -188,11 +229,14 @@ async def best_score(session: AsyncSession, *, user_id: int, event_id: int) -> i
     )
 
 
-async def start_game(session: AsyncSession, *, user: User, event: Event) -> GameSession | None:
+async def start_game(session: AsyncSession, *, user: User, event: Event) -> GameSession | str:
+    """A new round, or why not: "CLOSED" (board frozen) or "NO_ATTEMPTS"."""
+    if not is_open(event):
+        return "CLOSED"
     # Serialise this person's attempts so two taps cannot open a third round.
     await session.execute(select(User.id).where(User.id == user.id).with_for_update())
     if await attempts_used(session, user_id=user.id, event_id=event.id) >= ATTEMPTS_PER_EVENT:
-        return None
+        return "NO_ATTEMPTS"
     game = GameSession(
         event_id=event.id,
         user_id=user.id,
@@ -250,30 +294,27 @@ async def leaderboard(session: AsyncSession, *, event_id: int, limit: int = 10) 
     ]
 
 
-async def award_prizes(session: AsyncSession, *, event: Event) -> list[tuple[User, int, int]]:
-    """Top places get points, once. Ties on score go to whoever was first."""
-    paid = []
-    for place, row in enumerate(await leaderboard(session, event_id=event.id, limit=len(PRIZES))):
-        prize = PRIZES[place]
-        tx = await points_service.award(
-            session,
-            user_id=row["user_id"],
-            delta=prize,
-            reason_code=PointsReason.GAME_PRIZE,
-            idempotency_key=f"game_prize:{event.id}:{row['user_id']}",
-            event_id=event.id,
-            ref_type="game",
-        )
-        if tx is not None:
-            paid.append((await session.get(User, row["user_id"]), place + 1, prize))
-    return paid
+async def award_free_entries(session: AsyncSession, *, event: Event) -> list[tuple[User, int]]:
+    """Top five get free entry, once: a PRIZE ticket on their LYFE PASS for
+    this event. Ties on score go to whoever was first."""
+    won = []
+    for place, row in enumerate(await leaderboard(session, event_id=event.id, limit=FREE_ENTRY_PLACES), start=1):
+        code = f"PUMPKIN RUSH #{place}"
+        ticket = await ticket_for(session, user_id=row["user_id"], event_id=event.id)
+        if ticket is not None and ticket.provider == TicketProvider.PRIZE:
+            continue
+        if ticket is None:
+            session.add(Ticket(event_id=event.id, user_id=row["user_id"], provider=TicketProvider.PRIZE, code=code))
+        else:                          # an old GoOut code on file — the prize replaces it
+            ticket.provider, ticket.code = TicketProvider.PRIZE, code
+        await session.flush()
+        won.append((await session.get(User, row["user_id"]), place))
+    return won
 
 
 # --------------------------------------------------------------------------
-# Tickets
+# Free entry (PUMPKIN RUSH prize)
 # --------------------------------------------------------------------------
-
-_TICKET_CODE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9\-_/.:]{3,127}$")
 
 
 async def ticket_for(session: AsyncSession, *, user_id: int, event_id: int) -> Ticket | None:
@@ -282,38 +323,7 @@ async def ticket_for(session: AsyncSession, *, user_id: int, event_id: int) -> T
     )
 
 
-async def attach_ticket(session: AsyncSession, *, user: User, event: Event, code: str) -> str:
-    """OK, FORMAT or TAKEN."""
-    code = "".join((code or "").split())
-    if not _TICKET_CODE.match(code):
-        return "FORMAT"
-
-    from lyfe.core.services import user_service
-
-    await user_service.lock_user(session, user.id)
-
-    other = await session.scalar(
-        select(Ticket).where(Ticket.provider == TicketProvider.GOOUT, Ticket.code == code)
-    )
-    if other is not None and other.user_id != user.id:
-        return "TAKEN"
-
-    ticket = await ticket_for(session, user_id=user.id, event_id=event.id)
-    try:
-        async with session.begin_nested():
-            if ticket is None:
-                session.add(Ticket(event_id=event.id, user_id=user.id, provider=TicketProvider.GOOUT, code=code))
-            else:
-                ticket.code = code
-            await session.flush()
-    except IntegrityError:
-        # Someone attached the same code a moment earlier.
-        return "TAKEN"
-    return "OK"
-
-
-async def detach_ticket(session: AsyncSession, *, user: User, event: Event) -> None:
-    ticket = await ticket_for(session, user_id=user.id, event_id=event.id)
-    if ticket is not None:
-        await session.delete(ticket)
-
+async def free_entry_for(session: AsyncSession, *, user_id: int, event_id: int) -> str | None:
+    """"PUMPKIN RUSH #2" if this guest won free entry, else None."""
+    ticket = await ticket_for(session, user_id=user_id, event_id=event_id)
+    return ticket.code if ticket is not None and ticket.provider == TicketProvider.PRIZE else None

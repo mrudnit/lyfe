@@ -26,9 +26,10 @@ from sqlalchemy import delete, func, select, text  # noqa: E402
 from lyfe.config import get_settings  # noqa: E402
 from lyfe.core import pass_token  # noqa: E402
 from lyfe.core.security import hash_password  # noqa: E402
+from lyfe.core.services import season_service  # noqa: E402
 from lyfe.db import SessionFactory  # noqa: E402
 from lyfe.models import (  # noqa: E402
-    AdminRole, AdminUser, Event, EventStatus, PointTransaction, User, Venue,
+    AdminRole, AdminUser, Event, EventStatus, GameSession, PointTransaction, User, Venue,
 )
 
 BASE = "http://127.0.0.1:8000"
@@ -228,20 +229,35 @@ async def main() -> None:
     check("finish twice → UNKNOWN", (await c.post(f"/api/app/game/{g1['id']}/finish", headers=guest(6), json={"hits": []})).json()["status"] == "UNKNOWN")
     print("       (waiting 19 s for a real round)")
     await asyncio.sleep(19)
-    good = [{"id": p["id"], "t": p["at"] + 0.2} for p in g2["pieces"] if p["value"] > 0]
+    # a perfect fast player: every pumpkin tapped quickly, ghosts left alone
+    good = [{"id": p["id"], "t": round(p["at"] + 0.1, 3)} for p in g2["pieces"] if p["value"] > 0]
     forged = [{"id": 9999, "t": 1}, {"id": g2["pieces"][0]["id"], "t": 99}, {"id": "x", "t": "y"}]
-    expected = sum(p["value"] for p in g2["pieces"] if p["value"] > 0)
+    async with SessionFactory() as s:
+        seed = await s.scalar(select(GameSession.seed).where(GameSession.id == g2["id"]))
+    expected = season_service.score_hits(seed, good)
+    flat = sum(p["value"] for p in g2["pieces"] if p["value"] > 0)
     r = (await c.post(f"/api/app/game/{g2['id']}/finish", headers=guest(6), json={"hits": good + good + forged})).json()
     check("server score: duplicates and forged taps ignored", r["score"] == expected and r["place"] == 1, (r, expected))
+    check(f"streak + fast taps pay off ({expected} vs {flat} flat)", expected > flat * 2, (expected, flat))
+    # sloppy player: slow taps, every 3rd pumpkin missed, one ghost — far below
+    slow = [{"id": p["id"], "t": round(p["at"] + p["ttl"] * 0.9, 3)} for i, p in enumerate(g2["pieces"]) if p["value"] > 0 and i % 3]
+    ghost = next(p for p in g2["pieces"] if p["value"] < 0)
+    sloppy = season_service.score_hits(seed, slow + [{"id": ghost["id"], "t": ghost["at"] + 0.1}])
+    check(f"sloppy round scores much less ({sloppy})", sloppy < expected / 2, (sloppy, expected))
 
-    print("\n[tickets]")
-    check("bad code → FORMAT", (await c.post("/api/app/ticket", headers=guest(1), json={"code": "<script>"})).json()["status"] == "FORMAT")
-    check("attach", (await c.post("/api/app/ticket", headers=guest(1), json={"code": "GO-E2E-001"})).json()["status"] == "OK")
-    check("same code by another → TAKEN", (await c.post("/api/app/ticket", headers=guest(2), json={"code": "GO-E2E-001"})).json()["status"] == "TAKEN")
-    check("change own code", (await c.post("/api/app/ticket", headers=guest(1), json={"code": "GO-E2E-002"})).json()["status"] == "OK")
-    me1 = (await c.get("/api/app/me", headers=guest(1))).json()
-    check("ticket in /me", me1["ticket"] == {"code": "GO-E2E-002"}, me1["ticket"])
-    check("ticket QR in pass", (await c.get("/api/app/pass", headers=guest(1))).json()["ticket"]["code"] == "GO-E2E-002")
+    print("\n[free entry for the top 5]")
+    me6 = (await c.get("/api/app/me", headers=guest(6))).json()
+    check("game open two days ahead, top 5 announced", me6["season"]["game"]["open"] and me6["season"]["game"]["places"] == 5, me6["season"]["game"])
+    check("GoOut code endpoint is gone", (await c.post("/api/app/ticket", headers=guest(1), json={"code": "GO-1"})).status_code in (404, 405))
+    async with SessionFactory() as s:
+        ev = await s.get(Event, event_id)
+        won = await season_service.award_free_entries(s, event=ev)
+        again = await season_service.award_free_entries(s, event=ev)
+        await s.commit()
+    check("winner marked once", len(won) == 1 and again == [], (won, again))
+    check("FREE ENTRY in /me", (await c.get("/api/app/me", headers=guest(6))).json()["free_entry"] == "PUMPKIN RUSH #1")
+    check("FREE ENTRY on the LYFE PASS", (await c.get("/api/app/pass", headers=guest(6))).json()["free_entry"] == "PUMPKIN RUSH #1")
+    check("no free entry for others", (await c.get("/api/app/me", headers=guest(1))).json()["free_entry"] is None)
 
     print("\n[door scanner]")
     adm = httpx.AsyncClient(base_url=BASE, timeout=40)
@@ -254,7 +270,11 @@ async def main() -> None:
     st = [x.json()["status"] for x in results]
     check("4 parallel scans → 1 check-in", st.count("OK") == 1 and st.count("ALREADY") == 3, st)
     ok = next(x.json() for x in results if x.json()["status"] == "OK")
-    check("scan shows the GoOut ticket", ok["ticket"] == "GO-E2E-002", ok)
+    check("scan: no free entry for guest 1", ok["free_entry"] is None, ok)
+    async with SessionFactory() as s:
+        u6 = await s.scalar(select(User).where(User.tg_user_id == TG_BASE + 6))
+    r6 = (await adm.post("/api/checkin", json={"token": pass_token.build(u6.id, settings.admin_secret_key)})).json()
+    check("scan shows FREE ENTRY for the winner", r6["free_entry"] == "PUMPKIN RUSH #1", r6)
     r = (await adm.post("/api/checkin", json={"token": "LYFE:1:deadbeef"})).json()
     check("forged pass → INVALID_TOKEN", r["status"] == "INVALID_TOKEN", r)
     r = (await adm.post("/api/checkin", json={"lyfe_id": u2.lyfe_id})).json()
@@ -284,6 +304,12 @@ async def main() -> None:
         api_pts = (await c.get("/api/app/me", headers=guest(n))).json()["user"]["points"]
         ledger = dict(rows)[TG_BASE + n]
         check(f"guest {n}: app balance == ledger ({ledger})", api_pts == ledger, (api_pts, ledger))
+
+    print("\n[game closes a day before the party]")
+    await db("UPDATE events SET starts_at=now() + interval '12 hours' WHERE id=:id", id=event_id)
+    me5 = (await c.get("/api/app/me", headers=guest(5))).json()
+    check("closed in /me", me5["season"]["game"]["open"] is False, me5["season"]["game"])
+    check("start after close → CLOSED", (await c.post("/api/app/game/start", headers=guest(5))).json()["status"] == "CLOSED")
 
     print("\n[between parties]")
     await db("UPDATE events SET status='ENDED', starts_at=now() - interval '1 day' WHERE id=:id", id=event_id)
