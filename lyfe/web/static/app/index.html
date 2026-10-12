@@ -371,8 +371,9 @@
   @keyframes rise { from { transform: scale(.2) translateY(20px); opacity: 0; } }
   @keyframes popout { to { transform: scale(1.7); opacity: 0; } }
   @keyframes sink { to { transform: scale(.4); opacity: 0; } }
-  .g-float { position: absolute; font-family: var(--font-display); font-weight: 900; font-size: 20px; pointer-events: none; animation: floatup .7s ease-out forwards; }
-  @keyframes floatup { to { transform: translateY(-40px); opacity: 0; } }
+  .g-float small { display: block; font-size: 11px; letter-spacing: .04em; text-align: center; margin-top: 2px; }
+  .g-float { position: absolute; transform: translateX(-50%); text-align: center; font-family: var(--font-display); font-weight: 900; font-size: 20px; pointer-events: none; animation: floatup .7s ease-out forwards; }
+  @keyframes floatup { from { transform: translate(-50%, 0); } to { transform: translate(-50%, -40px); opacity: 0; } }
   .g-center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; pointer-events: none; }
   .g-center .n { font-family: var(--font-display); font-weight: 900; font-size: 120px; line-height: 1; color: var(--accent); }
   .g-result { flex: 1; overflow-y: auto; padding-top: 10px; }
@@ -505,7 +506,7 @@ const COPY = {
     game_rules: '{s} секунд. Тыква +1, золотая +3, призрак −{g}. Серия без промахов умножает очки: ×2 с {k} подряд, дальше до ×{m}. Быстрый тап — ещё +1. Топ-{n} получают бесплатный вход.',
     game_short: '20 секунд. Лови тыквы, не трогай призраков. Топ-{n} — бесплатный вход.', game_how: 'Как играть',
     game_how_items: ['Тыква +1, золотая +3, призрак −{g}.', 'Серия без промахов умножает очки: ×2 с {k} подряд, дальше до ×{m}. Промах или призрак — серия сначала.', 'Быстрый тап — ещё +1.', '{a} попытки, в таблицу идёт лучшая.', 'Топ-{n} на {d} проходят бесплатно — по LYFE PASS.'],
-    game_closes: 'Таблица закрывается {d}', game_closed: 'Игра закрыта · топ-{n} идут бесплатно',
+    game_fast: 'быстро', game_closes: 'Таблица закрывается {d}', game_closed: 'Игра закрыта · топ-{n} идут бесплатно',
     game_wait: 'Откроется, когда объявим следующую ночь',
     game_attempts: 'Попыток', game_best: 'Рекорд', game_play: 'Играть', game_board: 'Таблица',
     game_none: 'Попытки на эту ночь закончились.', game_go: 'GO',
@@ -585,7 +586,7 @@ const COPY = {
     game_rules: '{s} секунд. Гарбуз +1, золотий +3, привид −{g}. Серія без промахів множить очки: ×2 з {k} поспіль, далі до ×{m}. Швидкий тап — ще +1. Топ-{n} отримують безкоштовний вхід.',
     game_short: '20 секунд. Лови гарбузи, не чіпай привидів. Топ-{n} — безкоштовний вхід.', game_how: 'Як грати',
     game_how_items: ['Гарбуз +1, золотий +3, привид −{g}.', 'Серія без промахів множить очки: ×2 з {k} поспіль, далі до ×{m}. Промах або привид — серія спочатку.', 'Швидкий тап — ще +1.', '{a} спроби, у таблицю йде найкраща.', 'Топ-{n} на {d} проходять безкоштовно — за LYFE PASS.'],
-    game_closes: 'Таблиця закривається {d}', game_closed: 'Гру закрито · топ-{n} проходять безкоштовно',
+    game_fast: 'швидко', game_closes: 'Таблиця закривається {d}', game_closed: 'Гру закрито · топ-{n} проходять безкоштовно',
     game_wait: 'Відкриється, щойно оголосимо наступну ніч',
     game_attempts: 'Спроб', game_best: 'Рекорд', game_play: 'Грати', game_board: 'Таблиця',
     game_none: 'Спроби на цю ніч закінчились.', game_go: 'GO',
@@ -1034,7 +1035,7 @@ function renderTop() {
       <div class="tinfo"><div class="ttitle">${esc(it.title)}</div><div class="tartist">${tags}${esc(it.artist)}</div></div>
       <div class="right">
         <span class="score num${it.justVoted ? ' bump' : ''}">${it.score}</span>
-        <button class="act${it.voted || it.mine ? ' on' : ''}${it.justVoted ? ' pop' : ''}" data-vote="${i}" ${canVote ? '' : 'disabled'} aria-label="like">${it.voted || it.mine ? '♥' : '♡'}</button>
+        <button class="act${it.voted ? ' on' : ''}${it.justVoted ? ' pop' : ''}" data-vote="${i}" ${canVote ? '' : 'disabled'} aria-label="like">${it.voted || it.mine ? '♥' : '♡'}</button>
         <button class="act boost" data-boost="${i}" ${canBoost ? '' : 'disabled'} aria-label="boost">+${c}</button>
       </div></li>`;
   }).join('') + `</ul>` + `<div style="text-align:right;margin-top:10px">${hiddenPumpkin('top')}</div>` +
@@ -1444,11 +1445,13 @@ async function startGame() {
     live.delete(piece.id);
     const t = +((performance.now() - t0) / 1000).toFixed(3);
     hits.push({ id: piece.id, t });
-    let gain;
+    let gain, why = '';
     if (piece.value < 0) { gain = piece.value; score = Math.max(0, score + gain); streak = 0; }
     else {
-      const fast = t - piece.at <= SCR.fast_share * piece.ttl ? 1 : 0;
-      gain = (piece.value + fast) * mult(); score += gain; streak += 1;
+      const fast = t - piece.at <= SCR.fast_share * piece.ttl ? 1 : 0, m = mult();
+      gain = (piece.value + fast) * m; score += gain; streak += 1;
+      // say where the points came from: base, fast tap, streak multiplier
+      why = [fast ? '⚡' + L('game_fast') : '', m > 1 ? '×' + m : ''].filter(Boolean).join(' ');
     }
     scoreEl.textContent = score; showMult();
     node.classList.add('hit');
@@ -1457,7 +1460,7 @@ async function startGame() {
     f.className = 'g-float';
     f.style.left = node.style.left; f.style.top = node.style.top;
     f.style.color = piece.value < 0 ? 'var(--ink)' : 'var(--accent)';
-    f.textContent = (gain > 0 ? '+' : '−') + Math.abs(gain);
+    f.innerHTML = esc((gain > 0 ? '+' : '−') + Math.abs(gain)) + (why ? `<small>${esc(why)}</small>` : '');
     field.appendChild(f); setTimeout(() => f.remove(), 700);
     try { tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred(piece.kind === 'ghost' ? 'heavy' : 'light'); } catch (err) {}
   });
