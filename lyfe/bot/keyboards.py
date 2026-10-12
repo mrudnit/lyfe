@@ -37,14 +37,11 @@ def open_app_inline(lang: str) -> InlineKeyboardMarkup | None:
 def main_menu(lang: str) -> ReplyKeyboardMarkup:
     url = webapp_url()
     if url:
-        # The Mini App does everything. LYFE PASS stays as a chat button because
-        # the photo it sends is cached by Telegram and opens with no signal —
-        # the door is usually in a basement.
+        # The Mini App opens from the button in the chat message (and the menu
+        # button). The panel keeps only LYFE PASS: the photo it sends is cached by
+        # Telegram and opens with no signal — the door is usually in a basement.
         return ReplyKeyboardMarkup(
-            keyboard=[
-                [KeyboardButton(text=t("btn_open_app", lang), web_app=WebAppInfo(url=url))],
-                [KeyboardButton(text=t("btn_pass", lang))],
-            ],
+            keyboard=[[KeyboardButton(text=t("btn_pass", lang))]],
             resize_keyboard=True,
             is_persistent=True,
         )

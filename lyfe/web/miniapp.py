@@ -145,6 +145,12 @@ def _event_json(event: Event | None) -> dict | None:
         "days": max(days, 0),
         "ticket_url": event.ticket_url,
         "accepts_requests": event.accepts_requests(datetime.now(timezone.utc)),
+        # requests not open yet: when they will be (club time), so the app can say so
+        "requests_from": (
+            event.requests_open_from.astimezone(tz).strftime("%d.%m %H:%M")
+            if event.requests_open_from and event.requests_open_from > datetime.now(timezone.utc)
+            else None
+        ),
     }
 
 

@@ -348,6 +348,8 @@
   .qr svg { aspect-ratio: 1; height: auto; }
   .held { list-style: none; margin: 10px 0 0; padding: 0; }
   .held li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--rule); font-weight: 600; }
+  .howto { list-style: none; margin: 14px 0 0; padding: 0; }
+  .howto li { padding: 12px 0; border-top: 1px solid var(--rule); font-size: 15px; line-height: 1.4; }
   .free-badge { margin-top: 12px; padding: 18px 12px; text-align: center; background: var(--accent); color: var(--paper);
     font-family: var(--font-display); font-weight: 900; font-size: 30px; letter-spacing: -.02em; }
   .game-top .g-mult { font-family: var(--font-display); font-weight: 900; font-size: 18px; color: var(--accent); min-width: 44px; }
@@ -460,6 +462,7 @@ const COPY = {
     already: 'Уже твой. Второй раз не считается.',
     limit_t: 'Три трека — твой максимум.', limit_s: 'Этого хватит, чтобы развернуть ночь. Дальше решают остальные.',
     closed_t: 'Ночь закончилась.', closed_s: 'Следующая скоро. Мы напишем.',
+    soon_t: 'Скоро.', soon_s: 'Приём треков откроется {d}.', soon_home: 'Приём треков откроется {d}',
     boost_it: 'Поднять его +{c}', to_top: 'Смотреть TOP', add_more: 'Добавить ещё',
     top_title: 'TOP REQUESTS', top_empty_t: 'Тишина.', top_empty_s: 'Первый трек этой ночи за тобой.',
     legend_vote: '♡ бесплатно, +1', legend_boost: '+{c} за {c} LYFE POINTS',
@@ -493,20 +496,22 @@ const COPY = {
     open_tg_t: 'Открой LYFE в Telegram', open_tg_s: 'Эта страница работает только внутри бота.',
     open_bot: 'Открыть бота',
     ticket_label: 'Билет', ticket_buy: 'Купить билет · GoOut',
-    ticket_no_date: 'Как только объявим дату, билет через GoOut можно будет купить прямо отсюда.',
-    ticket_soon: 'Билеты на эту ночь скоро появятся на GoOut — купить можно будет прямо отсюда.',
-    ticket_how: 'Билеты продаются на GoOut. Оплата откроется прямо в Telegram, билет придёт на почту — на входе его сканируют.',
+    ticket_no_date: 'Билеты появятся, как только объявим дату.',
+    ticket_soon: 'Билеты скоро появятся на GoOut.',
+    ticket_how: 'Оплата на GoOut прямо в Telegram, билет придёт на почту.',
     free_title: 'FREE ENTRY', free_text: 'Ты в топ-5 PUMPKIN RUSH ({c}) — вход бесплатный. Просто покажи LYFE PASS на входе.',
     free_pass: 'Бесплатный вход', held_title: 'Покажи на входе',
     season_label: 'HALLOWEEN', game_name: 'PUMPKIN<br>RUSH',
     game_rules: '{s} секунд. Тыква +1, золотая +3, призрак −{g}. Серия без промахов умножает очки: ×2 с {k} подряд, дальше до ×{m}. Быстрый тап — ещё +1. Топ-{n} получают бесплатный вход.',
+    game_short: '20 секунд. Лови тыквы, не трогай призраков. Топ-{n} — бесплатный вход.', game_how: 'Как играть',
+    game_how_items: ['Тыква +1, золотая +3, призрак −{g}.', 'Серия без промахов умножает очки: ×2 с {k} подряд, дальше до ×{m}. Промах или призрак — серия сначала.', 'Быстрый тап — ещё +1.', '{a} попытки, в таблицу идёт лучшая.', 'Топ-{n} на {d} проходят бесплатно — по LYFE PASS.'],
     game_closes: 'Таблица закрывается {d}', game_closed: 'Игра закрыта · топ-{n} идут бесплатно',
     game_wait: 'Откроется, когда объявим следующую ночь',
     game_attempts: 'Попыток', game_best: 'Рекорд', game_play: 'Играть', game_board: 'Таблица',
     game_none: 'Попытки на эту ночь закончились.', game_go: 'GO',
     game_result: 'Твой счёт', game_place: 'Место в таблице: {n}', game_again: 'Ещё попытка', game_close: 'Закрыть',
     game_board_t: 'PUMPKIN RUSH · таблица', game_empty: 'Пока никто не играл. Будь первым.',
-    hunt: 'Найди {n} тыкв в приложении: +{p} за каждую, +{b} за все.', hunt_found: 'Тыква! +{p} LYFE POINTS · {k}/{n}',
+    hunt: 'Найди {n} тыкв: +{p} за каждую.', hunt_found: 'Тыква! +{p} LYFE POINTS · {k}/{n}',
     hunt_all: 'Все тыквы найдены! Бонус +{b}', door_title: 'На входе', door_take: 'Взять', door_yours: 'Твоё',
     door_q: '{c} LYFE POINTS — {name}.\n\nПокажи LYFE PASS на входе, тебе выдадут.', door_ok: 'Готово. Покажи LYFE PASS на входе.',
   },
@@ -537,6 +542,7 @@ const COPY = {
     already: 'Вже твій. Вдруге не рахується.',
     limit_t: 'Три треки — твій максимум.', limit_s: 'Цього вистачить, щоб розвернути ніч. Далі вирішують інші.',
     closed_t: 'Ніч закінчилась.', closed_s: 'Наступна скоро. Ми напишемо.',
+    soon_t: 'Скоро.', soon_s: 'Прийом треків відкриється {d}.', soon_home: 'Прийом треків відкриється {d}',
     boost_it: 'Підняти його +{c}', to_top: 'Дивитися TOP', add_more: 'Додати ще',
     top_title: 'TOP REQUESTS', top_empty_t: 'Тиша.', top_empty_s: 'Перший трек цієї ночі за тобою.',
     legend_vote: '♡ безкоштовно, +1', legend_boost: '+{c} за {c} LYFE POINTS',
@@ -570,20 +576,22 @@ const COPY = {
     open_tg_t: 'Відкрий LYFE у Telegram', open_tg_s: 'Ця сторінка працює лише всередині бота.',
     open_bot: 'Відкрити бота',
     ticket_label: 'Квиток', ticket_buy: 'Купити квиток · GoOut',
-    ticket_no_date: 'Щойно оголосимо дату, квиток через GoOut можна буде купити просто звідси.',
-    ticket_soon: 'Квитки на цю ніч скоро з’являться на GoOut — купити можна буде просто звідси.',
-    ticket_how: 'Квитки продаються на GoOut. Оплата відкриється просто в Telegram, квиток прийде на пошту — на вході його скануть.',
+    ticket_no_date: 'Квитки з’являться, щойно оголосимо дату.',
+    ticket_soon: 'Квитки скоро з’являться на GoOut.',
+    ticket_how: 'Оплата на GoOut просто в Telegram, квиток прийде на пошту.',
     free_title: 'FREE ENTRY', free_text: 'Ти в топ-5 PUMPKIN RUSH ({c}) — вхід безкоштовний. Просто покажи LYFE PASS на вході.',
     free_pass: 'Безкоштовний вхід', held_title: 'Покажи на вході',
     season_label: 'HALLOWEEN', game_name: 'PUMPKIN<br>RUSH',
     game_rules: '{s} секунд. Гарбуз +1, золотий +3, привид −{g}. Серія без промахів множить очки: ×2 з {k} поспіль, далі до ×{m}. Швидкий тап — ще +1. Топ-{n} отримують безкоштовний вхід.',
+    game_short: '20 секунд. Лови гарбузи, не чіпай привидів. Топ-{n} — безкоштовний вхід.', game_how: 'Як грати',
+    game_how_items: ['Гарбуз +1, золотий +3, привид −{g}.', 'Серія без промахів множить очки: ×2 з {k} поспіль, далі до ×{m}. Промах або привид — серія спочатку.', 'Швидкий тап — ще +1.', '{a} спроби, у таблицю йде найкраща.', 'Топ-{n} на {d} проходять безкоштовно — за LYFE PASS.'],
     game_closes: 'Таблиця закривається {d}', game_closed: 'Гру закрито · топ-{n} проходять безкоштовно',
     game_wait: 'Відкриється, щойно оголосимо наступну ніч',
     game_attempts: 'Спроб', game_best: 'Рекорд', game_play: 'Грати', game_board: 'Таблиця',
     game_none: 'Спроби на цю ніч закінчились.', game_go: 'GO',
     game_result: 'Твій рахунок', game_place: 'Місце в таблиці: {n}', game_again: 'Ще спроба', game_close: 'Закрити',
     game_board_t: 'PUMPKIN RUSH · таблиця', game_empty: 'Поки ніхто не грав. Будь першим.',
-    hunt: 'Знайди {n} гарбузів у застосунку: +{p} за кожен, +{b} за всі.', hunt_found: 'Гарбуз! +{p} LYFE POINTS · {k}/{n}',
+    hunt: 'Знайди {n} гарбузів: +{p} за кожен.', hunt_found: 'Гарбуз! +{p} LYFE POINTS · {k}/{n}',
     hunt_all: 'Усі гарбузи знайдено! Бонус +{b}', door_title: 'На вході', door_take: 'Взяти', door_yours: 'Твоє',
     door_q: '{c} LYFE POINTS — {name}.\n\nПокажи LYFE PASS на вході, тобі видадуть.', door_ok: 'Готово. Покажи LYFE PASS на вході.',
   },
@@ -778,6 +786,7 @@ function renderHome() {
     ${own}
     <div class="slots">${slots}</div>
     ${canAdd ? `<button class="btn" id="goadd">${esc(L('add_track'))}</button>` : ''}
+    ${!ev.accepts_requests && ev.requests_from ? `<p class="label" style="margin-top:14px">${esc(L('soon_home', { d: ev.requests_from }))}</p>` : ''}
 
     ${seasonBlock()}`;
 
@@ -808,7 +817,11 @@ function renderAdd(opts = {}) {
   const tn = tonight();
   const head = topline(`<span class="label num">${ev ? esc(L('slots', { used: tn.requests_used, max: rules().requests_max })) : ''}</span>`);
   if (!ev) { view.innerHTML = head + `<h1 class="mega">${esc(L('no_event_t'))}</h1><p class="muted" style="margin-top:16px">${esc(L('no_event_s'))}</p>`; return; }
-  if (!ev.accepts_requests) { view.innerHTML = head + `<h1 class="mega">${esc(L('closed_t'))}</h1><p class="muted" style="margin-top:16px">${esc(L('closed_s'))}</p>`; return; }
+  if (!ev.accepts_requests) {
+    const soon = !!ev.requests_from;
+    view.innerHTML = head + `<h1 class="mega">${esc(L(soon ? 'soon_t' : 'closed_t'))}</h1><p class="muted" style="margin-top:16px">${esc(soon ? L('soon_s', { d: ev.requests_from }) : L('closed_s'))}</p>`;
+    return;
+  }
   if (tn.requests_used >= rules().requests_max) {
     view.innerHTML = head + `<h1 class="mega">${esc(L('limit_t'))}</h1><p class="muted" style="margin:16px 0 28px">${esc(L('limit_s'))}</p>
       <button class="btn" id="totop">${esc(L('to_top'))}</button>`;
@@ -1348,14 +1361,14 @@ function seasonBlock() {
     <div class="season-card">
       <span class="label accent">${esc(L('season_label'))}</span>
       <div class="title">${L('game_name')}</div>
-      <p class="muted" style="margin-top:12px">${esc(L('game_rules', { s: g.seconds, g: g.scoring.ghost, k: g.scoring.streak_step, m: g.scoring.max_mult, n: g.places }))}</p>
+      <p class="muted" style="margin-top:12px">${esc(L('game_short', { n: g.places }))}</p>
       ${g.open && g.closes_at ? `<p class="label" style="margin-top:10px">${esc(L('game_closes', { d: fmtClose(g.closes_at) }))}</p>` : ''}
       <div class="facts">
         <div><b class="num">${g.attempts_left}/${g.attempts}</b><span class="label">${esc(L('game_attempts'))}</span></div>
         <div><b class="num">${g.best == null ? '—' : g.best}</b><span class="label">${esc(L('game_best'))}</span></div>
       </div>
       <button class="btn" id="gamePlay" ${g.open && g.attempts_left ? '' : 'disabled'}>${esc(!g.open ? (g.waiting ? L('game_wait') : L('game_closed', { n: g.places })) : g.attempts_left ? L('game_play') : L('game_none'))}</button>
-      <div style="margin-top:16px"><button class="link" id="gameBoard">${esc(L('game_board'))} →</button></div>
+      <div style="margin-top:16px;display:flex;gap:22px"><button class="link" id="gameHow">${esc(L('game_how'))} →</button><button class="link" id="gameBoard">${esc(L('game_board'))} →</button></div>
       <div class="hunt"><span class="dots">${dots}</span><span>${esc(L('hunt', { n: sn.pumpkins.length, p: sn.pumpkin_points, b: sn.pumpkin_bonus }))}</span></div>
     </div>`;
 }
@@ -1367,11 +1380,20 @@ function fmtClose(iso) {
 function bindSeason() {
   const play = $('#gamePlay'); if (play) play.onclick = startGame;
   const board = $('#gameBoard'); if (board) board.onclick = openBoard;
+  const how = $('#gameHow'); if (how) how.onclick = openHowTo;
 }
 
 function boardList(rows) {
   if (!rows.length) return `<p class="muted" style="margin-top:12px">${esc(L('game_empty'))}</p>`;
   return `<ul class="board-mini">${rows.map((r, i) => `<li class="${r.me ? 'me' : ''}"><span class="p num">${pad(i + 1)}</span><span>${esc(r.name)}</span><span class="s num">${r.score}</span></li>`).join('')}</ul>`;
+}
+
+function openHowTo() {
+  const g = S.me.season.game, sc = g.scoring;
+  const vars = { g: sc.ghost, k: sc.streak_step, m: sc.max_mult, a: g.attempts, n: g.places, d: g.closes_at ? fmtClose(g.closes_at) : '' };
+  const items = L('game_how_items').map(x => Object.keys(vars).reduce((t, k) => t.split('{' + k + '}').join(vars[k]), x));
+  openSheet(`<span class="label accent">PUMPKIN RUSH</span><div class="say" style="padding-top:10px"><div class="h">${esc(L('game_how'))}</div></div>
+    <ul class="howto">${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`);
 }
 
 async function openBoard() {
