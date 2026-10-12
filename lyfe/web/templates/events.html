@@ -120,15 +120,17 @@
 
       <div class="grid">
         <label><span>Заявки открыть за, часов</span>
-          <input type="number" name="request_hours_before" value="336"></label>
+          <input type="number" name="request_hours_before" value="{{ hours.request_hours_before }}"></label>
         <label><span>Заявки закрыть через, часов</span>
-          <input type="number" name="request_hours_after" value="4"></label>
+          <input type="number" name="request_hours_after" value="{{ hours.request_hours_after }}"></label>
         <label><span>Check-in открыть за, часов</span>
-          <input type="number" name="checkin_hours_before" value="2"></label>
+          <input type="number" name="checkin_hours_before" value="{{ hours.checkin_hours_before }}"></label>
         <label><span>Check-in закрыть через, часов</span>
-          <input type="number" name="checkin_hours_after" value="8"></label>
+          <input type="number" name="checkin_hours_after" value="{{ hours.checkin_hours_after }}"></label>
       </div>
-      <div class="hint">Часы считаются от начала ивента. 336 часов — это две недели.</div>
+      <div class="hint">Часы считаются от начала ивента: 24 — сутки, 72 — три дня, 168 — неделя, 336 — две недели.
+        {% if windows %}<br>Сейчас: треки принимаются {{ windows.requests[0]|replace('T', ' ') }} → {{ windows.requests[1]|replace('T', ' ') }},
+        check-in {{ windows.checkin[0]|replace('T', ' ') }} → {{ windows.checkin[1]|replace('T', ' ') }}.{% endif %}</div>
 
       <button class="primary" type="submit">Сохранить</button>
     </fieldset>

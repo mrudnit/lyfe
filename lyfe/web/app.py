@@ -390,6 +390,24 @@ async def events_page(
             moment, zones.get(city_id, ZoneInfo("Europe/Bratislava"))
         )
 
+    # The hour fields show what this event really has (a hard-coded 336 here
+    # used to overwrite the real value on every save).
+    hours = {"request_hours_before": 336, "request_hours_after": 4, "checkin_hours_before": 2, "checkin_hours_after": 8}
+    windows = None
+    if editing is not None and editing.starts_at:
+        def h(a, b):
+            return round((a - b).total_seconds() / 3600) if a and b else None
+        hours = {
+            "request_hours_before": h(editing.starts_at, editing.requests_open_from) or 0,
+            "request_hours_after": h(editing.requests_open_until, editing.starts_at) or 0,
+            "checkin_hours_before": h(editing.starts_at, editing.checkin_open_from) or 0,
+            "checkin_hours_after": h(editing.checkin_open_until, editing.starts_at) or 0,
+        }
+        windows = {
+            "requests": (local(editing.requests_open_from, editing.city_id), local(editing.requests_open_until, editing.city_id)),
+            "checkin": (local(editing.checkin_open_from, editing.city_id), local(editing.checkin_open_until, editing.city_id)),
+        }
+
     return TEMPLATES.TemplateResponse(
         request,
         "events.html",
@@ -400,6 +418,8 @@ async def events_page(
             "editing": editing,
             "statuses": EventStatus.ALL,
             "local": local,
+            "hours": hours,
+            "windows": windows,
             "saved": saved,
             "denied": False,
         },
