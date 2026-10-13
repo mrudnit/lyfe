@@ -452,6 +452,7 @@ class BoostResult:
     EVENT_CLOSED = "EVENT_CLOSED"
     NOT_FOUND = "NOT_FOUND"
     PLAYED = "PLAYED"
+    NOT_OWN = "NOT_OWN"        # only the person who requested a track can boost it
 
 
 @dataclass
@@ -476,10 +477,10 @@ async def boosts_used(session: AsyncSession, *, user_id: int, event_id: int) -> 
 
 
 async def boost(session: AsyncSession, *, user_id: int, event_track_id: int) -> BoostOutcome:
-    """Spend points to lift a track: cost_boost points become cost_boost score.
+    """Spend points to lift your own track: cost_boost points become cost_boost score.
 
-    Works on any track, own or someone else's — backing a track you love is the
-    point. Unlike a guaranteed play it promises nothing, so it is never refunded.
+    Only on a track you requested yourself — likes are how you back someone
+    else's. Unlike a guaranteed play it promises nothing, so it is never refunded.
     """
     from lyfe.core.services import user_service
 
@@ -497,6 +498,11 @@ async def boost(session: AsyncSession, *, user_id: int, event_track_id: int) -> 
     await session.execute(select(User.id).where(User.id == user_id).with_for_update())
 
     balance = await user_service.get_points_balance(session, user_id)
+    own = await session.scalar(
+        select(TrackRequest.id).where(TrackRequest.event_track_id == event_track.id, TrackRequest.user_id == user_id)
+    )
+    if own is None:
+        return BoostOutcome(status=BoostResult.NOT_OWN, balance=balance)
     used = await boosts_used(session, user_id=user_id, event_id=event.id)
     if used >= settings.max_boosts_per_event:
         return BoostOutcome(status=BoostResult.LIMIT_REACHED, balance=balance, used=used)
