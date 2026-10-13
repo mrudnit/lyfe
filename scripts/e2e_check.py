@@ -180,15 +180,21 @@ async def main() -> None:
     statuses = [x.json()["status"] for x in results]
     check(f"parallel likes on every track: exactly {cap} go through", statuses.count("VOTED") == cap, statuses)
 
-    print("\n[boost — incl. 12 parallel taps]")
-    check("no points → NOT_ENOUGH", (await c.post(f"/api/app/boost/{first['id']}", headers=guest(5))).json()["status"] == "NOT_ENOUGH_POINTS")
+    print("\n[boost — own track only, incl. 12 parallel taps]")
+    check("boost someone else's track → NOT_OWN", (await c.post(f"/api/app/boost/{first['id']}", headers=guest(5))).json()["status"] == "NOT_OWN")
     await give(5, 100, "e2e:give:5")
-    results = await asyncio.gather(*(c.post(f"/api/app/boost/{first['id']}", headers=guest(5)) for _ in range(12)))
+    check("NOT_OWN even with points", (await c.post(f"/api/app/boost/{first['id']}", headers=guest(5))).json()["status"] == "NOT_OWN")
+    await give(1, 20, "e2e:give:1b")                     # guest 1 requested the first track
+    before1 = (await c.get("/api/app/me", headers=guest(1))).json()["user"]["points"]
+    results = await asyncio.gather(*(c.post(f"/api/app/boost/{first['id']}", headers=guest(1)) for _ in range(12)))
     st = [x.json()["status"] for x in results]
-    check("only 3 boosts go through", st.count("BOOSTED") == 3 and st.count("LIMIT_REACHED") == 9, st)
+    cap = settings.max_boosts_per_event
+    check(f"own track: only {cap} boosts go through", st.count("BOOSTED") == cap and st.count("LIMIT_REACHED") == 12 - cap, st)
+    after1 = (await c.get("/api/app/me", headers=guest(1))).json()["user"]["points"]
+    check(f"balance charged exactly {cap * settings.cost_boost}", before1 - after1 == cap * settings.cost_boost, (before1, after1))
     me5 = (await c.get("/api/app/me", headers=guest(5))).json()
-    expected5 = 100 + settings.points_vote * min(settings.max_votes_per_event, settings.max_paid_votes_per_event) - 15   # gift, paid likes, three boosts
-    check("balance charged exactly 15", me5["user"]["points"] == expected5, (me5["user"]["points"], expected5))
+    expected5 = 100 + settings.points_vote * min(settings.max_votes_per_event, settings.max_paid_votes_per_event)   # gift + paid likes, no boosts
+    check("nothing charged for refused boosts", me5["user"]["points"] == expected5, (me5["user"]["points"], expected5))
 
     print("\n[guarantee]")
     await give(1, 100, "e2e:give:1")

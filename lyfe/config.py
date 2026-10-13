@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     # BOOST: spend points to lift a track in TOP REQUESTS, one point = one place
     # of score. Capped per night so a full wallet cannot buy the whole chart.
     cost_boost: int = 5
-    max_boosts_per_event: int = 3
+    max_boosts_per_event: int = 2      # BOOST only on your own track, twice a night
 
     # Mini App. The public https address of the web service, e.g.
     # https://lyfe-web-production.up.railway.app — the bot opens <url>/app.
