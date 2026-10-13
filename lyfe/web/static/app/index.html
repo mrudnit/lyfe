@@ -466,10 +466,10 @@ const COPY = {
     soon_t: 'Скоро.', soon_s: 'Приём треков откроется {d}.', soon_home: 'Приём треков откроется {d}',
     boost_it: 'Поднять его +{c}', to_top: 'Смотреть TOP', add_more: 'Добавить ещё',
     top_title: 'TOP REQUESTS', top_empty_t: 'Тишина.', top_empty_s: 'Первый трек этой ночи за тобой.',
-    legend_vote: '♡ бесплатно, +1', legend_boost: '+{c} за {c} LYFE POINTS',
+    legend_vote: '♡ бесплатно, +1', legend_votes: '♡ лайков: {l} из {m}', legend_boost: '+{c} за {c} LYFE POINTS',
     more: 'Ещё', played: 'Сыграно', priority: 'Гарантия', you: 'Твой',
     vote_done: 'Голос засчитан.', vote_already: 'Ты уже голосовал за него.',
-    vote_own: 'Это твой трек — он уже посчитан.', vote_closed: 'Голосование закрыто.',
+    vote_own: 'Это твой трек — он уже посчитан.', vote_closed: 'Голосование закрыто.', vote_limit: 'Лайки на эту ночь закончились — {m} из {m}.',
     boost_q_t: 'BOOST', boost_q: '{c} LYFE POINTS → +{c} к треку\n«{track}»\n\nОсталось бустов на эту ночь: {left}.',
     boost_go: 'Поднять',
     boost_done: '+{c}. Трек выше.', boost_poor: 'Нужно {c} LYFE POINTS, у тебя {have}.',
@@ -546,10 +546,10 @@ const COPY = {
     soon_t: 'Скоро.', soon_s: 'Прийом треків відкриється {d}.', soon_home: 'Прийом треків відкриється {d}',
     boost_it: 'Підняти його +{c}', to_top: 'Дивитися TOP', add_more: 'Додати ще',
     top_title: 'TOP REQUESTS', top_empty_t: 'Тиша.', top_empty_s: 'Перший трек цієї ночі за тобою.',
-    legend_vote: '♡ безкоштовно, +1', legend_boost: '+{c} за {c} LYFE POINTS',
+    legend_vote: '♡ безкоштовно, +1', legend_votes: '♡ лайків: {l} з {m}', legend_boost: '+{c} за {c} LYFE POINTS',
     more: 'Ще', played: 'Зіграно', priority: 'Гарантія', you: 'Твій',
     vote_done: 'Голос зараховано.', vote_already: 'Ти вже голосував за нього.',
-    vote_own: 'Це твій трек — він уже врахований.', vote_closed: 'Голосування закрите.',
+    vote_own: 'Це твій трек — він уже врахований.', vote_closed: 'Голосування закрите.', vote_limit: 'Лайки на цю ніч закінчились — {m} з {m}.',
     boost_q_t: 'BOOST', boost_q: '{c} LYFE POINTS → +{c} до треку\n«{track}»\n\nЗалишилось бустів на цю ніч: {left}.',
     boost_go: 'Підняти',
     boost_done: '+{c}. Трек вище.', boost_poor: 'Потрібно {c} LYFE POINTS, у тебе {have}.',
@@ -672,7 +672,7 @@ async function api(path, opts = {}) {
 
 function setPoints(points) { if (S.me && typeof points === 'number') S.me.user.points = points; }
 function rules() { return S.me.rules; }
-function tonight() { return S.me.tonight || { requests_used: 0, boosts_used: 0, own: [] }; }
+function tonight() { return S.me.tonight || { requests_used: 0, boosts_used: 0, votes_used: 0, own: [] }; }
 function cover(url) {
   return `<div class="cover"${url ? ` style="background-image:url('${esc(url)}')"` : ''}></div>`;
 }
@@ -1008,7 +1008,7 @@ function topHeader() {
   return topline(`<span class="label num" id="pts">${S.me.user.points} LYFE POINTS</span>`) + `
     <h1 class="mega" style="font-size:clamp(32px,10.5vw,56px)">TOP<br>REQUESTS</h1>
     ${ev ? `<div class="meta"><span>${esc(ev.title)}</span><span>${esc(ev.date)}</span></div>` : ''}
-    <div class="legend"><span>${esc(L('legend_vote'))}</span><span>${esc(L('legend_boost', { c: rules().cost_boost }))}</span></div>`;
+    <div class="legend"><span>${esc(L('legend_votes', { l: Math.max(0, rules().votes_max - tonight().votes_used), m: rules().votes_max }))}</span><span>${esc(L('legend_boost', { c: rules().cost_boost }))}</span></div>`;
 }
 
 function renderTop() {
@@ -1028,7 +1028,7 @@ function renderTop() {
     const tags = (it.priority ? `<span class="tag">${esc(L('priority'))}</span>` : '') +
       (played ? `<span class="tag">${esc(L('played'))}</span>` : '') +
       (it.mine ? `<span class="tag">${esc(L('you'))}</span>` : '');
-    const canVote = open && !played && !it.mine && !it.voted;
+    const canVote = open && !played && !it.mine && !it.voted && tonight().votes_used < rules().votes_max;
     const canBoost = open && !played && boostsLeft > 0;
     return `<li class="${cls}">
       <span class="pos num">${pad(it.position)}</span>
@@ -1052,10 +1052,11 @@ async function doVote(item, button) {
   let res;
   try { res = await api('/api/app/vote/' + item.id, { method: 'POST' }); } catch (e) { button.disabled = false; return; }
   setPoints(res.points);
-  const msg = { VOTED: 'vote_done', ALREADY_VOTED: 'vote_already', OWN_TRACK: 'vote_own', EVENT_CLOSED: 'vote_closed' }[res.status];
-  if (msg) toast(L(msg));
+  const msg = { VOTED: 'vote_done', ALREADY_VOTED: 'vote_already', OWN_TRACK: 'vote_own', EVENT_CLOSED: 'vote_closed', LIMIT: 'vote_limit' }[res.status];
+  if (msg) toast(L(msg, { m: rules().votes_max }));
+  if (res.status === 'LIMIT') { tonight().votes_used = rules().votes_max; renderTop(); }
   if (res.status === 'VOTED') {
-    item.voted = true; item.score += 1; item.votes += 1; item.justVoted = true;
+    item.voted = true; item.score += 1; item.votes += 1; item.justVoted = true; tonight().votes_used += 1;
     renderTop(); item.justVoted = false;
   }
 }

@@ -340,6 +340,19 @@ class VoteResult:
     OWN_TRACK = "OWN_TRACK"
     EVENT_CLOSED = "EVENT_CLOSED"
     NOT_FOUND = "NOT_FOUND"
+    LIMIT = "LIMIT"          # this person has used all their likes for the night
+
+
+async def votes_used(session: AsyncSession, *, user_id: int, event_id: int) -> int:
+    """Likes this person has given at this event."""
+    return int(
+        await session.scalar(
+            select(func.count(TrackVote.id))
+            .join(EventTrack, EventTrack.id == TrackVote.event_track_id)
+            .where(TrackVote.user_id == user_id, EventTrack.event_id == event_id)
+        )
+        or 0
+    )
 
 
 async def add_vote(session: AsyncSession, *, user_id: int, event_track_id: int) -> str:
@@ -374,6 +387,10 @@ async def add_vote(session: AsyncSession, *, user_id: int, event_track_id: int) 
     )
     if existing is not None:
         return VoteResult.ALREADY_VOTED
+
+    # Checked under the per-user lock above, so parallel taps cannot slip past it.
+    if await votes_used(session, user_id=user_id, event_id=event.id) >= settings.max_votes_per_event:
+        return VoteResult.LIMIT
 
     vote = TrackVote(event_track_id=event_track_id, user_id=user_id)
     try:
