@@ -23,6 +23,7 @@ from aiogram.types import (
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from lyfe.bot.keyboards import button_texts, main_menu
+from lyfe.config import get_settings
 from lyfe.core.services import event_service, request_service
 from lyfe.core.services.request_service import VoteResult
 from lyfe.i18n import t
@@ -170,6 +171,7 @@ async def vote(callback: CallbackQuery, user: User, session: AsyncSession):
         VoteResult.OWN_TRACK: t("vote_own", lang),
         VoteResult.EVENT_CLOSED: t("vote_closed", lang),
         VoteResult.NOT_FOUND: t("error", lang),
+        VoteResult.LIMIT: t("vote_limit", lang, n=get_settings().max_votes_per_event),
     }
     await callback.answer(notices.get(result, ""), show_alert=False)
 

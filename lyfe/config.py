@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     # like all ten tracks in TOP from their sofa and out-earn someone who
     # actually turned up.
     max_paid_votes_per_event: int = 3
+    # Likes per person per night. Without a cap one person could like every
+    # track in TOP and the chart would stop meaning anything.
+    max_votes_per_event: int = 3
     points_attendance: int = 10
     cost_priority_track: int = 40
     # BOOST: spend points to lift a track in TOP REQUESTS, one point = one place

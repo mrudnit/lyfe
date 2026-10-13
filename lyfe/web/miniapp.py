@@ -204,6 +204,7 @@ async def me(user: User = Depends(current_user), session: AsyncSession = Depends
             "boosts_used": await request_service.boosts_used(
                 session, user_id=user.id, event_id=event.id
             ),
+            "votes_used": await request_service.votes_used(session, user_id=user.id, event_id=event.id),
             "own": [
                 {"position": position, "name": name}
                 for position, name in await request_service.user_track_positions(
@@ -229,6 +230,7 @@ async def me(user: User = Depends(current_user), session: AsyncSession = Depends
         "rules": {
             "requests_max": settings.max_requests_per_user_per_event,
             "boosts_max": settings.max_boosts_per_event,
+            "votes_max": settings.max_votes_per_event,
             "cost_boost": settings.cost_boost,
             "cost_priority": settings.cost_priority_track,
             "points_request": settings.points_music_request,

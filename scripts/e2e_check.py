@@ -169,9 +169,16 @@ async def main() -> None:
     check("vote", (await c.post(f"/api/app/vote/{first['id']}", headers=guest(5))).json()["status"] == "VOTED")
     check("vote again → ALREADY", (await c.post(f"/api/app/vote/{first['id']}", headers=guest(5))).json()["status"] == "ALREADY_VOTED")
     others = [i["id"] for i in top["items"][1:]]
+    cap = settings.max_votes_per_event
+    check(f"enough tracks to test the like cap ({len(others)} others)", len(others) >= cap, len(others))
+    for i in others[:cap - 1]:
+        check("like within the cap", (await c.post(f"/api/app/vote/{i}", headers=guest(5))).json()["status"] == "VOTED")
+    check(f"like #{cap + 1} → LIMIT", (await c.post(f"/api/app/vote/{others[cap - 1]}", headers=guest(5))).json()["status"] == "LIMIT")
+    me5v = (await c.get("/api/app/me", headers=guest(5))).json()
+    check(f"/me shows {cap} of {cap} likes used", me5v["tonight"]["votes_used"] == cap and me5v["rules"]["votes_max"] == cap, me5v["tonight"])
     results = await asyncio.gather(*(c.post(f"/api/app/vote/{i}", headers=guest(6)) for i in others * 3))
     statuses = [x.json()["status"] for x in results]
-    check("parallel duplicate votes: one per track", statuses.count("VOTED") == len(others), statuses)
+    check(f"parallel likes on every track: exactly {cap} go through", statuses.count("VOTED") == cap, statuses)
 
     print("\n[boost — incl. 12 parallel taps]")
     check("no points → NOT_ENOUGH", (await c.post(f"/api/app/boost/{first['id']}", headers=guest(5))).json()["status"] == "NOT_ENOUGH_POINTS")
@@ -180,7 +187,7 @@ async def main() -> None:
     st = [x.json()["status"] for x in results]
     check("only 3 boosts go through", st.count("BOOSTED") == 3 and st.count("LIMIT_REACHED") == 9, st)
     me5 = (await c.get("/api/app/me", headers=guest(5))).json()
-    expected5 = 100 + settings.points_vote - 15      # gift, one paid like, three boosts
+    expected5 = 100 + settings.points_vote * min(settings.max_votes_per_event, settings.max_paid_votes_per_event) - 15   # gift, paid likes, three boosts
     check("balance charged exactly 15", me5["user"]["points"] == expected5, (me5["user"]["points"], expected5))
 
     print("\n[guarantee]")
