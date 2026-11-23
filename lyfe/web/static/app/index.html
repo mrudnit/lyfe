@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="gta">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="dark">
 <title>LYFE</title>
 <link rel="preload" href="/static/app/logo-ink.png?v=__ASSET_V__" as="image">
 <link rel="stylesheet" href="/static/app/fonts/fonts.css?v=__ASSET_V__">
@@ -401,6 +401,132 @@
     padding: 10px 12px; color: var(--ink-2); opacity: 0; transition: opacity .3s;
   }
   .splash .sound.show { opacity: 1; }
+
+  /* ================= Grand Theft Lyfe =================
+     docs/lyfe-gta-style.md — the night city skin. Only the look: markup, data
+     and logic underneath are the same as before. Two neons per screen at most:
+     pink for actions, cash green for money and success. */
+  :root[data-theme="gta"] {
+    color-scheme: dark;
+    --night: #0B0B12; --asphalt: #1A1A24; --neon-pink: #FF2E88; --neon-cyan: #2EF2FF;
+    --sunset: #FF8A3D; --cash: #7CFF6B; --wanted-red: #FF3B3B; --cream: #F2EDE4;
+    --paper: var(--night); --ink: var(--cream); --ink-2: #b4aea6; --ink-3: #7b7684; --rule: #2a2a36;
+    --accent: var(--neon-pink); --on-accent: var(--night);
+    --font-display: 'Big Shoulders Display', 'LYFE Cyr Display', 'Arial Narrow', sans-serif;
+    --font-text: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-num: 'Space Mono', 'IBM Plex Sans', ui-monospace, monospace;
+  }
+  :root[data-theme="gta"] body { background: var(--night); color: var(--cream); }
+  /* film grain + faint scan lines over everything, never in the way of a tap */
+  :root[data-theme="gta"] body::after {
+    content: ""; position: fixed; inset: 0; z-index: 95; pointer-events: none;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 3px),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.07'/%3E%3C/svg%3E");
+  }
+  :root[data-theme="gta"] ::selection { background: var(--neon-pink); color: var(--night); }
+  :root[data-theme="gta"] .mark { filter: invert(1); }
+  :root[data-theme="gta"] .mega, :root[data-theme="gta"] .done .title, :root[data-theme="gta"] .season-card .title {
+    font-family: var(--font-display); font-weight: 900; letter-spacing: .005em; line-height: .88; }
+  :root[data-theme="gta"] .label, :root[data-theme="gta"] .meta, :root[data-theme="gta"] .tab, :root[data-theme="gta"] .legend {
+    font-family: var(--font-num); font-weight: 700; letter-spacing: .12em; }
+  :root[data-theme="gta"] .label.accent, :root[data-theme="gta"] .label.mission { color: var(--neon-pink); }
+  :root[data-theme="gta"] .meta span:not(:last-child)::after { color: var(--neon-pink); }
+  :root[data-theme="gta"] .big-num, :root[data-theme="gta"] .num, :root[data-theme="gta"] .stats b,
+  :root[data-theme="gta"] .board .pos, :root[data-theme="gta"] .board .score, :root[data-theme="gta"] .tracks-mine .p,
+  :root[data-theme="gta"] .offer .price, :root[data-theme="gta"] .ledger .v, :root[data-theme="gta"] .season-card .facts b,
+  :root[data-theme="gta"] .game-top .g-score, :root[data-theme="gta"] .g-center .n, :root[data-theme="gta"] .board-mini .p,
+  :root[data-theme="gta"] .board-mini .s, :root[data-theme="gta"] .g-float {
+    font-family: var(--font-num); font-weight: 700; letter-spacing: -.02em; }
+  :root[data-theme="gta"] .big-num { letter-spacing: -.06em; }
+  :root[data-theme="gta"] .count .big-num, :root[data-theme="gta"] .stats b, :root[data-theme="gta"] .tracks-mine .p,
+  :root[data-theme="gta"] .board li:nth-child(-n+3) .pos, :root[data-theme="gta"] .live, :root[data-theme="gta"] .season-card .facts b { color: var(--cream); }
+  :root[data-theme="gta"] .wallet .big-num, :root[data-theme="gta"] .sheet .big-num, :root[data-theme="gta"] .ledger .v { color: var(--cash); }
+  :root[data-theme="gta"] .live::before { background: var(--wanted-red); border-radius: 0; }
+  :root[data-theme="gta"] .rule, :root[data-theme="gta"] .rule:not(.soft) { background: var(--rule); height: 2px; }
+  :root[data-theme="gta"] .rule:not(.soft)::before { content: ""; display: block; width: 28px; height: 2px; background: var(--neon-pink); }
+
+  /* actions: hard corners, 2px, short and sharp */
+  :root[data-theme="gta"] .btn { background: var(--neon-pink); color: var(--night); border-radius: 2px; min-height: 56px;
+    font-family: var(--font-display); font-size: 20px; font-weight: 900; letter-spacing: .04em; transition: transform .15s, filter .15s; }
+  :root[data-theme="gta"] .btn::after { color: var(--night); }
+  :root[data-theme="gta"] .btn:active:not(:disabled) { transform: scale(.98); filter: brightness(1.15); }
+  :root[data-theme="gta"] .btn.plain { background: none !important; color: var(--cream) !important; border: 2px solid var(--cream) !important; }
+  :root[data-theme="gta"] .link { color: var(--cream); border-bottom: 2px solid var(--neon-pink); font-family: var(--font-display); font-size: 16px; font-weight: 800; letter-spacing: .05em; }
+  :root[data-theme="gta"] .add { background: var(--neon-pink); color: var(--night); border-radius: 2px; min-height: 48px; min-width: 48px; font-family: var(--font-display); font-size: 15px; font-weight: 900; }
+  :root[data-theme="gta"] .add:disabled { background: none; color: var(--cash); }
+  :root[data-theme="gta"] .field { border-bottom: 2px solid var(--neon-pink); }
+  :root[data-theme="gta"] .field input { color: var(--cream); }
+  :root[data-theme="gta"] .search { background: var(--night); }
+  :root[data-theme="gta"] .cover { border-radius: 2px; background-color: var(--asphalt); }
+  :root[data-theme="gta"] .slot { background: var(--asphalt); height: 4px; }
+  :root[data-theme="gta"] .slot.on { background: var(--neon-pink); }
+
+  /* HUD: money and wanted stars, top right, like the game */
+  .hud { text-align: right; line-height: 1; }
+  .hud .cash { font-family: var(--font-num); font-weight: 700; font-size: 20px; color: var(--cash); letter-spacing: -.02em; white-space: nowrap; }
+  .hud .stars { display: flex; gap: 3px; justify-content: flex-end; margin-top: 6px; }
+  .hud .stars svg { width: 13px; height: 13px; fill: #34343f; }
+  .hud .stars svg.on { fill: var(--cream); }
+
+  /* radio: the chart reads like a car stereo */
+  :root[data-theme="gta"] .board { border-top: 2px solid var(--rule); }
+  :root[data-theme="gta"] .board li { min-height: 64px; }
+  :root[data-theme="gta"] .board li.pri { background: var(--asphalt); color: var(--cream); border-left: 4px solid var(--neon-pink); }
+  :root[data-theme="gta"] .board li.pri .pos, :root[data-theme="gta"] .board li.pri .tag { color: var(--neon-pink); }
+  :root[data-theme="gta"] .board .tag { font-family: var(--font-num); }
+  :root[data-theme="gta"] .board .act { width: 44px; height: 44px; color: var(--ink-3); }
+  :root[data-theme="gta"] .board .act svg { width: 22px; height: 22px; fill: currentColor; }
+  :root[data-theme="gta"] .board .act.on, :root[data-theme="gta"] .board .act.on:disabled { color: var(--cash); opacity: 1; }
+  :root[data-theme="gta"] .board .act.boost { border: 2px solid var(--neon-pink); color: var(--neon-pink); border-radius: 2px; width: 44px; height: 34px; font-family: var(--font-num); font-size: 11px; }
+  :root[data-theme="gta"] .board .score.bump { color: var(--cash); }
+  :root[data-theme="gta"] .radio-head { border: 2px solid var(--rule); border-radius: 2px; padding: 12px 14px; margin-top: 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  :root[data-theme="gta"] .radio-head .fq { font-family: var(--font-num); font-weight: 700; color: var(--neon-pink); font-size: 13px; letter-spacing: .1em; }
+  :root[data-theme="gta"] .radio-head .eq { display: flex; gap: 3px; align-items: flex-end; height: 18px; }
+  :root[data-theme="gta"] .radio-head .eq i { width: 4px; background: var(--neon-pink); animation: eq 0.9s steps(4) infinite; }
+  :root[data-theme="gta"] .radio-head .eq i:nth-child(2) { animation-delay: -.3s; } :root[data-theme="gta"] .radio-head .eq i:nth-child(3) { animation-delay: -.6s; }
+  @keyframes eq { 0% { height: 30%; } 50% { height: 100%; } 100% { height: 55%; } }
+
+  /* dossier */
+  :root[data-theme="gta"] .stats { border-top: 2px solid var(--rule); }
+  :root[data-theme="gta"] .pass .qr, :root[data-theme="gta"] .pass-extra .qr { background: #fff; padding: 12px; border-radius: 2px; border: 2px solid var(--cream); }
+  :root[data-theme="gta"] .free-badge { background: var(--cash); color: var(--night); border-radius: 2px; font-family: var(--font-display); }
+  :root[data-theme="gta"] .offer .nm { font-family: var(--font-display); font-weight: 900; font-size: 24px; }
+  :root[data-theme="gta"] .offer .price { color: var(--cash); }
+
+  /* tab bar, sheets, toasts */
+  :root[data-theme="gta"] .tabbar { background: var(--asphalt); border-top: 2px solid var(--rule); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  :root[data-theme="gta"] .tab { color: var(--ink-3); font-size: 10px; min-height: 48px; }
+  :root[data-theme="gta"] .tab.on { color: var(--cream); }
+  :root[data-theme="gta"] .tab.on::before { background: var(--neon-pink); height: 3px; top: -2px; }
+  :root[data-theme="gta"] .scrim { background: rgba(5,5,10,.72); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  :root[data-theme="gta"] .sheet { background: var(--asphalt); border-top: 2px solid var(--neon-pink); }
+  :root[data-theme="gta"] .toast { background: var(--asphalt); color: var(--cream); border-left: 4px solid var(--cash); border-radius: 2px; font-family: var(--font-text); font-weight: 600; }
+  :root[data-theme="gta"] .toast.bad { border-left-color: var(--wanted-red); }
+  :root[data-theme="gta"] .loading::after { background: var(--neon-pink); }
+  :root[data-theme="gta"] .season-pill { display: none; }
+  :root[data-theme="gta"] .hunt .dots i { border-color: var(--cash); border-radius: 0; }
+  :root[data-theme="gta"] .hunt .dots i.on { background: var(--cash); }
+  :root[data-theme="gta"] .hp { animation: none; transform: rotate(-8deg); }
+
+  /* success flash / failure shake, 150–250 ms */
+  .fx-flash { position: fixed; inset: 0; z-index: 96; pointer-events: none; background: var(--cash); opacity: 0; }
+  .fx-flash.go { animation: flash .22s ease-out; }
+  @keyframes flash { 0% { opacity: .22; } 100% { opacity: 0; } }
+  .shake { animation: shake .22s linear; }
+  @keyframes shake { 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+
+  /* the game screen goes dark too */
+  :root[data-theme="gta"] .game { background: var(--night); }
+  :root[data-theme="gta"] .g-timer { background: var(--asphalt); }
+  :root[data-theme="gta"] .g-timer i, :root[data-theme="gta"] .g-center .n { background: none; }
+  :root[data-theme="gta"] .g-timer i { background: var(--neon-pink); }
+  :root[data-theme="gta"] .g-center .n { color: var(--neon-pink); }
+  :root[data-theme="gta"] .board-mini { border-top: 2px solid var(--rule); }
+
+  /* splash: the same mark, white on night */
+  :root[data-theme="gta"] .splash { background: #000; }
+  :root[data-theme="gta"] .splash canvas { filter: invert(1); }
 </style>
 </head>
 <body>
@@ -426,6 +552,7 @@
 <div class="scrim" id="scrim"></div>
 <div class="sheet" id="sheet"></div>
 <div class="toast" id="toast"></div>
+<div class="fx-flash" id="fxFlash"></div>
 
 <script>
 'use strict';
@@ -598,6 +725,94 @@ const COPY = {
   },
 };
 
+/* Grand Theft Lyfe voice (docs/lyfe-gta-style.md): short, «ты», like a crew
+   mate's texts. Only the words change; every key below already existed. */
+const GTA = {
+  ru: {
+    tab_home: 'МИССИЯ', tab_add: 'ЗАКАЗАТЬ', tab_top: 'РАДИО', tab_me: 'ДОСЬЕ',
+    presents: 'Миссия', ticket: 'Пропуск', live: 'В деле',
+    no_event_t: 'В городе тихо.', no_event_s: 'Новое дело скоро. Наберу первым.',
+    your_tracks: 'Твои заказы', no_tracks: 'Пусто. Закажи три трека — и ночь твоя.',
+    add_track: 'Заказать трек', wallet: 'Бабки · LYFE POINTS', wallet_spend: 'Потратить',
+    req_title: 'Радио LYFE · заказ', req_sub: 'Что крутим {date}?', req_ph: 'Трек, артист или ссылка',
+    added_t: 'Заказ принят', added_first: 'Ты первый, кто его заказал.', added_nth: 'Ты {n}-й, кто его заказал.',
+    added_s: 'Поставят — маякну первым.', already: 'Уже твой. Дважды не считается.',
+    limit_t: 'Три заказа — лимит.', limit_s: 'Дальше решает зал.',
+    closed_t: 'Эфир закрыт.', closed_s: 'Следующее дело скоро. Наберу.',
+    soon_t: 'Скоро эфир.', soon_s: 'Заказы откроются {d}.', soon_home: 'Заказы откроются {d}',
+    boost_it: 'Поднять +{c}', to_top: 'В эфир', add_more: 'Ещё заказ',
+    top_title: 'Радио LYFE', top_empty_t: 'Тихий эфир.', top_empty_s: 'Первый трек ночи за тобой.',
+    legend_votes: 'Огонь: {l} из {m}', legend_boost: 'Буст своего: +{c} за ${c}',
+    played: 'Отыграл', priority: 'Гарантия', you: 'Твой',
+    vote_done: 'Огонь засчитан. Трек выше.', vote_already: 'Уже давал ему огня.',
+    vote_own: 'Свой трек — он уже в счёте.', vote_closed: 'Эфир закрыт.', vote_limit: 'Огонь кончился — {m} из {m}.',
+    boost_q: '${c} → +{c} к треку\n«{track}»\n\nБустов осталось: {left}.', boost_go: 'Поднять',
+    boost_done: 'Трек выше. −${c}', boost_poor: 'Нужно ${c}, у тебя ${have}.',
+    boost_limit: 'Бусты кончились на эту вечеринку.', boost_played: 'Его уже отыграли.', boost_own: 'Бустить можно только свой трек.',
+    nights: 'Ночей', requests: 'Заказов', played_n: 'Отыграли',
+    pass_btn: 'ПРОПУСК', pass_s: 'Покажи на входе.',
+    spend_title: 'Куда потратить', earn_title: 'Как поднять бабки', hist_title: 'Движение денег',
+    earn_req: 'Заказать трек', earn_vote: 'Огонь чужому треку, первые 3', earn_att: 'Прийти на дело LYFEPARTY',
+    error: 'Что-то сломалось. Минуту.', offline: 'Связь пропала. Ещё раз.',
+    ticket_label: 'Пропуск', ticket_buy: 'Забрать билет · GoOut', ticket_soon: 'Билеты скоро на GoOut.',
+    ticket_no_date: 'Билеты появятся, когда объявим дело.',
+    free_pass: 'Вход бесплатный', held_title: 'Покажи на входе',
+    hunt: 'Найди {n} тайников с баблом: +${p} за каждый.', hunt_found: 'Тайник вскрыт. +${p} · {k}/{n}', hunt_all: 'Все тайники вскрыты. Бонус +${b}',
+    dossier: 'Досье', case_no: 'Дело № {id}', wanted: 'Розыск',
+    boost_ds: '+{c} к своему треку в эфире. До {max} раз на вечеринку.', boost_left: 'Осталось: {n}', boost_how: 'В эфир',
+    pri_nm: 'Гарантия', pri_ds: 'Трек закрепляется у DJ и точно звучит. Всего {max} на вечеринку.', pri_btn: 'Выбрать трек',
+    pri_left: 'Осталось: {n}', pri_none: 'Сначала закажи трек — гарантия ставится на свой.', pri_full: 'Разобрали. Их всего две.',
+    pri_have: 'Твой трек уже закреплён.', pri_pick: 'Какой трек закрепить?', pri_go: 'Закрепить', pri_done: 'Готово. Трек у DJ.',
+    pri_off: 'Откроется ближе к делу.',
+  },
+  uk: {
+    tab_home: 'МІСІЯ', tab_add: 'ЗАМОВИТИ', tab_top: 'РАДІО', tab_me: 'ДОСЬЄ',
+    presents: 'Місія', ticket: 'Пропуск', live: 'У справі',
+    no_event_t: 'У місті тихо.', no_event_s: 'Нова справа скоро. Наберу першим.',
+    your_tracks: 'Твої замовлення', no_tracks: 'Порожньо. Замов три треки — і ніч твоя.',
+    add_track: 'Замовити трек', wallet: 'Бабки · LYFE POINTS', wallet_spend: 'Витратити',
+    req_title: 'Радіо LYFE · замовлення', req_sub: 'Що крутимо {date}?', req_ph: 'Трек, артист або посилання',
+    added_t: 'Замовлення прийнято', added_first: 'Ти перший, хто його замовив.', added_nth: 'Ти {n}-й, хто його замовив.',
+    added_s: 'Поставлять — маякну першим.', already: 'Вже твій. Двічі не рахується.',
+    limit_t: 'Три замовлення — ліміт.', limit_s: 'Далі вирішує зал.',
+    closed_t: 'Ефір закрито.', closed_s: 'Наступна справа скоро. Наберу.',
+    soon_t: 'Скоро ефір.', soon_s: 'Замовлення відкриються {d}.', soon_home: 'Замовлення відкриються {d}',
+    boost_it: 'Підняти +{c}', to_top: 'В ефір', add_more: 'Ще замовлення',
+    top_title: 'Радіо LYFE', top_empty_t: 'Тихий ефір.', top_empty_s: 'Перший трек ночі за тобою.',
+    legend_votes: 'Вогонь: {l} з {m}', legend_boost: 'Буст свого: +{c} за ${c}',
+    played: 'Відіграв', priority: 'Гарантія', you: 'Твій',
+    vote_done: 'Вогонь зараховано. Трек вище.', vote_already: 'Вже давав йому вогню.',
+    vote_own: 'Свій трек — він уже в рахунку.', vote_closed: 'Ефір закрито.', vote_limit: 'Вогонь скінчився — {m} з {m}.',
+    boost_q: '${c} → +{c} до треку\n«{track}»\n\nБустів лишилось: {left}.', boost_go: 'Підняти',
+    boost_done: 'Трек вище. −${c}', boost_poor: 'Потрібно ${c}, у тебе ${have}.',
+    boost_limit: 'Бусти скінчились на цю вечірку.', boost_played: 'Його вже відіграли.', boost_own: 'Бустити можна лише свій трек.',
+    nights: 'Ночей', requests: 'Замовлень', played_n: 'Відіграли',
+    pass_btn: 'ПРОПУСК', pass_s: 'Покажи на вході.',
+    spend_title: 'На що витратити', earn_title: 'Як підняти бабки', hist_title: 'Рух грошей',
+    earn_req: 'Замовити трек', earn_vote: 'Вогонь чужому треку, перші 3', earn_att: 'Прийти на справу LYFEPARTY',
+    error: 'Щось зламалось. Хвилину.', offline: 'Зв’язок пропав. Ще раз.',
+    ticket_label: 'Пропуск', ticket_buy: 'Забрати квиток · GoOut', ticket_soon: 'Квитки скоро на GoOut.',
+    ticket_no_date: 'Квитки з’являться, коли оголосимо справу.',
+    free_pass: 'Вхід безкоштовний', held_title: 'Покажи на вході',
+    hunt: 'Знайди {n} схованок з баблом: +${p} за кожну.', hunt_found: 'Схованку зламано. +${p} · {k}/{n}', hunt_all: 'Усі схованки зламано. Бонус +${b}',
+    dossier: 'Досьє', case_no: 'Справа № {id}', wanted: 'Розшук',
+    boost_ds: '+{c} до свого треку в ефірі. До {max} разів на вечірку.', boost_left: 'Лишилось: {n}', boost_how: 'В ефір',
+    pri_nm: 'Гарантія', pri_ds: 'Трек закріплюється у DJ і точно звучить. Всього {max} на вечірку.', pri_btn: 'Обрати трек',
+    pri_left: 'Лишилось: {n}', pri_none: 'Спершу замов трек — гарантія ставиться на свій.', pri_full: 'Розібрали. Їх лише дві.',
+    pri_have: 'Твій трек уже закріплено.', pri_pick: 'Який трек закріпити?', pri_go: 'Закріпити', pri_done: 'Готово. Трек у DJ.',
+    pri_off: 'Відкриється ближче до справи.',
+  },
+};
+for (const lg of ['ru', 'uk']) {
+  Object.assign(COPY[lg], GTA[lg]);
+  COPY[lg].reason = { ...COPY[lg].reason, VOTE: lg === 'ru' ? 'Огонь' : 'Вогонь', MUSIC_REQUEST: lg === 'ru' ? 'Заказ' : 'Замовлення', PUMPKIN: lg === 'ru' ? 'Тайник' : 'Схованка' };
+}
+
+const STAR = '<svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7.1L12 17.6 5.7 21.3l1.7-7.1L2 9.5l7.1-.6z"/></svg>';
+const FIRE = '<svg viewBox="0 0 24 24"><path d="M13.5 1.5s.9 3.1-1.3 6C10.1 10.3 7 11.6 7 15.6 7 19.1 9.3 22 12.4 22c3.4 0 5.6-2.6 5.6-6.1 0-2.5-1.3-4.2-1.3-4.2s-.2 2.1-1.9 2.9c.6-4.6-1.3-9.4-1.3-13.1zM12 20c-1.5 0-2.6-1.1-2.6-2.7 0-2 2.2-2.6 2.6-5.1.9 1.5 2.7 2.8 2.7 5 0 1.6-1.1 2.8-2.7 2.8z"/></svg>';
+// reward names in the database start with an emoji; the skin uses words only
+const noEmoji = (t) => String(t || '').replace(/^[\p{Extended_Pictographic}\u{FE0F}\u{200D}\s]+/u, '');
+
 const BOT_USERNAME = '__BOT_USERNAME__';
 // Changes with every deploy: asset URLs carry it, so Telegram's webview cannot
 // keep showing last week's splash frames from its cache.
@@ -629,11 +844,19 @@ function esc(s) {
 }
 function pad(n) { return String(n).padStart(2, '0'); }
 function haptic(kind) {
+  fx(kind);
   try {
     if (!tg || !tg.HapticFeedback) return;
     if (kind === 'ok' || kind === 'error' || kind === 'warning') tg.HapticFeedback.notificationOccurred(kind === 'ok' ? 'success' : kind);
     else tg.HapticFeedback.impactOccurred(kind || 'light');
   } catch (e) {}
+}
+function fx(kind) {
+  if (kind === 'ok') { const f = $('#fxFlash'); if (f) { f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); } }
+  if (kind === 'warning' || kind === 'error') {
+    view.classList.remove('shake'); void view.offsetWidth; view.classList.add('shake');
+    const t = $('#toast'); if (t) { t.classList.add('bad'); clearTimeout(fx.t); fx.t = setTimeout(() => t.classList.remove('bad'), 2600); }
+  }
 }
 let toastTimer;
 function toast(text) {
@@ -729,8 +952,8 @@ async function refreshMe() {
   S.me = await api('/api/app/me');
   lang = S.me.user.language === 'uk' ? 'uk' : 'ru';
   document.documentElement.lang = lang;
-  if (S.me.season) document.documentElement.dataset.season = S.me.season.name;
-  else delete document.documentElement.dataset.season;
+  delete document.documentElement.dataset.season;   // the GTA skin replaces the seasonal palette
+  document.documentElement.dataset.theme = 'gta';
   try {
     const paper = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim() || '#ffffff';
     tg && tg.setHeaderColor(paper); tg && tg.setBackgroundColor(paper);
@@ -739,8 +962,14 @@ async function refreshMe() {
   document.querySelectorAll('[data-l]').forEach(el => { el.textContent = L(el.dataset.l); });
 }
 
-function topline(right) {
-  return `<div class="topline"><span class="mark" role="img" aria-label="LYFE"></span>${right || ''}</div>`;
+function hud() {
+  if (!S.me || !S.me.user) return '';
+  const stars = Math.min(5, S.me.user.nights || 0);   // wanted level = nights at LYFEPARTY
+  return `<div class="hud"><div class="cash num">$ ${Number(S.me.user.points).toLocaleString('ru-RU')}</div>
+    <div class="stars" aria-label="${esc(L('wanted'))} ${stars}/5">${Array.from({ length: 5 }, (_, i) => STAR.replace('<svg', `<svg class="${i < stars ? 'on' : ''}"`)).join('')}</div></div>`;
+}
+function topline() {
+  return `<div class="topline"><span class="mark" role="img" aria-label="LYFE"></span>${hud()}</div>`;
 }
 
 /* ---------------- НОЧЬ ---------------- */
@@ -752,7 +981,7 @@ function renderHome() {
     // Between parties: no date yet, but the season, the hunt and the game
     // are still on, and the guest learns where tickets will appear.
     view.innerHTML = topline(seasonPill()) + `
-      <div class="label">${esc(L('presents'))}</div>
+      <div class="label mission">${esc(L('presents'))}</div>
       <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px">
         <h1 class="mega" style="margin-top:10px">${esc(L('no_event_t'))}</h1>${hiddenPumpkin('home')}
       </div>
@@ -776,7 +1005,7 @@ function renderHome() {
   const canAdd = ev.accepts_requests && tn.requests_used < rules().requests_max;
 
   view.innerHTML = topline(seasonPill()) + `
-    <div class="label">${esc(L('presents'))}</div>
+    <div class="label mission">${esc(L('presents'))}</div>
     <h1 class="mega" style="margin-top:10px">${esc(ev.title)}</h1>
     <div class="meta">${[ev.date, ev.time, ev.venue, ev.city].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('')}</div>
     <div style="display:flex;align-items:flex-end;justify-content:space-between">${when}${hiddenPumpkin('home')}</div>
@@ -1005,8 +1234,9 @@ async function loadTop(append, silent) {
 
 function topHeader() {
   const ev = S.me.event;
-  return topline(`<span class="label num" id="pts">${S.me.user.points} LYFE POINTS</span>`) + `
-    <h1 class="mega" style="font-size:clamp(32px,10.5vw,56px)">TOP<br>REQUESTS</h1>
+  return topline() + `
+    <h1 class="mega" style="font-size:clamp(36px,12vw,64px)">${esc(L('top_title'))}</h1>
+    <div class="radio-head"><span class="fq">LYFE · 103.0 FM</span><span class="eq"><i></i><i></i><i></i></span></div>
     ${ev ? `<div class="meta"><span>${esc(ev.title)}</span><span>${esc(ev.date)}</span></div>` : ''}
     <div class="legend"><span>${esc(L('legend_votes', { l: Math.max(0, rules().votes_max - tonight().votes_used), m: rules().votes_max }))}</span><span>${esc(L('legend_boost', { c: rules().cost_boost }))}</span></div>`;
 }
@@ -1035,7 +1265,7 @@ function renderTop() {
       <div class="tinfo"><div class="ttitle">${esc(it.title)}</div><div class="tartist">${tags}${esc(it.artist)}</div></div>
       <div class="right">
         <span class="score num${it.justVoted ? ' bump' : ''}">${it.score}</span>
-        <button class="act${it.voted ? ' on' : ''}${it.justVoted ? ' pop' : ''}" data-vote="${i}" ${canVote ? '' : 'disabled'} aria-label="like">${it.voted || it.mine ? '♥' : '♡'}</button>
+        <button class="act${it.voted ? ' on' : ''}${it.justVoted ? ' pop' : ''}" data-vote="${i}" ${canVote ? '' : 'disabled'} aria-label="like">${FIRE}</button>
         ${it.mine ? `<button class="act boost" data-boost="${i}" ${canBoost ? '' : 'disabled'} aria-label="boost">+${c}</button>` : '<span class="act boost" style="visibility:hidden"></span>'}
       </div></li>`;
   }).join('') + `</ul>` + `<div style="text-align:right;margin-top:10px">${hiddenPumpkin('top')}</div>` +
@@ -1087,8 +1317,8 @@ async function doBoost(item) {
 
 function renderMe() {
   const { user } = S.me;
-  view.innerHTML = topline(`<span class="label">LYFE #${esc(user.lyfe_id)}</span>`) + `
-    <span class="label">MY LYFE</span>
+  view.innerHTML = topline() + `
+    <span class="label mission">${esc(L('dossier'))} · ${esc(L('case_no', { id: user.lyfe_id }))}</span>
     <h1 class="mega" style="margin-top:10px">${esc(user.name)}</h1>
     <div class="stats">
       <div><b class="num">${user.requests}</b><span class="label">${esc(L('requests'))}</span></div>
@@ -1098,7 +1328,7 @@ function renderMe() {
 
     <div class="pass">
       <div class="qr" id="qr"><div class="loading"></div></div>
-      <p class="label" style="text-align:center;margin-top:14px">LYFE PASS · ${esc(L('pass_s'))} ${hiddenPumpkin('me')}</p>
+      <p class="label" style="text-align:center;margin-top:14px">${esc(L('pass_btn'))} · LYFE PASS · ${esc(L('pass_s'))} ${hiddenPumpkin('me')}</p>
     </div>
     <div id="passExtra"></div>
 
@@ -1118,7 +1348,7 @@ function renderMe() {
     }
     if (p.held && p.held.length) {
       html += `<div class="pass-extra"><span class="label">${esc(L('held_title'))}</span>
-        <ul class="held">${p.held.map(h => `<li><span>${esc(h.name)}</span><span>${esc(h.code)}</span></li>`).join('')}</ul></div>`;
+        <ul class="held">${p.held.map(h => `<li><span>${esc(noEmoji(h.name))}</span><span>${esc(h.code)}</span></li>`).join('')}</ul></div>`;
     }
     extra.innerHTML = html;
   }).catch(() => {});
@@ -1220,7 +1450,7 @@ async function openPass() {
   try { p = await api('/api/app/pass'); } catch (e) { closeSheet(); return; }
   $('#sheet').innerHTML = `<button class="close" id="sheetclose" aria-label="close">×</button>
     <span class="label">LYFE PASS</span>
-    <div class="mega" style="font-size:clamp(28px,9vw,44px);margin-top:10px">${esc(p.name)}</div>
+    <div class="mega" style="font-size:clamp(28px,9vw,44px);margin-top:10px">${esc(noEmoji(p.name))}</div>
     <div class="meta" style="margin-top:8px"><span>LYFE #${esc(p.lyfe_id)}</span></div>
     <div class="qr">${p.svg}</div>
     <p class="muted" style="text-align:center;margin-top:14px">${esc(L('pass_s'))}</p>`;
@@ -1255,6 +1485,8 @@ function renderOutside() {
 /* ---------------- season: art ---------------- */
 
 const ART = {
+  // a stash of cash: the hunt in the Grand Theft Lyfe skin
+  stash: `<svg viewBox="0 0 64 64"><rect x="8" y="20" width="44" height="26" rx="2" fill="#2f6b2a" stroke="#7CFF6B" stroke-width="3"/><rect x="12" y="16" width="44" height="26" rx="2" fill="#1f4a1c" stroke="#7CFF6B" stroke-width="3"/><circle cx="34" cy="29" r="6" fill="none" stroke="#7CFF6B" stroke-width="3"/><path d="M33 25v8M31 27h4M31 31h4" stroke="#7CFF6B" stroke-width="2"/></svg>`,
   pumpkin: `<svg viewBox="0 0 64 64"><path d="M31 15c0-5 3-9 9-10l1 3c-4 1-6 4-6 7z" fill="#2f4f1a"/><ellipse cx="20" cy="38" rx="14" ry="18" fill="#e8590c"/><ellipse cx="44" cy="38" rx="14" ry="18" fill="#e8590c"/><ellipse cx="32" cy="38" rx="13" ry="20" fill="#ff7a1a"/><path d="M23 33l5-6 4 6zM36 33l4-6 5 6zM21 43c7 7 15 7 22 0h-3l-2 3-3-3-3 3-3-3-3 3-2-3z" fill="#160b03"/></svg>`,
   gold: `<svg viewBox="0 0 64 64"><path d="M31 15c0-5 3-9 9-10l1 3c-4 1-6 4-6 7z" fill="#2f4f1a"/><ellipse cx="20" cy="38" rx="14" ry="18" fill="#d99a06"/><ellipse cx="44" cy="38" rx="14" ry="18" fill="#d99a06"/><ellipse cx="32" cy="38" rx="13" ry="20" fill="#fcc419"/><path d="M23 33l5-6 4 6zM36 33l4-6 5 6zM21 43c7 7 15 7 22 0h-3l-2 3-3-3-3 3-3-3-3 3-2-3z" fill="#160b03"/><path d="M10 14l2 4 4 2-4 2-2 4-2-4-4-2 4-2zM54 8l1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z" fill="#fcc419"/></svg>`,
   ghost: `<svg viewBox="0 0 64 64"><path d="M14 56V30a18 18 0 0 1 36 0v26l-6-5-6 5-6-5-6 5-6-5z" fill="#fff" stroke="#160b03" stroke-width="3" stroke-linejoin="round"/><ellipse cx="25" cy="30" rx="3.5" ry="5" fill="#160b03"/><ellipse cx="39" cy="30" rx="3.5" ry="5" fill="#160b03"/><ellipse cx="32" cy="41" rx="4" ry="3" fill="#160b03"/></svg>`,
@@ -1269,7 +1501,7 @@ function seasonPill() {
 function hiddenPumpkin(id) {
   const sn = S.me && S.me.season;
   if (!sn || !sn.game || sn.found.includes(id)) return '';
-  return `<button class="hp" data-pumpkin="${id}" aria-label="pumpkin">${ART.pumpkin}</button>`;
+  return `<button class="hp" data-pumpkin="${id}" aria-label="stash">${ART.stash}</button>`;
 }
 
 document.addEventListener('click', async e => {
@@ -1328,7 +1560,7 @@ function loadDoorRewards() {
     const box = $('#doorRewards'); if (!box || !r.items.length) return;
     box.innerHTML = r.items.map(it => `
       <div class="offer">
-        <div class="nm">${esc(it.name.replace(/^\S+\s/, ''))}</div>
+        <div class="nm">${esc(noEmoji(it.name))}</div>
         <div class="price num">${it.cost}<small>POINTS</small></div>
         <p class="ds">${esc(it.description || '')}</p>
         <div class="state"><span class="faint">${esc(L('door_title'))}</span>
@@ -1338,7 +1570,7 @@ function loadDoorRewards() {
       </div>`).join('');
     box.querySelectorAll('[data-door]').forEach(b => b.onclick = async () => {
       const it = r.items.find(x => String(x.id) === b.dataset.door);
-      if (!await confirmBox(it.name, L('door_q', { c: it.cost, name: it.name }), L('door_take'))) return;
+      if (!await confirmBox(noEmoji(it.name), L('door_q', { c: it.cost, name: noEmoji(it.name) }), L('door_take'))) return;
       let res;
       try { res = await api(`/api/app/rewards/${it.id}/buy`, { method: 'POST' }); } catch (e) { return; }
       if (res.status === 'OK') { toast(L('door_ok')); setPoints(res.points); }
