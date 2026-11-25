@@ -84,7 +84,10 @@ def _new_code() -> str:
 
 
 def invite_link(gang: Gang) -> str:
-    return f"https://t.me/{settings.bot_username}?startapp=gang_{gang.invite_code}"
+    """t.me/<bot>?start=gang_<code>: the bot answers with a button that opens
+    the app on this gang. Works without a Main Mini App set in BotFather,
+    unlike ?startapp=, which then only opens the chat."""
+    return f"https://t.me/{settings.bot_username}?start=gang_{gang.invite_code}"
 
 
 async def membership(session: AsyncSession, *, user_id: int, event_id: int) -> GangMember | None:

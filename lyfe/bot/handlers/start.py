@@ -1,25 +1,30 @@
 """Step 1 handlers: /start, NEXT EVENT, MY LYFE, fallback."""
 import asyncio
+import re
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 from aiogram import F, Router
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandObject, CommandStart
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from lyfe.bot.keyboards import button_texts, main_menu, open_app_inline
+from lyfe.bot.keyboards import button_texts, gang_invite_inline, main_menu, open_app_inline
 from lyfe.core.services import event_service, user_service
 from lyfe.i18n import days_word, t
-from lyfe.models import Attendance, EventTrack, TrackRequest, TrackStatus, User
+from lyfe.models import Attendance, EventTrack, Gang, TrackRequest, TrackStatus, User
 
 router = Router(name="start")
 
+_GANG_ARG = re.compile(r"^gang_([A-Za-z0-9]{4,16})$")
+
 
 @router.message(CommandStart())
-async def cmd_start(message: Message, user: User, is_new_user: bool, session: AsyncSession):
+async def cmd_start(message: Message, user: User, is_new_user: bool, session: AsyncSession,
+                    command: CommandObject | None = None):
     lang = user.language
+    invite = _GANG_ARG.match((command.args or "") if command else "")
 
     if is_new_user:
         await message.answer(t("start_new", lang), reply_markup=main_menu(lang))
@@ -31,6 +36,16 @@ async def cmd_start(message: Message, user: User, is_new_user: bool, session: As
             t("start_returning", lang, name=user.name, lyfe_id=user.lyfe_id),
             reply_markup=main_menu(lang),
         )
+
+    if invite:
+        # a friend's gang link: one button that opens the app and joins
+        code = invite.group(1).upper()
+        gang = await session.scalar(select(Gang).where(Gang.invite_code == code))
+        if gang is not None and (button := gang_invite_inline(lang, code)) is not None:
+            await message.answer(t("gang_invite", lang, g=gang.name), reply_markup=button)
+            return
+        await message.answer(t("gang_invite_gone", lang), reply_markup=open_app_inline(lang))
+        return
 
     await _send_next_event(message, user, session)
 
