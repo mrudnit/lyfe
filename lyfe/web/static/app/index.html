@@ -743,6 +743,17 @@
 
   /* Радио: the leader on the car radio, the rest in rows */
   .vcounts { margin-top: 14px; font-size: 14px; font-weight: 600; color: rgba(255,241,220,.7); }
+  /* what the marks next to a track mean, with what is left tonight */
+  .vlegend { list-style: none; margin: 16px 0 4px; padding: 0; border-top: 1px solid rgba(255,241,220,.16); }
+  .vlegend li { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,241,220,.16); }
+  .vlegend .ic { flex: none; width: 34px; display: flex; justify-content: center; padding-top: 1px; }
+  .vlegend .ic svg { width: 20px; height: 20px; }
+  .vlegend .ic.f svg { fill: var(--v-cash); }
+  .vlegend .ic.w svg { fill: none; stroke: #FF3B3B; stroke-width: 2; }
+  .vlegend .ic.b { font: 800 10px/20px var(--v-head); color: var(--v-ink); background: var(--v-pink); padding: 0 4px; width: auto; min-width: 34px; }
+  .vlegend p { flex: 1; font-size: 14px; line-height: 1.35; color: rgba(255,241,220,.72); }
+  .vlegend b { display: block; font-size: 15px; color: var(--v-sand); }
+  .hud { cursor: pointer; }
   .vchart { list-style: none; margin: 8px 0 0; padding: 0; }
   .vchart li { display: flex; align-items: center; gap: 10px; min-height: 72px; border-bottom: 1px solid rgba(255,241,220,.16); }
   .vchart .pos { flex: none; width: 26px; font: 800 17px/1 var(--v-head); color: rgba(255,241,220,.5); }
@@ -1126,7 +1137,11 @@ const GTA = {
     tab_home: 'Миссия', tab_add: 'Заказать', tab_top: 'Радио', tab_gang: 'Банда', tab_me: 'Досье',
     babki_h: 'Твои бабки', boost_nm: 'Буст своего трека',
     add_t: 'Заказать трек', add_s: 'До {n} треков на {d}', slots_left: 'Осталось {l} из {m}', added_h: 'Трек в эфире',
-    top_s: 'Жми «Огонь», и трек поднимется', top_counts: 'Огонь {v} из {vm}, розыск {d} из {dm}, буст {b} из {bm}', boost_btn: 'Буст', more_btn: 'Показать ещё',
+    top_s: 'Жми «Огонь», и трек поднимется', top_counts: 'Огонь {v} из {vm}, розыск {d} из {dm}, буст {b} из {bm}',
+    lg_fire_h: 'Огонь: осталось {n} из {m}', lg_fire: 'Трек качает? Жми огонь, и он поднимется в эфире.',
+    lg_want_h: 'В розыск: осталось {n} из {m}', lg_want: 'Не заходит? Жми звезду, и трек опустится. На свой трек нельзя, на один трек либо огонь, либо розыск.',
+    lg_boost_h: 'Буст: осталось {n} из {m}', lg_boost: 'Только на свой трек: сразу поднимает его выше. Стоит {c} баллов.',
+    hud_help: 'Сверху справа: $ это твои баллы LYFE, звёзды показывают, сколько вечеринок LYFE ты прошёл, максимум 5.', boost_btn: 'Буст', more_btn: 'Показать ещё',
     me_s: 'Всё, что LYFE PD знает о тебе', me_case: 'Дело № {id}', me_wanted: 'Розыск: {n} {w} на LYFEPARTY', nights_f: ['ночь', 'ночи', 'ночей'],
     me_req: 'заказал', me_played: 'сыграно', me_nights: 'ночей', me_pass_note: 'Покажи на входе. Тот же код, что на «Миссии».',
     me_money: 'Бабки за заказы, огни и приходы', me_spend: 'Потратить', me_prizes: 'Твои призы', me_free: 'Вход бесплатный', me_gang: 'Банда «{g}», {r}',
@@ -1194,7 +1209,11 @@ const GTA = {
     tab_home: 'Місія', tab_add: 'Замовити', tab_top: 'Радіо', tab_gang: 'Банда', tab_me: 'Досьє',
     babki_h: 'Твої бабки', boost_nm: 'Буст свого треку',
     add_t: 'Замовити трек', add_s: 'До {n} треків на {d}', slots_left: 'Залишилось {l} з {m}', added_h: 'Трек в ефірі',
-    top_s: 'Тисни «Вогонь», і трек підніметься', top_counts: 'Вогонь {v} з {vm}, розшук {d} з {dm}, буст {b} з {bm}', boost_btn: 'Буст', more_btn: 'Показати ще',
+    top_s: 'Тисни «Вогонь», і трек підніметься', top_counts: 'Вогонь {v} з {vm}, розшук {d} з {dm}, буст {b} з {bm}',
+    lg_fire_h: 'Вогонь: лишилось {n} з {m}', lg_fire: 'Трек качає? Тисни вогонь, і він підніметься в ефірі.',
+    lg_want_h: 'У розшук: лишилось {n} з {m}', lg_want: 'Не заходить? Тисни зірку, і трек опуститься. На свій трек не можна, на один трек або вогонь, або розшук.',
+    lg_boost_h: 'Буст: лишилось {n} з {m}', lg_boost: 'Лише на свій трек: одразу піднімає його вище. Коштує {c} балів.',
+    hud_help: 'Угорі праворуч: $ це твої бали LYFE, зірки показують, скільки вечірок LYFE ти пройшов, максимум 5.', boost_btn: 'Буст', more_btn: 'Показати ще',
     me_s: 'Усе, що LYFE PD знає про тебе', me_case: 'Справа № {id}', me_wanted: 'Розшук: {n} {w} на LYFEPARTY', nights_f: ['ніч', 'ночі', 'ночей'],
     me_req: 'замовив', me_played: 'зіграно', me_nights: 'ночей', me_pass_note: 'Покажи на вході. Той самий код, що на «Місії».',
     me_money: 'Бабки за замовлення, вогні та приходи', me_spend: 'Витратити', me_prizes: 'Твої призи', me_free: 'Вхід безкоштовний', me_gang: 'Банда «{g}», {r}',
@@ -1814,11 +1833,14 @@ async function loadTop(append, silent) {
 
 function topHeader() {
   const tn = tonight(), r = rules();
-  const counts = S.me.event ? `<p class="vcounts">${esc(L('top_counts', {
-    v: Math.max(0, r.votes_max - (tn.votes_used || 0)), vm: r.votes_max,
-    d: Math.max(0, (r.dislikes_max || 0) - (tn.dislikes_used || 0)), dm: r.dislikes_max || 0,
-    b: Math.max(0, r.boosts_max - (tn.boosts_used || 0)), bm: r.boosts_max,
-  }))}</p>` : '';
+  const v = Math.max(0, r.votes_max - (tn.votes_used || 0));
+  const d = Math.max(0, (r.dislikes_max || 0) - (tn.dislikes_used || 0));
+  const b = Math.max(0, r.boosts_max - (tn.boosts_used || 0));
+  const counts = S.me.event ? `<ul class="vlegend">
+      <li><span class="ic f">${FIRE}</span><p><b>${esc(L('lg_fire_h', { n: v, m: r.votes_max }))}</b>${esc(L('lg_fire'))}</p></li>
+      <li><span class="ic w">${STAR}</span><p><b>${esc(L('lg_want_h', { n: d, m: r.dislikes_max || 0 }))}</b>${esc(L('lg_want'))}</p></li>
+      <li><span class="ic b">${esc(L('boost_btn'))}</span><p><b>${esc(L('lg_boost_h', { n: b, m: r.boosts_max }))}</b>${esc(L('lg_boost', { c: r.cost_boost }))}</p></li>
+    </ul>` : '';
   return `<div class="vice">${viceSub(L('radio_lyfe'), L('top_s'))}<div class="vbody">${counts}`;
 }
 const TOP_END = '</div></div>';
@@ -2119,6 +2141,7 @@ function hiddenPumpkin(id) {
 }
 
 document.addEventListener('click', async e => {
+  if (e.target.closest && e.target.closest('.hud')) { toast(L('hud_help')); haptic('light'); return; }
   const el = e.target.closest && e.target.closest('[data-pumpkin]');
   if (!el || el.dataset.busy) return;
   e.stopPropagation();
