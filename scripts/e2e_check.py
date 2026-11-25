@@ -397,6 +397,33 @@ async def main() -> None:
     r = (await c.post("/api/app/gang/create", headers=guest(22), json={"name": "Одиночки"})).json()
     check("lone gang leaves → gang gone", (await c.post("/api/app/gang/leave", headers=guest(22))).json()["status"] == "LEFT"
           and (await c.post("/api/app/gang/join", headers=guest(23), json={"code": r["gang"]["gang"]["code"]})).json()["status"] == "NOT_FOUND")
+    print("\n[Банда: open gangs, «Найти банду»]")
+    check("not the leader → can't open the gang", (await c.post("/api/app/gang/public", headers=guest(11), json={"open": True})).json()["status"] == "NOT_LEADER")
+    check("no gang → can't open one", (await c.post("/api/app/gang/public", headers=guest(22), json={"open": True})).json()["status"] == "NOT_IN_GANG")
+    r = (await c.post("/api/app/gang/public", headers=guest(20), json={"open": True})).json()
+    check("leader opens the gang", r["status"] == "OPENED" and r["gang"]["gang"]["public"] is True, r)
+    check("second leader opens too", (await c.post("/api/app/gang/public", headers=guest(21), json={"open": True})).json()["status"] == "OPENED")
+    for n in range(23, 32):
+        await c.get("/api/app/me", headers=guest(n))
+    og = (await c.get("/api/app/gang", headers=guest(23))).json()["open_gangs"]
+    check("no gang: sees the open gangs, not the closed full one", len(og) == 2 and "Ночные Лисы" not in [o["name"] for o in og], og)
+    check("a closed gang can't be joined by id", (await c.post("/api/app/gang/join-open/99999999", headers=guest(23))).json()["status"] == "NOT_FOUND")
+    palms = next(o["id"] for o in og if o["name"] == "Бетонные Пальмы")
+    check("join an open gang from the list", (await c.post(f"/api/app/gang/join-open/{palms}", headers=guest(23))).json()["status"] == "JOINED")
+    r = (await c.post("/api/app/gang/find", headers=guest(24))).json()
+    check("«Найти банду» puts you in the fullest open gang", r["status"] == "JOINED" and r["name"] == "Бетонные Пальмы", r)
+    results = await asyncio.gather(*(c.post("/api/app/gang/find", headers=guest(n)) for n in range(25, 32)))
+    st = [x.json()["status"] for x in results]
+    check("7 people press «Найти банду» at once with 6 places → 6 in, 1 NONE_OPEN", st.count("JOINED") == 6 and st.count("NONE_OPEN") == 1, st)
+    sizes = [b["size"] for b in (await c.get("/api/app/gang", headers=guest(20))).json()["board"]]
+    check("no gang went over 5", max(sizes) <= 5, sizes)
+    check("full gangs drop off the open list", (await c.get("/api/app/gang", headers=guest(22))).json()["open_gangs"] == [])
+    board = (await c.get("/api/app/gang", headers=guest(22))).json()["board"]
+    check("the rating shows who is in each gang", all(len(b["crew"]) == b["size"] for b in board), board)
+    leader21 = (await c.get("/api/app/gang", headers=guest(21))).json()["gang"]
+    check("leader closes the gang", leader21 and (await c.post("/api/app/gang/public", headers=guest(21), json={"open": False})).json()["status"] == "CLOSED")
+    r = (await c.post("/api/app/gang/find", headers=guest(22))).json()
+    check("nothing open → NONE_OPEN, still no gang", r["status"] == "NONE_OPEN" and r["gang"]["gang"] is None, r)
     saved_until = gang_service.settings.gang_changes_until
     gang_service.settings.gang_changes_until = "2020-01-01T00:00:00+00:00"
     try:
@@ -428,23 +455,27 @@ async def main() -> None:
     check("someone else's run → NOT_FOUND", (await c.post(f"/api/app/hack/{h['id']}/finish", headers=guest(joined[2]), json={"taps": taps})).json()["status"] == "NOT_FOUND")
     await asyncio.sleep(sum(taps) + 0.3)
     r = (await c.post(f"/api/app/hack/{h['id']}/finish", headers=guest(joined[1]), json={"taps": taps})).json()
-    check("all 10 locks → $ 5 500", r["levels"] == 10 and r["score"] == hack_service.loot_for(10) == 5500, r)
+    full = sum(hack_service.lock_loot(l, t) for l, t in zip([hack_service.Lock(**x) for x in h["locks"]], taps))
+    check("all 10 locks → base + aim + speed, as the replay says", r["levels"] == 10 and r["score"] == full and r["score"] > hack_service.loot_for(10), (r, full))
+    best1 = r["score"]
     h = (await c.post("/api/app/hack/start", headers=guest(joined[2]))).json()
     taps = [perfect(l) for l in h["locks"][:2]] + [wrong(h["locks"][2])] + [perfect(l) for l in h["locks"][3:]]
     await asyncio.sleep(sum(taps[:3]) + 0.3)
     r = (await c.post(f"/api/app/hack/{h['id']}/finish", headers=guest(joined[2]), json={"taps": taps})).json()
-    check("miss on lock 3 → WASTED after 2, $ 300", r["levels"] == 2 and r["score"] == 300, r)
+    two = sum(hack_service.lock_loot(hack_service.Lock(**l), t) for l, t in zip(h["locks"][:2], taps[:2]))
+    check("miss on lock 3 → WASTED after 2, loot of those 2", r["levels"] == 2 and r["score"] == two and r["score"] >= 300, (r, two))
     h = (await c.post("/api/app/hack/start", headers=guest(joined[2]))).json()
     r = (await c.post(f"/api/app/hack/{h['id']}/finish", headers=guest(joined[2]), json={"taps": ["x", None]})).json()
-    check("garbage taps → nothing, best kept", r["score"] == 0 and r["best"] == 300, r)
+    check("garbage taps → nothing, best kept", r["score"] == 0 and r["best"] == two, r)
     h = (await c.post("/api/app/hack/start", headers=guest(20))).json()
     t2 = [perfect(l) for l in h["locks"][:1]] + [wrong(h["locks"][1])]
     await asyncio.sleep(sum(t2) + 0.3)
     r = (await c.post(f"/api/app/hack/{h['id']}/finish", headers=guest(20), json={"taps": t2})).json()
-    check("other gang: 1 lock, $ 100", r["score"] == 100, r)
+    one = hack_service.lock_loot(hack_service.Lock(**h["locks"][0]), t2[0])
+    check("other gang: 1 lock, its loot", r["levels"] == 1 and r["score"] == one, (r, one))
     gv = (await c.get("/api/app/gang", headers=guest(20))).json()
     names = [(b["name"], b["loot"]) for b in gv["board"]]
-    check("rating: gang loot = sum of members' best runs", names[:2] == [("Ночные Лисы", 5800), ("Бетонные Пальмы", 100)], names)
+    check("rating: gang loot = sum of members' best runs", names[:2] == [("Ночные Лисы", best1 + two), ("Бетонные Пальмы", one)], names)
     check("my gang is marked in the rating", any(b["mine"] and b["name"] == "Бетонные Пальмы" for b in gv["board"]), gv["board"])
     saved_attempts = hack_service.settings.hack_attempts_per_day
     hack_service.settings.hack_attempts_per_day = 0
@@ -464,7 +495,7 @@ async def main() -> None:
         won = await gang_service.award_free_entries(s, event=ev)
         again = await gang_service.award_free_entries(s, event=ev)
         await s.commit()
-    check("both top gangs, every member marked once (5 + 1)", len(won) == 6 and again == [], [(u.name, g, p) for u, g, p in won])
+    check("both top gangs, every member marked once (5 + 5)", len(won) == 10 and again == [], [(u.name, g, p) for u, g, p in won])
     check("FREE ENTRY for a member of the first gang", (await c.get("/api/app/me", headers=guest(joined[3]))).json()["free_entry"].startswith("Банда «Ночные Лисы» #1 · LYFE "))
     check("FREE ENTRY for the second gang", (await c.get("/api/app/pass", headers=guest(20))).json()["free_entry"].startswith("Банда «Бетонные Пальмы» #2 · LYFE "))
     check("nobody else", (await c.get("/api/app/me", headers=guest(21))).json()["free_entry"] is None)
