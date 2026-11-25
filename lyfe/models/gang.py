@@ -40,6 +40,16 @@ class Gang(PKMixin, TimestampMixin, Base):
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
 
 
+class GangLeave(PKMixin, TimestampMixin, Base):
+    """Someone left a gang. One leave per person per party
+    (settings.gang_moves_max): in, out, into another one, and that's it."""
+    __tablename__ = "gang_leaves"
+
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    gang_name: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
 class GangMember(PKMixin, TimestampMixin, Base):
     __tablename__ = "gang_members"
     __table_args__ = (

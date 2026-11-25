@@ -23,7 +23,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from lyfe.config import get_settings
-from lyfe.models import Event, Gang, GangMember, GangRole, Ticket, TicketProvider, User
+from lyfe.models import Event, Gang, GangLeave, GangMember, GangRole, Ticket, TicketProvider, User
 
 settings = get_settings()
 
@@ -48,6 +48,7 @@ class GangResult:
     NAME_TAKEN = "NAME_TAKEN"
     NOT_LEADER = "NOT_LEADER"             # only the leader opens or closes the gang
     NONE_OPEN = "NONE_OPEN"               # «Найти банду»: no open gang has room
+    MOVE_USED = "MOVE_USED"               # already changed gang once this party
     OPENED = "OPENED"
     CLOSED = "CLOSED"
 
@@ -185,6 +186,12 @@ async def join_gang(session: AsyncSession, *, user: User, code: str = "", gang_i
     return GangOutcome(GangResult.JOINED, gang)
 
 
+async def moves_used(session: AsyncSession, *, user_id: int, event_id: int) -> int:
+    return int(await session.scalar(
+        select(func.count(GangLeave.id)).where(GangLeave.user_id == user_id, GangLeave.event_id == event_id)
+    ) or 0)
+
+
 async def leave_gang(session: AsyncSession, *, user: User, event: Event | None) -> GangOutcome:
     if event is None:
         return GangOutcome(GangResult.NO_EVENT)
@@ -194,7 +201,10 @@ async def leave_gang(session: AsyncSession, *, user: User, event: Event | None) 
     mine = await membership(session, user_id=user.id, event_id=event.id)
     if mine is None:
         return GangOutcome(GangResult.NOT_IN_GANG)
+    if await moves_used(session, user_id=user.id, event_id=event.id) >= settings.gang_moves_max:
+        return GangOutcome(GangResult.MOVE_USED)
     gang = await session.get(Gang, mine.gang_id, with_for_update=True)
+    session.add(GangLeave(event_id=event.id, user_id=user.id, gang_name=gang.name))
     was_leader = mine.role == GangRole.LEADER
     await session.delete(mine)
     await session.flush()
@@ -280,7 +290,7 @@ async def ranking(session: AsyncSession, *, event_id: int, limit: int | None = 1
     q = (
         select(Gang.id, Gang.name, Gang.created_at, func.count(GangMember.id).label("size"), loot.label("loot"))
         .join(GangMember, GangMember.gang_id == Gang.id)
-        .outerjoin(best, best.c.user_id == GangMember.user_id)
+        .outerjoin(best, (best.c.user_id == GangMember.user_id) & (best.c.gang_id == GangMember.gang_id))
         .where(Gang.event_id == event_id)
         .group_by(Gang.id)
         .order_by(loot.desc(), reached.asc().nulls_last(), Gang.created_at.asc(), Gang.id.asc())

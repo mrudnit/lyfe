@@ -170,30 +170,32 @@ async def attempts_left(session: AsyncSession, *, user_id: int, event_id: int) -
     return min(today, total), total
 
 
-async def best(session: AsyncSession, *, user_id: int, event_id: int) -> int:
-    return int(
-        await session.scalar(
-            select(func.max(GameSession.score)).where(
-                GameSession.user_id == user_id, GameSession.event_id == event_id, GameSession.kind == KIND
-            )
-        )
-        or 0
+async def best(session: AsyncSession, *, user_id: int, event_id: int, gang_id: int | None = None) -> int:
+    """Best run; with gang_id, only runs played for that gang (what it counts)."""
+    q = select(func.max(GameSession.score)).where(
+        GameSession.user_id == user_id, GameSession.event_id == event_id, GameSession.kind == KIND
     )
+    if gang_id is not None:
+        q = q.where(GameSession.gang_id == gang_id)
+    return int(await session.scalar(q) or 0)
 
 
 def best_runs_subquery(event_id: int):
-    """Per person: their best loot and when they first reached it (for ties)."""
+    """Per person and gang: the best loot played for that gang and when it was
+    first reached (for ties). A run counts only for the gang it was played in."""
     best = (
-        select(GameSession.user_id, func.max(GameSession.score).label("score"))
-        .where(GameSession.event_id == event_id, GameSession.kind == KIND, GameSession.score > 0)
-        .group_by(GameSession.user_id)
+        select(GameSession.user_id, GameSession.gang_id, func.max(GameSession.score).label("score"))
+        .where(GameSession.event_id == event_id, GameSession.kind == KIND, GameSession.score > 0,
+               GameSession.gang_id.is_not(None))
+        .group_by(GameSession.user_id, GameSession.gang_id)
         .subquery()
     )
     return (
-        select(best.c.user_id, best.c.score, func.min(GameSession.finished_at).label("reached_at"))
-        .join(GameSession, (GameSession.user_id == best.c.user_id) & (GameSession.score == best.c.score))
+        select(best.c.user_id, best.c.gang_id, best.c.score, func.min(GameSession.finished_at).label("reached_at"))
+        .join(GameSession, (GameSession.user_id == best.c.user_id) & (GameSession.gang_id == best.c.gang_id)
+              & (GameSession.score == best.c.score))
         .where(GameSession.event_id == event_id, GameSession.kind == KIND)
-        .group_by(best.c.user_id, best.c.score)
+        .group_by(best.c.user_id, best.c.gang_id, best.c.score)
         .subquery()
     )
 
@@ -206,7 +208,8 @@ async def start(session: AsyncSession, *, user: User, event: Event | None) -> Ga
         return "CLOSED"
     from lyfe.core.services import gang_service
 
-    if await gang_service.membership(session, user_id=user.id, event_id=event.id) is None:
+    mine = await gang_service.membership(session, user_id=user.id, event_id=event.id)
+    if mine is None:
         return "NO_GANG"
     await session.execute(select(User.id).where(User.id == user.id).with_for_update())
     today, total = await attempts_left(session, user_id=user.id, event_id=event.id)
@@ -220,6 +223,7 @@ async def start(session: AsyncSession, *, user: User, event: Event | None) -> Ga
         kind=KIND,
         seed=random.SystemRandom().randrange(1, 2**31 - 1),
         started_at=datetime.now(timezone.utc),
+        gang_id=mine.gang_id,
     )
     session.add(game)
     await session.flush()
@@ -248,4 +252,4 @@ async def finish(session: AsyncSession, *, user: User, game_id: int, taps: list)
     game.score = loot
     await session.flush()
     return Finish("DONE", levels=opened, score=game.score,
-                  best=await best(session, user_id=user.id, event_id=game.event_id))
+                  best=await best(session, user_id=user.id, event_id=game.event_id, gang_id=game.gang_id))

@@ -38,6 +38,7 @@ DELETE FROM game_sessions      WHERE user_id IN (SELECT id FROM reset_me);
 CREATE TEMP TABLE reset_gangs ON COMMIT DROP AS
   SELECT gang_id AS id FROM gang_members WHERE user_id IN (SELECT id FROM reset_me);
 DELETE FROM gang_members WHERE user_id IN (SELECT id FROM reset_me);
+DELETE FROM gang_leaves WHERE user_id IN (SELECT id FROM reset_me);
 DELETE FROM gangs g WHERE g.id IN (SELECT id FROM reset_gangs)
   AND NOT EXISTS (SELECT 1 FROM gang_members m WHERE m.gang_id = g.id);
 UPDATE gang_members m SET role = 'leader'
