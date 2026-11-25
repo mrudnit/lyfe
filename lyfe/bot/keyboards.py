@@ -34,6 +34,16 @@ def open_app_inline(lang: str) -> InlineKeyboardMarkup | None:
     )
 
 
+def gang_invite_inline(lang: str, code: str) -> InlineKeyboardMarkup | None:
+    """Opens the app with ?gang=<code>; the page joins that gang on load."""
+    url = webapp_url()
+    if not url:
+        return None
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text=t("btn_gang_join", lang), web_app=WebAppInfo(url=f"{url}?gang={code}"))]]
+    )
+
+
 def main_menu(lang: str) -> ReplyKeyboardMarkup:
     url = webapp_url()
     if url:

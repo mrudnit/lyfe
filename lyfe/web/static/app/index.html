@@ -2287,7 +2287,8 @@ function shareGang() {
   haptic('light');
   if (tg && tg.openTelegramLink) tg.openTelegramLink(url); else window.open(url, '_blank');
 }
-// a friend's link: t.me/<bot>?startapp=gang_<code>
+// a friend's link: t.me/<bot>?start=gang_<code> → the bot's button opens /app?gang=<code>
+// (older links: t.me/<bot>?startapp=gang_<code>, when a Main Mini App is set)
 async function joinFromLink(code) {
   go('gang');
   let res;
@@ -2798,7 +2799,9 @@ function hideSplash() {
   if (!ok) { hideSplash(); return; }
   $('#tabbar').hidden = false;
   const start = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
-  if (/^gang_[A-Za-z0-9]{4,16}$/.test(start)) joinFromLink(start.slice(5));
+  const gangParam = new URLSearchParams(location.search).get('gang') || '';
+  if (/^[A-Za-z0-9]{4,16}$/.test(gangParam)) joinFromLink(gangParam);
+  else if (/^gang_[A-Za-z0-9]{4,16}$/.test(start)) joinFromLink(start.slice(5));
   else go(['add', 'top', 'gang', 'me'].includes(start) ? start : 'home');
   hideSplash();
 

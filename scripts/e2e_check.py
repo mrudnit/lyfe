@@ -362,7 +362,7 @@ async def main() -> None:
     r = (await c.post("/api/app/gang/create", headers=guest(11), json={"name": "  Ночные   Лисы "})).json()
     check("create gang, name tidied, leader", r["status"] == "CREATED" and r["gang"]["gang"]["name"] == "Ночные Лисы" and r["gang"]["gang"]["my_role"] == "leader", r)
     code = r["gang"]["gang"]["code"]
-    check("invite link carries the code", r["gang"]["gang"]["link"].endswith("startapp=gang_" + code), r["gang"]["gang"]["link"])
+    check("invite link carries the code", r["gang"]["gang"]["link"].endswith("?start=gang_" + code), r["gang"]["gang"]["link"])
     check("same name in other case → NAME_TAKEN", (await c.post("/api/app/gang/create", headers=guest(12), json={"name": "ночные лисы"})).json()["status"] == "NAME_TAKEN")
     check("second gang for the leader → ALREADY_IN_GANG", (await c.post("/api/app/gang/create", headers=guest(11), json={"name": "Другая"})).json()["status"] == "ALREADY_IN_GANG")
     check("unknown code → NOT_FOUND", (await c.post("/api/app/gang/join", headers=guest(12), json={"code": "NOPE1234"})).json()["status"] == "NOT_FOUND")
