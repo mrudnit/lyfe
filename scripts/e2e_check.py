@@ -499,13 +499,24 @@ async def main() -> None:
         hack_service.settings.hack_attempts_total = saved_total
     check("all runs for the party used → NO_ATTEMPTS_LEFT", no == "NO_ATTEMPTS_LEFT", no)
 
+    print("\n[Банда: one change per party, loot stays with the gang]")
+    check("left once already → second leave MOVE_USED", (await c.post("/api/app/gang/leave", headers=guest(11))).json()["status"] == "MOVE_USED")
+    r = (await c.post("/api/app/gang/leave", headers=guest(joined[2]))).json()
+    check("a player who earned loot leaves", r["status"] == "LEFT" and r["gang"]["moves_left"] == 0, r)
+    foxes = next(b for b in (await c.get("/api/app/gang", headers=guest(joined[1]))).json()["board"] if b["name"] == "Ночные Лисы")
+    check("their loot leaves with them: the old gang keeps only the others' runs", foxes["loot"] == best1, (foxes, best1))
+    r = (await c.post("/api/app/gang/create", headers=guest(joined[2]), json={"name": "Перебежчики"})).json()
+    check("in the new gang they start at $ 0", r["status"] == "CREATED" and r["gang"]["gang"]["loot"] == 0
+          and r["gang"]["hack"]["best"] == 0, r["gang"]["gang"])
+    check("and can't leave it any more → MOVE_USED", (await c.post("/api/app/gang/leave", headers=guest(joined[2]))).json()["status"] == "MOVE_USED")
+
     print("\n[top 2 gangs get in free]")
     async with SessionFactory() as s:
         ev = await s.get(Event, event_id)
         won = await gang_service.award_free_entries(s, event=ev)
         again = await gang_service.award_free_entries(s, event=ev)
         await s.commit()
-    check("both top gangs, every member marked once (5 + 5)", len(won) == 10 and again == [], [(u.name, g, p) for u, g, p in won])
+    check("both top gangs, every member marked once (4 + 5)", len(won) == 9 and again == [], [(u.name, g, p) for u, g, p in won])
     check("FREE ENTRY for a member of the first gang", (await c.get("/api/app/me", headers=guest(joined[3]))).json()["free_entry"].startswith("Банда «Ночные Лисы» #1 · LYFE "))
     check("FREE ENTRY for the second gang", (await c.get("/api/app/pass", headers=guest(20))).json()["free_entry"].startswith("Банда «Бетонные Пальмы» #2 · LYFE "))
     check("nobody else", (await c.get("/api/app/me", headers=guest(21))).json()["free_entry"] is None)

@@ -47,3 +47,6 @@ class GameSession(PKMixin, TimestampMixin, Base):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     score: Mapped[int | None] = mapped_column(Integer)
+    # «Взлом»: the gang this run was played for. Loot counts only there, so
+    # moving to another gang does not carry it along (a new gang starts at 0).
+    gang_id: Mapped[int | None] = mapped_column(ForeignKey("gangs.id", ondelete="SET NULL"), index=True)

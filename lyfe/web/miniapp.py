@@ -749,16 +749,18 @@ async def _gang_json(session: AsyncSession, user: User, event: Event | None) -> 
         "board": [],
         "gangs_total": 0,
         "open_gangs": [],
+        "moves_left": settings.gang_moves_max,
     }
     if event is None:
         return base
+    base["moves_left"] = max(0, settings.gang_moves_max - await gang_service.moves_used(session, user_id=user.id, event_id=event.id))
     closes = hack_service.closes_at(event)
     base["hack"] = {
         "open": hack_service.is_open(event),
         # no party ahead yet: the game starts once the next one is announced
         "waiting": season_service.is_waiting(event),
         "closes_at": closes.isoformat() if closes else None,
-        "best": await hack_service.best(session, user_id=user.id, event_id=event.id),
+        "best": 0,
         "attempts_left": (left := await hack_service.attempts_left(session, user_id=user.id, event_id=event.id))[0],
         "attempts_total_left": left[1],
         "per_day": settings.hack_attempts_per_day,
@@ -776,7 +778,7 @@ async def _gang_json(session: AsyncSession, user: User, event: Event | None) -> 
             crew.append({
                 "name": person.name,
                 "role": member.role,
-                "best": await hack_service.best(session, user_id=person.id, event_id=event.id),
+                "best": await hack_service.best(session, user_id=person.id, event_id=event.id, gang_id=gang.id),
                 "me": person.id == user.id,
             })
         row = next((r for r in board if r["id"] == gang.id), None)
@@ -790,6 +792,7 @@ async def _gang_json(session: AsyncSession, user: User, event: Event | None) -> 
             "my_role": mine.role,
             "public": gang.is_public,
         }
+        base["hack"]["best"] = next((m["best"] for m in crew if m["me"]), 0)
     my_id = base["gang"] and mine.gang_id
     base["board"] = [
         {"name": r["name"], "loot": r["loot"], "size": r["size"], "place": r["place"], "mine": r["id"] == my_id, "id": r["id"]}

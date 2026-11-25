@@ -65,6 +65,9 @@ class Settings(BaseSettings):
     gang_changes_until: str = "2026-12-01T00:00:00+01:00"
     # The two gangs with the most loot get in free (scripts/award_game.py).
     gang_free_entry_places: int = 2
+    # Leaving a gang is allowed this many times per party (in, out, into another,
+    # done). Loot stays with the gang it was played for, so moving carries nothing.
+    gang_moves_max: int = 1
     # «Взлом»: 20 runs per person for the whole party, at most 3 a day (club
     # calendar day), so nobody burns them all in one evening. Announced 25.11,
     # play until 03.12: 9 days, 20 / 9 rounded up = 3 a day.
