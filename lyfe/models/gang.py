@@ -7,7 +7,7 @@ the unique constraints are the last line if two taps race anyway.
 """
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from lyfe.models.base import Base, PKMixin, TimestampMixin
@@ -35,6 +35,9 @@ class Gang(PKMixin, TimestampMixin, Base):
     name_key: Mapped[str] = mapped_column(String(32), nullable=False)
     # the part of the invite link after gang_
     invite_code: Mapped[str] = mapped_column(String(16), nullable=False, unique=True, index=True)
+    # the leader opened the gang to anyone: it shows in «Банды ищут людей» and
+    # «Найти банду» can put a stranger in it
+    is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
 
 
 class GangMember(PKMixin, TimestampMixin, Base):

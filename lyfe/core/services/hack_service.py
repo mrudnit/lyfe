@@ -1,8 +1,16 @@
 """«Взлом»: a needle runs round a lock, tap while it is in the green zone.
 
-Ten locks, each one narrower and faster. A miss is WASTED and the run ends;
-the loot is what the cleared locks were worth (lock n pays LOOT_STEP × n, so
-all ten pay 5 500). A person's best run counts for their gang.
+Ten locks, each one narrower and faster. A miss is WASTED and the run ends.
+A person's best run counts for their gang.
+
+Loot per opened lock n (see lock_loot):
+  * BASE × n for opening it;
+  * up to AIM × n for hitting the middle of the zone (falls off linearly to
+    nothing at the zone's edge);
+  * FAST × n for a tap on the needle's first pass through the zone,
+    half of that on the second pass, nothing later.
+So two players who open the same locks almost never get the same sum, and
+the gang board does not end in a pile of equal scores.
 
 Scored by the server, like PUMPKIN RUSH: the server picks a seed, derives
 every lock from it (zone, width, speed, direction) and gives the page the
@@ -26,11 +34,14 @@ settings = get_settings()
 
 KIND = "hack"
 LEVELS = 10
-LOOT_STEP = 100
-WIDTH_FIRST, WIDTH_LAST = 64.0, 16.0     # degrees of green
-SPEED_FIRST, SPEED_LAST = 150.0, 480.0   # degrees per second
+BASE, AIM, FAST = 100, 100, 40          # $ per lock number, see lock_loot
+LOOT_STEP = BASE                         # kept for older pages
+WIDTH_FIRST, WIDTH_LAST = 60.0, 12.0     # degrees of green
+SPEED_FIRST, SPEED_LAST = 150.0, 540.0   # degrees per second
+SPEED_JITTER = 0.08                      # each lock ±8 %, so no two runs feel the same
 GRACE_DEG = 3.0                          # finger and frame lag
 MIN_TAP, MAX_TAP = 0.12, 15.0            # seconds; no tap in 15 s is a miss
+REACT = 0.35                             # a pass that starts sooner than this is too quick for anyone
 MAX_RUN = timedelta(minutes=30)
 
 
@@ -49,7 +60,7 @@ def locks(seed: int) -> list[Lock]:
         rng = random.Random(seed * 31 + n)
         k = (n - 1) / (LEVELS - 1)
         width = round(WIDTH_FIRST + (WIDTH_LAST - WIDTH_FIRST) * k, 2)
-        speed = round(SPEED_FIRST + (SPEED_LAST - SPEED_FIRST) * k, 2)
+        speed = round((SPEED_FIRST + (SPEED_LAST - SPEED_FIRST) * k) * rng.uniform(1 - SPEED_JITTER, 1 + SPEED_JITTER), 2)
         # keep the zone well away from the needle's start so the first moment is never a free hit
         start = round(rng.uniform(40.0, 320.0 - width), 2)
         out.append(Lock(n=n, start=start, width=width, speed=speed, dir=1 if rng.random() < 0.5 else -1))
@@ -65,13 +76,40 @@ def in_zone(lock: Lock, angle: float) -> bool:
     return d <= lock.width + GRACE_DEG or d >= 360.0 - GRACE_DEG
 
 
+def aim(lock: Lock, angle: float) -> float:
+    """1.0 in the middle of the zone, 0.0 at its edge (and in the grace band)."""
+    pos = (angle - lock.start) % 360.0
+    if pos > 180.0:
+        pos -= 360.0                     # just before the zone, inside the grace band
+    half = lock.width / 2
+    return max(0.0, 1.0 - abs(pos - half) / half)
+
+
+def lap(lock: Lock, t: float) -> int:
+    """0 if the tap came on the needle's first catchable pass through the zone
+    (one that starts after REACT seconds), 1 on the next, and so on."""
+    edge = lock.start if lock.dir == 1 else 360.0 - lock.start - lock.width
+    turn = 360.0 / lock.speed
+    first = (edge - GRACE_DEG) / lock.speed
+    while first < REACT:
+        first += turn
+    return max(0, int((t - first) // turn))
+
+
+def lock_loot(lock: Lock, t: float) -> int:
+    n = lock.n
+    fast = FAST * n if lap(lock, t) == 0 else FAST * n // 2 if lap(lock, t) == 1 else 0
+    return BASE * n + round(AIM * n * aim(lock, needle(lock, t))) + fast
+
+
 def loot_for(levels: int) -> int:
-    return LOOT_STEP * levels * (levels + 1) // 2
+    """The base part only: what opening that many locks is worth at the least."""
+    return BASE * levels * (levels + 1) // 2
 
 
-def replay(seed: int, taps: list) -> tuple[int, float]:
-    """(locks opened, seconds the taps took). Stops at the first bad tap."""
-    opened, spent = 0, 0.0
+def replay(seed: int, taps: list) -> tuple[int, float, int]:
+    """(locks opened, seconds the taps took, loot). Stops at the first bad tap."""
+    opened, spent, loot = 0, 0.0, 0
     for lock, raw in zip(locks(seed), taps[:LEVELS]):
         try:
             t = float(raw)
@@ -83,7 +121,8 @@ def replay(seed: int, taps: list) -> tuple[int, float]:
         if not in_zone(lock, needle(lock, t)):
             break
         opened += 1
-    return opened, spent
+        loot += lock_loot(lock, t)
+    return opened, spent, loot
 
 
 # --------------------------------------------------------------------------
@@ -125,10 +164,18 @@ async def best(session: AsyncSession, *, user_id: int, event_id: int) -> int:
 
 
 def best_runs_subquery(event_id: int):
-    return (
+    """Per person: their best loot and when they first reached it (for ties)."""
+    best = (
         select(GameSession.user_id, func.max(GameSession.score).label("score"))
         .where(GameSession.event_id == event_id, GameSession.kind == KIND, GameSession.score > 0)
         .group_by(GameSession.user_id)
+        .subquery()
+    )
+    return (
+        select(best.c.user_id, best.c.score, func.min(GameSession.finished_at).label("reached_at"))
+        .join(GameSession, (GameSession.user_id == best.c.user_id) & (GameSession.score == best.c.score))
+        .where(GameSession.event_id == event_id, GameSession.kind == KIND)
+        .group_by(best.c.user_id, best.c.score)
         .subquery()
     )
 
@@ -165,13 +212,13 @@ async def finish(session: AsyncSession, *, user: User, game_id: int, taps: list)
     if game is None or game.user_id != user.id or game.kind != KIND or game.finished_at is not None:
         return Finish("NOT_FOUND")
     now = datetime.now(timezone.utc)
-    opened, spent = replay(game.seed, taps if isinstance(taps, list) else [])
+    opened, spent, loot = replay(game.seed, taps if isinstance(taps, list) else [])
     elapsed = (now - game.started_at).total_seconds()
     # a run cannot end before its own taps could have happened, nor turn up much later
     if elapsed + 0.5 < spent or now - game.started_at > MAX_RUN:
-        opened = 0
+        opened, loot = 0, 0
     game.finished_at = now
-    game.score = loot_for(opened)
+    game.score = loot
     await session.flush()
     return Finish("DONE", levels=opened, score=game.score,
                   best=await best(session, user_id=user.id, event_id=game.event_id))

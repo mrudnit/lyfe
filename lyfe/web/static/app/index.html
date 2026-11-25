@@ -599,9 +599,10 @@
   .vtk-qr svg { display: block; width: 100%; height: 100%; }
   .vtk-free { margin-top: 6px; font-weight: 700; font-size: 13px; }
 
+  /* buttons: square, no rounded pills, no cut corners */
   .vact { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 22px var(--gutter) 0; }
   .vbtn { display: inline-flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 20px;
-    background: var(--v-pink); color: var(--v-ink); border: 2px solid var(--v-ink); border-radius: 12px;
+    background: var(--v-pink); color: var(--v-ink); border: 0; border-radius: 0;
     font-family: var(--v-head); font-weight: 800; font-size: 14px; transition: transform .15s; }
   .vbtn:active { transform: translate(2px, 2px); }
   .vnote-s { font-size: 14px; color: rgba(255,241,220,.65); }
@@ -689,12 +690,17 @@
   .vlink-ink { color: var(--v-ink); border-color: var(--v-ink); }
 
   /* shared bits the old screens use, now on the night */
-  :root[data-vice] .vice .field { display: flex; align-items: center; margin-top: 16px; min-height: 56px; background: var(--v-sand); color: var(--v-ink);
-    border: 2px solid var(--v-ink); border-radius: 12px; padding: 0 6px 0 16px; }
-  :root[data-vice] .vice .field input { flex: 1; min-width: 0; border: 0; background: none; outline: none; font: 600 17px/1.2 var(--v-text); color: var(--v-ink); padding: 14px 0; }
-  :root[data-vice] .vice .field input::placeholder { color: rgba(26,11,46,.45); }
-  :root[data-vice] .vice .field:focus-within { box-shadow: 0 0 0 3px var(--v-pink); }
-  :root[data-vice] .vice .field .clear { width: 44px; height: 44px; font-size: 24px; color: rgba(26,11,46,.6); }
+  /* fields: a line you write on, like a name scrawled on a file, not a rounded box */
+  :root[data-vice] .vice .field { display: flex; align-items: center; margin-top: 12px; min-height: 52px; background: none; color: var(--v-sand);
+    border: 0; border-bottom: 2px solid rgba(255,241,220,.55); border-radius: 0; padding: 0; transition: border-color .15s; }
+  :root[data-vice] .vice .field input { flex: 1; min-width: 0; border: 0; background: none; outline: none; font: 600 20px/1.2 var(--v-text); color: var(--v-sand); padding: 12px 0 10px; }
+  :root[data-vice] .vice .field input::placeholder { color: rgba(255,241,220,.38); font-weight: 500; }
+  :root[data-vice] .vice .field:focus-within { border-bottom-color: var(--v-pink); }
+  :root[data-vice] .vice .field .clear { width: 44px; height: 44px; font-size: 24px; color: rgba(255,241,220,.6); }
+  /* a field with its button at the end of the same line */
+  .vline { display: flex; align-items: flex-end; gap: 12px; }
+  .vline .field { flex: 1; min-width: 0; }
+  .vline .vbtn { flex: none; margin: 0 !important; }
   :root[data-vice] .vice .hint { margin-top: 14px; font-size: 15px; color: rgba(255,241,220,.65); }
   :root[data-vice] .vice .say { margin-top: 22px; }
   :root[data-vice] .vice .say .h { font-family: var(--v-head); font-weight: 800; font-size: 20px; line-height: 1.15; }
@@ -707,7 +713,7 @@
   :root[data-vice] .vice .from-link .t { font-weight: 700; margin-top: 4px; }
   :root[data-vice] .vice .label { font: 700 13px/1.3 var(--v-text); letter-spacing: 0; text-transform: none; color: rgba(255,241,220,.65); }
   :root[data-vice] .vice .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 22px; width: auto;
-    background: var(--v-pink); color: var(--v-ink); border: 2px solid var(--v-ink); border-radius: 12px; font: 800 15px/1 var(--v-head); letter-spacing: 0; text-transform: none; }
+    background: var(--v-pink); color: var(--v-ink); border: 0; border-radius: 0; font: 800 15px/1 var(--v-head); letter-spacing: 0; text-transform: none; }
   :root[data-vice] .vice .btn::after { content: none; }
 
   /* Заказать */
@@ -723,7 +729,7 @@
   :root[data-vice] .vice .tartist { font-size: 14px; color: rgba(255,241,220,.62); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   :root[data-vice] .vice .tnote { font-size: 13px; font-weight: 600; color: var(--v-sun); margin-top: 3px; }
   :root[data-vice] .vice .tnote.faint { color: rgba(255,241,220,.5); }
-  :root[data-vice] .vice .add { flex: none; min-width: 48px; min-height: 48px; padding: 0 12px; border-radius: 12px; border: 2px solid var(--v-sun); background: none; color: var(--v-sun);
+  :root[data-vice] .vice .add { flex: none; min-width: 48px; min-height: 48px; padding: 0 12px; border-radius: 0; border: 2px solid var(--v-sun); background: none; color: var(--v-sun);
     font: 800 12px/1 var(--v-head); letter-spacing: 0; }
   :root[data-vice] .vice .add.plus { background: var(--v-pink); border-color: var(--v-ink); color: var(--v-ink); font-size: 24px; }
   :root[data-vice] .vice .add:disabled { border-color: rgba(255,241,220,.3); color: rgba(255,241,220,.5); background: none; }
@@ -743,25 +749,25 @@
   .vchart .tx { flex: 1; min-width: 0; padding: 10px 0; }
   .vchart .tt { font-weight: 700; font-size: 17px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .vchart .ta { font-size: 14px; color: rgba(255,241,220,.62); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .vtag { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 7px; margin-right: 6px; border-radius: 6px; vertical-align: 1px; }
+  .vtag { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 7px; margin-right: 6px; vertical-align: 1px; }
   .vtag.you { background: var(--v-pink); color: var(--v-ink); }
   .vtag.pri { background: var(--v-sun); color: var(--v-ink); }
   .vtag.done { border: 1px solid rgba(255,241,220,.4); color: rgba(255,241,220,.7); }
   .vchart li.played .tt { text-decoration: line-through; text-decoration-thickness: 2px; color: rgba(255,241,220,.5); }
   .vchart .vr-fire { min-width: 56px; }
-  .vboost { flex: none; min-height: 48px; padding: 0 10px; border-radius: 12px; background: var(--v-pink); color: var(--v-ink); border: 2px solid var(--v-ink);
+  .vboost { flex: none; min-height: 48px; padding: 0 10px; border-radius: 0; background: var(--v-pink); color: var(--v-ink); border: 0;
     font: 800 12px/1.1 var(--v-head); text-align: center; }
   .vboost small { display: block; font: 700 11px/1.1 var(--v-text); }
   .vboost:disabled { background: none; color: rgba(255,241,220,.45); border-color: rgba(255,241,220,.25); }
   .vchart li.lead { display: grid; grid-template-columns: auto 1fr; grid-template-areas: "pos pos" "tx tx" "eq act"; align-items: center; gap: 0 10px;
-    margin: 16px 0 6px; padding: 14px 16px 16px; background: #120720; border: 2px solid #3a2457; border-radius: 12px; }
+    margin: 16px 0 6px; padding: 14px 16px 16px; background: #120720; border: 2px solid #3a2457; border-radius: 0; }
   .vchart li.lead .pos { grid-area: pos; width: auto; font-size: 22px; color: var(--v-sun); text-shadow: 0 0 12px rgba(255,210,63,.55); }
   .vchart li.lead .tx { grid-area: tx; padding: 8px 0 0; }
   .vchart li.lead .tt { font: 800 19px/1.2 var(--v-head); white-space: normal; }
   .vchart li.lead .ta { font-size: 15px; }
   .vchart li.lead .veq { grid-area: eq; }
   .vchart li.lead .vacts { grid-area: act; justify-self: end; }
-  .vchart li.lead .vr-fire { min-height: 52px; padding: 0 16px; border-radius: 12px; background: var(--v-cash); color: var(--v-ink); gap: 8px; }
+  .vchart li.lead .vr-fire { min-height: 52px; padding: 0 16px; border-radius: 0; background: var(--v-cash); color: var(--v-ink); gap: 8px; }
   .vchart li.lead .vr-fire span { color: var(--v-ink); }
   .vchart li.lead .vr-fire:disabled { background: rgba(255,241,220,.12); color: rgba(255,241,220,.5); }
   .vchart li.lead .vr-fire:disabled span { color: var(--v-sand); }
@@ -825,7 +831,7 @@
   :root[data-vice] .sheet .link { color: var(--v-ink); border-bottom: 2px solid var(--v-ink); }
   :root[data-vice] .sheet .faint, :root[data-vice] .sheet .earnline { color: rgba(26,11,46,.65); }
   :root[data-vice] .sheet .ledger .v { color: var(--v-palm); }
-  :root[data-vice] .sheet .btn, :root[data-vice] .sheet .add { background: var(--v-ink); color: var(--v-sand); border: 0; border-radius: 12px; font: 700 12px/1 var(--v-head); text-transform: none; letter-spacing: 0; min-height: 44px; padding: 0 14px; }
+  :root[data-vice] .sheet .btn, :root[data-vice] .sheet .add { background: var(--v-ink); color: var(--v-sand); border: 0; border-radius: 0; font: 700 12px/1 var(--v-head); text-transform: none; letter-spacing: 0; min-height: 44px; padding: 0 14px; }
   :root[data-vice] .sheet .btn::after { content: none; }
   :root[data-vice] .toast { background: var(--v-sand); color: var(--v-ink); border-left: 6px solid var(--v-cash); border-radius: 0; font: 600 15px/1.35 var(--v-text); }
   :root[data-vice] .toast.bad { border-left-color: var(--wanted-red); }
@@ -845,7 +851,7 @@
   .vcrew .nm { flex: 1; min-width: 0; font-weight: 700; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .vcrew .nm.need { color: rgba(255,241,220,.55); font-weight: 600; }
   .vcrew .sc { flex: none; font: 800 14px/1 var(--v-head); }
-  .vcrew .call { flex: none; min-height: 40px; padding: 0 12px; border-radius: 12px; border: 2px solid var(--v-pink); color: var(--v-pink); font: 700 11px/1 var(--v-head); }
+  .vcrew .call { flex: none; min-height: 40px; padding: 0 12px; border-radius: 0; border: 2px solid var(--v-pink); color: var(--v-pink); font: 700 11px/1 var(--v-head); }
   .vacts2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
   .vacts2 .vbtn { justify-content: center; padding: 0 10px; font-size: 13px; text-align: center; }
   .vacts2 .vbtn::after, .vbtn.noarrow::after, :root[data-vice] .vice .vbtn::after { content: none; }
@@ -853,7 +859,14 @@
   .vgboard { list-style: none; margin: 10px 0 0; padding: 0; }
   .vgboard li { display: flex; align-items: center; gap: 12px; min-height: 48px; border-bottom: 1px solid rgba(255,241,220,.16); font-weight: 600; font-size: 16px; }
   .vgboard .pos { flex: none; width: 24px; font: 800 16px/1 var(--v-head); color: rgba(255,241,220,.5); }
-  .vgboard .n { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .vgboard .n { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 8px 0; }
+  .vgboard .n small { display: block; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; font-size: 13px; font-weight: 500; color: rgba(255,241,220,.55); }
+  .vgboard li.me .n small { color: rgba(26,11,46,.6); }
+  .vgboard .vbtn { flex: none; min-height: 40px; padding: 0 14px; font-size: 13px; }
+  .vfind { margin-top: 14px; }
+  .vpub { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding: 12px 0; border-top: 1px solid rgba(255,241,220,.16); border-bottom: 1px solid rgba(255,241,220,.16); }
+  .vpub p { flex: 1; font-size: 14px; line-height: 1.35; color: rgba(255,241,220,.75); }
+  .vpub .vbtn { flex: none; min-height: 44px; padding: 0 14px; font-size: 13px; }
   .vgboard b { flex: none; font: 800 15px/1 var(--v-head); color: var(--v-cash); }
   .vgboard li.me { margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter); background: var(--v-sand); color: var(--v-ink); border: 0; }
   .vgboard li.me .pos { color: var(--v-ink); } .vgboard li.me b { color: var(--v-palm); }
@@ -879,7 +892,7 @@
   .hack-hint { position: relative; z-index: 2; text-align: center; margin-top: 22px; font-weight: 600; font-size: 16px; min-height: 22px; }
   .hack-cash { position: relative; z-index: 2; text-align: center; margin-top: 8px; font: 800 20px/1 var(--v-head); color: var(--v-cash); text-shadow: 0 0 10px rgba(124,255,107,.5); }
   .hack-go { position: relative; z-index: 2; margin-top: auto; padding: 0 var(--gutter) 30px; }
-  .hack-go .vbtn { width: 100%; justify-content: center; min-height: 64px; font-size: 20px; border-radius: 12px; }
+  .hack-go .vbtn { width: 100%; justify-content: center; min-height: 64px; font-size: 20px; }
   .hack.flash .hack-lock { animation: hflash .25s ease-out; }
   @keyframes hflash { 0% { filter: drop-shadow(0 0 0 #7CFF6B); } 50% { filter: drop-shadow(0 0 26px #7CFF6B); } 100% { filter: none; } }
   .hack.shake { animation: hshake .25s linear; }
@@ -902,7 +915,8 @@
   :root[data-vice] .tab.on { font-weight: 800; }
 
   :root[data-vice] .vice .search { background: none; position: static; padding: 0; margin-top: 0; }
-  :root[data-vice] .vice .field input { color: var(--v-ink); -webkit-text-fill-color: var(--v-ink); caret-color: var(--v-pink); }
+  :root[data-vice] .vice .field input { color: var(--v-sand); -webkit-text-fill-color: var(--v-sand); caret-color: var(--v-pink); }
+  :root[data-vice] .vice .field input::placeholder { color: rgba(255,241,220,.4); -webkit-text-fill-color: rgba(255,241,220,.4); }
   :root[data-vice] .vice .link, :root[data-vice] .sheet .link { font: 600 15px/1.3 var(--v-text); text-transform: none; letter-spacing: 0; }
   :root[data-vice] .hack .num, :root[data-vice] .hack-res .num, :root[data-vice] .sheet .num { font-family: var(--v-head); letter-spacing: 0; }
   :root[data-vice] .sheet .offer .state { font: 600 13px/1.3 var(--v-text); }
@@ -1119,18 +1133,20 @@ const GTA = {
     role_leader: 'Лидер', role_driver: 'Водитель', role_hacker: 'Хакер', role_muscle: 'Громила', role_scout: 'Наводчик',
     need_leader: 'лидер', need_driver: 'водитель', need_hacker: 'хакер', need_muscle: 'громила', need_scout: 'наводчик',
     gang_s_none: 'Собери до {m} человек и взламывай', gang_s_have: 'В банде {n} из {m}', gang_s_need: 'В банде {n} из {m}. Нужен {r}', gang_s_full: 'Банда в сборе: {n} из {m}',
-    gang_create_h: 'Своя банда', gang_name_ph: 'Название банды', gang_create_btn: 'Создать банду', gang_join_h: 'Есть код от друга?', gang_code_ph: 'Код из ссылки', gang_join_btn: 'Вступить',
+    gang_create_h: 'Своя банда', gang_name_ph: 'Название банды', gang_create_btn: 'Создать', gang_join_h: 'Есть код от друга?', gang_code_ph: 'Код из ссылки', gang_join_btn: 'Вступить',
     gang_free_slot: 'Свободно', gang_call: 'Позвать', gang_hack: 'Взломать', gang_invite: 'Позвать в банду', gang_leave: 'Выйти из банды',
     gang_leave_q: 'Выйти из банды «{g}»? Твоё место займёт кто-то другой.', gang_board_h: 'Рейтинг банд', gang_board_empty: 'Пока ни одной банды. Стань первой.',
     gang_prize_h: 'За что играем', gang_prize: 'Топ-{n} банды по добыче проходят на {d} бесплатно. Всей бандой.', gang_place: '{p} место из {t}', gang_no_place: 'пока без места',
     gang_locked: 'Состав банд закрыт. Менять уже нельзя.', gang_until: 'Банду можно менять до {d}.', gang_you: 'ты', gang_share: 'Го в мою банду «{g}» на Grand Theft Lyfe',
-    gang_loot_rule: 'Добыча банды: сумма лучших взломов всех в банде.', gang_no_event: 'Банды собираются под вечеринку. Ждём дату.',
+    gang_loot_rule: 'Добыча банды: сумма лучших взломов всех в банде. Чем ближе к центру зелёного и чем быстрее жмёшь, тем больше денег.', gang_no_event: 'Банды собираются под вечеринку. Ждём дату.',
     g_CREATED: 'Банда «{g}» собрана. Зови своих.', g_JOINED: 'Ты в банде «{g}».', g_LEFT: 'Ты вышел из банды.', g_ALREADY_IN_GANG: 'Ты уже в другой банде. Сначала выйди из неё.',
-    g_ALREADY_HERE: 'Ты уже в этой банде.', g_FULL: 'В банде «{g}» уже {m}. Мест нет.', g_NOT_FOUND: 'Такой банды нет. Проверь код.', g_LOCKED: 'Состав банд закрыт.',
+    g_ALREADY_HERE: 'Ты уже в этой банде.', g_FULL: 'В банде «{g}» уже {m}. Мест нет.', g_NOT_FOUND: 'Такой банды нет. Проверь код.', g_LOCKED: 'Состав банд закрыт.', g_OPENED: 'Набор открыт. Банду видят все, у кого нет банды.', g_CLOSED: 'Набор закрыт. Вступают только по ссылке.', g_NOT_LEADER: 'Это решает лидер.', g_NONE_OPEN: 'Свободных банд сейчас нет. Создай свою.',
+    gang_find_h: 'Нет своих?', gang_find_s: 'Эти банды ищут людей. Вступай в любую или жми «Найти банду», и тебя поставят туда, где почти собрались.', gang_find_btn: 'Найти банду', gang_open_empty: 'Открытых банд пока нет. Создай свою и открой набор.', gang_size: '{n} из {m}', gang_take: 'Вступить',
+    gang_pub_on: 'Набор открыт: вступить может любой без банды.', gang_pub_off: 'Набор по ссылке: вступают только те, кого позвал.', gang_pub_open: 'Открыть набор', gang_pub_close: 'Закрыть набор',
     g_BAD_NAME: 'Название: от 2 до 24 знаков, без ссылок.', g_NAME_TAKEN: 'Такое название уже занято.', g_NO_EVENT: 'Банды собираются под вечеринку. Ждём дату.', g_NOT_IN_GANG: 'Ты не в банде.',
-    hack_lock: 'замок из {n}', hack_hint: 'Жми, когда стрелка в зелёном', hack_btn: 'Взломать', hack_open: 'Замок {n} вскрыт. +$ {x}', hack_win: 'МИССИЯ ВЫПОЛНЕНА',
+    hack_lock: 'замок из {n}', hack_bull: 'В центр.', hack_quick: 'С первого круга.', hack_hint: 'Жми, когда стрелка в зелёном', hack_btn: 'Взломать', hack_open: 'Замок {n} вскрыт. +$ {x}', hack_win: 'МИССИЯ ВЫПОЛНЕНА',
     hack_win_s: 'Все {n} замков вскрыты', hack_wasted_s: 'Сигналка сработала. Ещё заход?', hack_timeout: 'Долго возился. Замок закрылся.', hack_again: 'Ещё раз', hack_to_gang: 'В банду',
-    hack_best: 'Рекорд: $ {b}', hack_new_best: 'Новый рекорд', hack_closed: 'Взлом закрыт. Банды уже посчитаны.', hack_no_att: 'На сегодня попытки кончились. Приходи завтра.',
+    hack_best: 'Рекорд: $ {b}', hack_new_best: 'Новый рекорд', hack_closed: 'Взлом закрыт. Банды уже посчитаны.', hack_waiting: 'Взлом откроется, как только объявим следующую вечеринку.', hack_no_att: 'На сегодня попытки кончились. Приходи завтра.',
     hack_left: 'Попыток на сегодня: {n}', hack_got: 'Добыча: $ {x}', hack_exit_q: 'Бросить взлом? Добыча этой попытки сгорит.', hack_exit: 'Бросить',
     presents: 'Миссия', ticket: 'Пропуск', live: 'В деле',
     free_text: 'Ты в топ-5 прошлого сезона ({c}), вход бесплатный. Покажи LYFE PASS на входе.',
@@ -1185,18 +1201,20 @@ const GTA = {
     role_leader: 'Лідер', role_driver: 'Водій', role_hacker: 'Хакер', role_muscle: 'Громила', role_scout: 'Навідник',
     need_leader: 'лідер', need_driver: 'водій', need_hacker: 'хакер', need_muscle: 'громила', need_scout: 'навідник',
     gang_s_none: 'Збери до {m} людей і зламуй', gang_s_have: 'У банді {n} з {m}', gang_s_need: 'У банді {n} з {m}. Потрібен {r}', gang_s_full: 'Банда в зборі: {n} з {m}',
-    gang_create_h: 'Своя банда', gang_name_ph: 'Назва банди', gang_create_btn: 'Створити банду', gang_join_h: 'Є код від друга?', gang_code_ph: 'Код із посилання', gang_join_btn: 'Вступити',
+    gang_create_h: 'Своя банда', gang_name_ph: 'Назва банди', gang_create_btn: 'Створити', gang_join_h: 'Є код від друга?', gang_code_ph: 'Код із посилання', gang_join_btn: 'Вступити',
     gang_free_slot: 'Вільно', gang_call: 'Покликати', gang_hack: 'Зламати', gang_invite: 'Покликати в банду', gang_leave: 'Вийти з банди',
     gang_leave_q: 'Вийти з банди «{g}»? Твоє місце займе хтось інший.', gang_board_h: 'Рейтинг банд', gang_board_empty: 'Поки жодної банди. Стань першою.',
     gang_prize_h: 'За що граємо', gang_prize: 'Топ-{n} банди за здобиччю проходять на {d} безкоштовно. Усією бандою.', gang_place: '{p} місце з {t}', gang_no_place: 'поки без місця',
     gang_locked: 'Склад банд закрито. Змінювати вже не можна.', gang_until: 'Банду можна змінити до {d}.', gang_you: 'ти', gang_share: 'Го в мою банду «{g}» на Grand Theft Lyfe',
-    gang_loot_rule: 'Здобич банди: сума найкращих зламів усіх у банді.', gang_no_event: 'Банди збираються під вечірку. Чекаємо дату.',
+    gang_loot_rule: 'Здобич банди: сума найкращих зламів усіх у банді. Що ближче до центру зеленого і що швидше тиснеш, то більше грошей.', gang_no_event: 'Банди збираються під вечірку. Чекаємо дату.',
     g_CREATED: 'Банду «{g}» зібрано. Клич своїх.', g_JOINED: 'Ти в банді «{g}».', g_LEFT: 'Ти вийшов з банди.', g_ALREADY_IN_GANG: 'Ти вже в іншій банді. Спершу вийди з неї.',
-    g_ALREADY_HERE: 'Ти вже в цій банді.', g_FULL: 'У банді «{g}» вже {m}. Місць немає.', g_NOT_FOUND: 'Такої банди немає. Перевір код.', g_LOCKED: 'Склад банд закрито.',
+    g_ALREADY_HERE: 'Ти вже в цій банді.', g_FULL: 'У банді «{g}» вже {m}. Місць немає.', g_NOT_FOUND: 'Такої банди немає. Перевір код.', g_LOCKED: 'Склад банд закрито.', g_OPENED: 'Набір відкрито. Банду бачать усі, хто без банди.', g_CLOSED: 'Набір закрито. Вступають лише за посиланням.', g_NOT_LEADER: 'Це вирішує лідер.', g_NONE_OPEN: 'Вільних банд зараз немає. Створи свою.',
+    gang_find_h: 'Немає своїх?', gang_find_s: 'Ці банди шукають людей. Вступай у будь-яку або тисни «Знайти банду», і тебе поставлять туди, де майже зібралися.', gang_find_btn: 'Знайти банду', gang_open_empty: 'Відкритих банд поки немає. Створи свою і відкрий набір.', gang_size: '{n} з {m}', gang_take: 'Вступити',
+    gang_pub_on: 'Набір відкрито: вступити може будь-хто без банди.', gang_pub_off: 'Набір за посиланням: вступають лише ті, кого покликав.', gang_pub_open: 'Відкрити набір', gang_pub_close: 'Закрити набір',
     g_BAD_NAME: 'Назва: від 2 до 24 знаків, без посилань.', g_NAME_TAKEN: 'Така назва вже зайнята.', g_NO_EVENT: 'Банди збираються під вечірку. Чекаємо дату.', g_NOT_IN_GANG: 'Ти не в банді.',
-    hack_lock: 'замок з {n}', hack_hint: 'Тисни, коли стрілка в зеленому', hack_btn: 'Зламати', hack_open: 'Замок {n} зламано. +$ {x}', hack_win: 'МІСІЮ ВИКОНАНО',
+    hack_lock: 'замок з {n}', hack_bull: 'У центр.', hack_quick: 'З першого кола.', hack_hint: 'Тисни, коли стрілка в зеленому', hack_btn: 'Зламати', hack_open: 'Замок {n} зламано. +$ {x}', hack_win: 'МІСІЮ ВИКОНАНО',
     hack_win_s: 'Усі {n} замків зламано', hack_wasted_s: 'Сигналка спрацювала. Ще захід?', hack_timeout: 'Довго возився. Замок закрився.', hack_again: 'Ще раз', hack_to_gang: 'У банду',
-    hack_best: 'Рекорд: $ {b}', hack_new_best: 'Новий рекорд', hack_closed: 'Злам закрито. Банди вже пораховано.', hack_no_att: 'На сьогодні спроби скінчились. Приходь завтра.',
+    hack_best: 'Рекорд: $ {b}', hack_new_best: 'Новий рекорд', hack_closed: 'Злам закрито. Банди вже пораховано.', hack_waiting: 'Злам відкриється, щойно оголосимо наступну вечірку.', hack_no_att: 'На сьогодні спроби скінчились. Приходь завтра.',
     hack_left: 'Спроб на сьогодні: {n}', hack_got: 'Здобич: $ {x}', hack_exit_q: 'Кинути злам? Здобич цієї спроби згорить.', hack_exit: 'Кинути',
     presents: 'Місія', ticket: 'Пропуск', live: 'У справі',
     free_text: 'Ти в топ-5 минулого сезону ({c}), вхід безкоштовний. Покажи LYFE PASS на вході.',
@@ -2184,23 +2202,31 @@ function drawGang() {
     <p class="vprize">${esc(L('gang_prize', { n: g.free_places, d: g.event.date }))}</p>
     <p class="vnote">${esc(L('gang_loot_rule'))}</p>`;
   const board = g.board.length ? `<ol class="vgboard">${g.board.map(b => `<li class="${[b.mine ? 'me' : '', b.place <= g.free_places && b.loot > 0 ? 'win' : ''].join(' ').trim()}">
-      <span class="pos num">${b.place}</span><span class="n">${esc(b.name)}</span><b class="num">$ ${fmtMoney(b.loot)}</b></li>`).join('')}</ol>`
+      <span class="pos num">${b.place}</span><span class="n">${esc(b.name)}${b.crew && b.crew.length ? `<small>${esc(b.crew.join(', '))}</small>` : ''}</span><b class="num">$ ${fmtMoney(b.loot)}</b></li>`).join('')}</ol>`
     : `<p class="vnote">${esc(L('gang_board_empty'))}</p>`;
   const hackInfo = g.hack.open
     ? `<p class="vnote">${esc(L('hack_best', { b: fmtMoney(g.hack.best) }))}. ${esc(L('hack_left', { n: g.hack.attempts_left }))}</p>`
-    : `<p class="vnote">${esc(L('hack_closed'))}</p>`;
+    : `<p class="vnote">${esc(L(g.hack.waiting ? 'hack_waiting' : 'hack_closed'))}</p>`;
   const lock = g.locked ? L('gang_locked') : L('gang_until', { d: fmtDate(g.changes_until) });
   let body;
   if (!g.gang) {
     body = `${g.locked ? '' : `<section class="vform">
         <h2 class="vh" style="margin-top:22px">${esc(L('gang_create_h'))}</h2>
-        <label class="field"><input id="gname" maxlength="24" autocomplete="off" placeholder="${esc(L('gang_name_ph'))}"></label>
-        <button class="vbtn" id="gcreate">${esc(L('gang_create_btn'))}</button>
+        <div class="vline"><label class="field"><input id="gname" maxlength="24" autocomplete="off" placeholder="${esc(L('gang_name_ph'))}"></label>
+        <button class="vbtn" id="gcreate">${esc(L('gang_create_btn'))}</button></div>
       </section>
       <section class="vform">
         <h2 class="vh">${esc(L('gang_join_h'))}</h2>
-        <label class="field"><input id="gcode" maxlength="16" autocomplete="off" autocapitalize="characters" placeholder="${esc(L('gang_code_ph'))}"></label>
-        <button class="vbtn sand" id="gjoin">${esc(L('gang_join_btn'))}</button>
+        <div class="vline"><label class="field"><input id="gcode" maxlength="16" autocomplete="off" autocapitalize="characters" placeholder="${esc(L('gang_code_ph'))}"></label>
+        <button class="vbtn sand" id="gjoin">${esc(L('gang_join_btn'))}</button></div>
+      </section>`}
+      ${g.locked ? '' : `<section class="vform">
+        <h2 class="vh">${esc(L('gang_find_h'))}</h2>
+        ${(g.open_gangs || []).length ? `<p class="vnote">${esc(L('gang_find_s'))}</p>
+          <ol class="vgboard">${g.open_gangs.map(o => `<li><span class="n">${esc(o.name)}<small>${esc(L('gang_size', { n: o.size, m: g.max }))}</small></span>
+            <button class="vbtn sand" data-open="${o.id}">${esc(L('gang_take'))}</button></li>`).join('')}</ol>
+          <button class="vbtn wide vfind" id="gfind">${esc(L('gang_find_btn'))}</button>`
+        : `<p class="vnote">${esc(L('gang_open_empty'))}</p>`}
       </section>`}
       <p class="vnote">${esc(lock)}</p>
       ${g.hack.open ? `<button class="vbtn wide" id="ghack" style="margin-top:18px">${esc(L('gang_hack'))}</button>` : ''}${hackInfo}
@@ -2221,7 +2247,10 @@ function drawGang() {
       <ul class="vcrew">${crew}</ul>
       <div class="vacts2">${g.hack.open ? `<button class="vbtn" id="ghack">${esc(L('gang_hack'))}</button>` : ''}
         ${!full && !g.locked ? `<button class="vbtn sand" data-invite>${esc(L('gang_invite'))}</button>` : ''}</div>
-      ${hackInfo}<p class="vnote">${esc(lock)}</p>
+      ${hackInfo}
+      ${!full && !g.locked ? `<div class="vpub"><p>${esc(L(gang.public ? 'gang_pub_on' : 'gang_pub_off'))}</p>
+        ${gang.my_role === 'leader' ? `<button class="vbtn ${gang.public ? 'sand' : ''}" id="gpub">${esc(L(gang.public ? 'gang_pub_close' : 'gang_pub_open'))}</button>` : ''}</div>` : ''}
+      <p class="vnote">${esc(lock)}</p>
       <h2 class="vh">${esc(L('gang_board_h'))}</h2>${board}${prize}
       ${g.locked ? '' : `<div style="margin-top:26px"><button class="link" id="gleave">${esc(L('gang_leave'))}</button></div>`}`;
   }
@@ -2229,6 +2258,9 @@ function drawGang() {
   const c = $('#gcreate'); if (c) c.onclick = () => gangAction('/api/app/gang/create', { name: $('#gname').value }, c);
   const j = $('#gjoin'); if (j) j.onclick = () => gangAction('/api/app/gang/join', { code: $('#gcode').value }, j);
   const h = $('#ghack'); if (h) h.onclick = startHack;
+  const f = $('#gfind'); if (f) f.onclick = () => gangAction('/api/app/gang/find', {}, f);
+  view.querySelectorAll('[data-open]').forEach(b => b.onclick = () => gangAction('/api/app/gang/join-open/' + b.dataset.open, {}, b));
+  const pb = $('#gpub'); if (pb) pb.onclick = () => gangAction('/api/app/gang/public', { open: !g.gang.public }, pb);
   view.querySelectorAll('[data-invite]').forEach(b => b.onclick = shareGang);
   const lv = $('#gleave'); if (lv) lv.onclick = async () => {
     if (!await confirmBox(L('gang_leave'), L('gang_leave_q', { g: g.gang.name }), L('gang_leave'))) return;
@@ -2242,7 +2274,7 @@ async function gangAction(path, body, button) {
   let res;
   try { res = await api(path, { body }); } catch (e) { gangBusy = false; if (button) button.disabled = false; return; }
   gangBusy = false;
-  const ok = ['CREATED', 'JOINED', 'LEFT'].includes(res.status);
+  const ok = ['CREATED', 'JOINED', 'LEFT', 'OPENED', 'CLOSED'].includes(res.status);
   haptic(ok ? 'ok' : 'warning');
   toast(L('g_' + res.status, { g: res.name || (res.gang && res.gang.gang && res.gang.gang.name) || '', m: res.gang ? res.gang.max : 5 }));
   if (res.gang) { S.gang = res.gang; if (S.tab === 'gang') drawGang(); }
@@ -2290,7 +2322,7 @@ async function startHack() {
   haptic('light');
   let res;
   try { res = await api('/api/app/hack/start', { method: 'POST' }); } catch (e) { return; }
-  if (res.status !== 'OK') { toast(L(res.status === 'NO_ATTEMPTS' ? 'hack_no_att' : 'hack_closed')); haptic('warning'); return; }
+  if (res.status !== 'OK') { toast(L(res.status === 'NO_ATTEMPTS' ? 'hack_no_att' : S.gang && S.gang.hack.waiting ? 'hack_waiting' : 'hack_closed')); haptic('warning'); return; }
   const el = document.createElement('div');
   el.className = 'hack';
   el.innerHTML = `<div class="hack-sky"></div>
@@ -2309,7 +2341,7 @@ async function startHack() {
     <div class="hack-cash num" id="hcash">$ 0</div>
     <div class="hack-go"><button class="vbtn" id="hgo">${esc(L('hack_btn'))}</button></div>`;
   document.body.appendChild(el);
-  const run = HACK.run = { id: res.id, locks: res.locks, step: res.loot_step, maxTap: res.max_tap, i: 0, taps: [], t0: 0, raf: 0, el, busy: false, loot: 0 };
+  const run = HACK.run = { id: res.id, locks: res.locks, step: res.loot_step, rule: res.loot, maxTap: res.max_tap, i: 0, taps: [], t0: 0, raf: 0, el, busy: false, loot: 0 };
   $('#hx').onclick = async () => {
     if (!await confirmBox(L('hack_exit'), L('hack_exit_q'), L('hack_exit'))) return;
     hackFinish(false, true);
@@ -2337,6 +2369,17 @@ function hackLock() {
   };
   run.raf = requestAnimationFrame(frame);
 }
+// the same sum the server pays (hack_service.lock_loot): opening + aim + speed
+function hackLoot(run, lock, t, angle) {
+  const r = run.rule; if (!r) return run.step * lock.n;
+  let pos = ((angle - lock.start) % 360 + 360) % 360; if (pos > 180) pos -= 360;
+  const half = lock.width / 2, aim = Math.max(0, 1 - Math.abs(pos - half) / half);
+  const turn = 360 / lock.speed, edge = lock.dir === 1 ? lock.start : 360 - lock.start - lock.width;
+  let first = (edge - r.grace) / lock.speed; while (first < r.react) first += turn;
+  const lap = Math.max(0, Math.floor((t - first) / turn));
+  const fast = lap === 0 ? r.fast * lock.n : lap === 1 ? Math.floor(r.fast * lock.n / 2) : 0;
+  return { x: r.base * lock.n + Math.round(r.aim * lock.n * aim) + fast, aim, lap };
+}
 function hackTap(e) {
   if (e && e.preventDefault) e.preventDefault();
   const run = HACK.run; if (!run || run.busy) return;
@@ -2349,9 +2392,12 @@ function hackTap(e) {
   cancelAnimationFrame(run.raf);
   // the page only predicts; the server's replay is what counts
   if (d <= lock.width + 3 || d >= 357) {
-    run.loot += run.step * (run.i + 1);
+    const got = hackLoot(run, lock, t, angle);
+    const x = typeof got === 'number' ? got : got.x;
+    run.loot += x;
     $('#hcash').textContent = '$ ' + fmtMoney(run.loot);
-    $('#hhint').textContent = L('hack_open', { n: run.i + 1, x: fmtMoney(run.step * (run.i + 1)) });
+    const tag = typeof got === 'number' ? '' : got.aim >= 0.85 ? L('hack_bull') : got.lap === 0 ? L('hack_quick') : '';
+    $('#hhint').textContent = L('hack_open', { n: run.i + 1, x: fmtMoney(x) }) + (tag ? '. ' + tag : '');
     haptic('ok');
     run.el.classList.remove('flash'); void run.el.offsetWidth; run.el.classList.add('flash');
     run.i += 1;

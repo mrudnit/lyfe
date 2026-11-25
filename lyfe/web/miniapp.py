@@ -744,16 +744,19 @@ async def _gang_json(session: AsyncSession, user: User, event: Event | None) -> 
         "locked": gang_service.is_locked(),
         "changes_until": gang_service.changes_until().isoformat(),
         "free_places": settings.gang_free_entry_places,
-        "hack": {"open": False},
+        "hack": {"open": False, "waiting": True},
         "gang": None,
         "board": [],
         "gangs_total": 0,
+        "open_gangs": [],
     }
     if event is None:
         return base
     closes = hack_service.closes_at(event)
     base["hack"] = {
         "open": hack_service.is_open(event),
+        # no party ahead yet: the game starts once the next one is announced
+        "waiting": season_service.is_waiting(event),
         "closes_at": closes.isoformat() if closes else None,
         "best": await hack_service.best(session, user_id=user.id, event_id=event.id),
         "attempts_left": max(0, settings.hack_attempts_per_day - await hack_service.attempts_today(session, user_id=user.id)),
@@ -782,15 +785,23 @@ async def _gang_json(session: AsyncSession, user: User, event: Event | None) -> 
             "loot": row["loot"] if row else 0,
             "place": row["place"] if row else None,
             "my_role": mine.role,
+            "public": gang.is_public,
         }
     my_id = base["gang"] and mine.gang_id
     base["board"] = [
-        {"name": r["name"], "loot": r["loot"], "size": r["size"], "place": r["place"], "mine": r["id"] == my_id}
+        {"name": r["name"], "loot": r["loot"], "size": r["size"], "place": r["place"], "mine": r["id"] == my_id, "id": r["id"]}
         for r in board[:10]
     ]
     if my_id and not any(r["mine"] for r in base["board"]):
         r = next(r for r in board if r["id"] == my_id)
-        base["board"].append({"name": r["name"], "loot": r["loot"], "size": r["size"], "place": r["place"], "mine": True})
+        base["board"].append({"name": r["name"], "loot": r["loot"], "size": r["size"], "place": r["place"], "mine": True, "id": r["id"]})
+    # who is in each gang on the board: first names only, the same ones the radio shows
+    shown = [r["id"] for r in board[:10]] + ([my_id] if my_id else [])
+    names = await gang_service.member_names(session, gang_ids=shown)
+    for b in base["board"]:
+        b["crew"] = names.get(b.pop("id"), [])
+    if base["gang"] is None and not gang_service.is_locked():
+        base["open_gangs"] = await gang_service.open_gangs(session, event_id=event.id)
     return base
 
 
@@ -816,6 +827,28 @@ async def gang_join(payload: dict = Body(...), user: User = Depends(current_user
     return {"status": out.status, "name": out.gang.name if out.gang else None, "gang": await _gang_json(session, user, event)}
 
 
+@router.post("/api/app/gang/find")
+async def gang_find(user: User = Depends(current_user), session: AsyncSession = Depends(get_session)):
+    """With an id: join that open gang. Without: the fullest open gang with room."""
+    event = await event_service.get_season_anchor(session)
+    out = await gang_service.find_gang(session, user=user, event=event)
+    return {"status": out.status, "name": out.gang.name if out.gang else None, "gang": await _gang_json(session, user, event)}
+
+
+@router.post("/api/app/gang/join-open/{gang_id}")
+async def gang_join_open(gang_id: int, user: User = Depends(current_user), session: AsyncSession = Depends(get_session)):
+    event = await event_service.get_season_anchor(session)
+    out = await gang_service.join_gang(session, user=user, gang_id=gang_id)
+    return {"status": out.status, "name": out.gang.name if out.gang else None, "gang": await _gang_json(session, user, event)}
+
+
+@router.post("/api/app/gang/public")
+async def gang_public(payload: dict = Body(...), user: User = Depends(current_user), session: AsyncSession = Depends(get_session)):
+    event = await event_service.get_season_anchor(session)
+    out = await gang_service.set_public(session, user=user, event=event, public=bool(payload.get("open")))
+    return {"status": out.status, "name": out.gang.name if out.gang else None, "gang": await _gang_json(session, user, event)}
+
+
 @router.post("/api/app/gang/leave")
 async def gang_leave(user: User = Depends(current_user), session: AsyncSession = Depends(get_session)):
     event = await event_service.get_season_anchor(session)
@@ -835,6 +868,9 @@ async def hack_start(user: User = Depends(current_user), session: AsyncSession =
         "max_tap": hack_service.MAX_TAP,
         "locks": [lock.__dict__ for lock in hack_service.locks(game.seed)],
         "loot_step": hack_service.LOOT_STEP,
+        # the page only previews the loot; finish() replays and pays
+        "loot": {"base": hack_service.BASE, "aim": hack_service.AIM, "fast": hack_service.FAST,
+                 "react": hack_service.REACT, "grace": hack_service.GRACE_DEG},
     }
 
 

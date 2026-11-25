@@ -46,6 +46,10 @@ class GangResult:
     NO_EVENT = "NO_EVENT"
     BAD_NAME = "BAD_NAME"
     NAME_TAKEN = "NAME_TAKEN"
+    NOT_LEADER = "NOT_LEADER"             # only the leader opens or closes the gang
+    NONE_OPEN = "NONE_OPEN"               # «Найти банду»: no open gang has room
+    OPENED = "OPENED"
+    CLOSED = "CLOSED"
 
 
 @dataclass
@@ -139,13 +143,19 @@ async def create_gang(session: AsyncSession, *, user: User, event: Event | None,
     return GangOutcome(GangResult.CREATED, gang)
 
 
-async def join_gang(session: AsyncSession, *, user: User, code: str) -> GangOutcome:
-    code = (code or "").strip().upper().removeprefix("GANG_")
-    if not code or len(code) > 16:
-        return GangOutcome(GangResult.NOT_FOUND)
-    gang = await session.scalar(select(Gang).where(Gang.invite_code == code))
-    if gang is None:
-        return GangOutcome(GangResult.NOT_FOUND)
+async def join_gang(session: AsyncSession, *, user: User, code: str = "", gang_id: int | None = None) -> GangOutcome:
+    """Join by invite code, or by id when the gang is open to anyone."""
+    if gang_id is not None:
+        gang = await session.get(Gang, gang_id)
+        if gang is None or not gang.is_public:
+            return GangOutcome(GangResult.NOT_FOUND)
+    else:
+        code = (code or "").strip().upper().removeprefix("GANG_")
+        if not code or len(code) > 16:
+            return GangOutcome(GangResult.NOT_FOUND)
+        gang = await session.scalar(select(Gang).where(Gang.invite_code == code))
+        if gang is None:
+            return GangOutcome(GangResult.NOT_FOUND)
     if is_locked():
         return GangOutcome(GangResult.LOCKED, gang)
 
@@ -197,19 +207,80 @@ async def leave_gang(session: AsyncSession, *, user: User, event: Event | None) 
     return GangOutcome(GangResult.LEFT, gang)
 
 
+async def open_gangs(session: AsyncSession, *, event_id: int, limit: int = 8) -> list[dict]:
+    """Open gangs with room, fullest first: a stranger finishes a crew before starting a new one."""
+    size = func.count(GangMember.id)
+    rows = (await session.execute(
+        select(Gang.id, Gang.name, size.label("size"))
+        .join(GangMember, GangMember.gang_id == Gang.id)
+        .where(Gang.event_id == event_id, Gang.is_public.is_(True))
+        .group_by(Gang.id)
+        .having(size < settings.max_gang_size)
+        .order_by(size.desc(), Gang.created_at.asc())
+        .limit(limit)
+    )).all()
+    return [{"id": r.id, "name": r.name, "size": int(r.size)} for r in rows]
+
+
+async def find_gang(session: AsyncSession, *, user: User, event: Event | None) -> GangOutcome:
+    """«Найти банду»: put this person in the fullest open gang that still has room."""
+    if event is None:
+        return GangOutcome(GangResult.NO_EVENT)
+    if is_locked():
+        return GangOutcome(GangResult.LOCKED)
+    if await membership(session, user_id=user.id, event_id=event.id) is not None:
+        return GangOutcome(GangResult.ALREADY_IN_GANG)
+    for row in await open_gangs(session, event_id=event.id, limit=20):
+        out = await join_gang(session, user=user, gang_id=row["id"])
+        if out.status != GangResult.FULL:      # filled up a moment ago: try the next one
+            return out
+    return GangOutcome(GangResult.NONE_OPEN)
+
+
+async def set_public(session: AsyncSession, *, user: User, event: Event | None, public: bool) -> GangOutcome:
+    if event is None:
+        return GangOutcome(GangResult.NO_EVENT)
+    mine = await membership(session, user_id=user.id, event_id=event.id)
+    if mine is None:
+        return GangOutcome(GangResult.NOT_IN_GANG)
+    if mine.role != GangRole.LEADER:
+        return GangOutcome(GangResult.NOT_LEADER)
+    gang = await session.get(Gang, mine.gang_id, with_for_update=True)
+    gang.is_public = bool(public)
+    await session.flush()
+    return GangOutcome(GangResult.OPENED if gang.is_public else GangResult.CLOSED, gang)
+
+
+async def member_names(session: AsyncSession, *, gang_ids: list[int]) -> dict[int, list[str]]:
+    if not gang_ids:
+        return {}
+    rows = await session.execute(
+        select(GangMember.gang_id, User)
+        .join(User, User.id == GangMember.user_id)
+        .where(GangMember.gang_id.in_(gang_ids))
+        .order_by(GangMember.joined_at.asc(), GangMember.id.asc())
+    )
+    out: dict[int, list[str]] = {}
+    for gid, person in rows.all():
+        out.setdefault(gid, []).append(person.name or "?")
+    return out
+
+
 async def ranking(session: AsyncSession, *, event_id: int, limit: int | None = 10) -> list[dict]:
-    """Gangs by loot (sum of members' best «Взлом» runs). Equal loot: the older gang first."""
+    """Gangs by loot (sum of members' best «Взлом» runs). Equal loot: the gang
+    that got there first wins, then the older gang."""
     from lyfe.core.services import hack_service
 
     best = hack_service.best_runs_subquery(event_id)
     loot = func.coalesce(func.sum(best.c.score), 0)
+    reached = func.max(best.c.reached_at)
     q = (
         select(Gang.id, Gang.name, Gang.created_at, func.count(GangMember.id).label("size"), loot.label("loot"))
         .join(GangMember, GangMember.gang_id == Gang.id)
         .outerjoin(best, best.c.user_id == GangMember.user_id)
         .where(Gang.event_id == event_id)
         .group_by(Gang.id)
-        .order_by(loot.desc(), Gang.created_at.asc(), Gang.id.asc())
+        .order_by(loot.desc(), reached.asc().nulls_last(), Gang.created_at.asc(), Gang.id.asc())
     )
     if limit:
         q = q.limit(limit)
