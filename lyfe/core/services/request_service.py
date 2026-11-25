@@ -255,7 +255,10 @@ async def add_request(
 
 
 def score_expression():
-    return EventTrack.requests_count + EventTrack.votes_count + EventTrack.boost_points
+    return (
+        EventTrack.requests_count + EventTrack.votes_count
+        - EventTrack.dislikes_count + EventTrack.boost_points
+    )
 
 
 def _top_ordering():
@@ -340,24 +343,39 @@ class VoteResult:
     OWN_TRACK = "OWN_TRACK"
     EVENT_CLOSED = "EVENT_CLOSED"
     NOT_FOUND = "NOT_FOUND"
-    LIMIT = "LIMIT"          # this person has used all their likes for the night
+    LIMIT = "LIMIT"          # this person has used all their likes (or dislikes) for the night
 
 
-async def votes_used(session: AsyncSession, *, user_id: int, event_id: int) -> int:
-    """Likes this person has given at this event."""
+LIKE, DISLIKE = 1, -1
+
+
+async def votes_used(
+    session: AsyncSession, *, user_id: int, event_id: int, value: int = LIKE
+) -> int:
+    """Likes (value=1) or dislikes (value=-1) this person has given at this event."""
     return int(
         await session.scalar(
             select(func.count(TrackVote.id))
             .join(EventTrack, EventTrack.id == TrackVote.event_track_id)
-            .where(TrackVote.user_id == user_id, EventTrack.event_id == event_id)
+            .where(
+                TrackVote.user_id == user_id,
+                EventTrack.event_id == event_id,
+                TrackVote.value == value,
+            )
         )
         or 0
     )
 
 
-async def add_vote(session: AsyncSession, *, user_id: int, event_track_id: int) -> str:
-    """A like on someone else's request. This IS the voting system —
-    there is no separate poll to build or moderate."""
+async def add_vote(
+    session: AsyncSession, *, user_id: int, event_track_id: int, value: int = LIKE
+) -> str:
+    """A like («Огонь», value=1) or a dislike («В розыск», value=-1) on someone
+    else's request. One reaction per person per track: a like and a dislike on
+    the same track are ALREADY_VOTED. This IS the voting system — there is no
+    separate poll to build or moderate."""
+    if value not in (LIKE, DISLIKE):
+        raise ValueError("value must be 1 or -1")
     event_track = await session.get(EventTrack, event_track_id)
     if event_track is None:
         return VoteResult.NOT_FOUND
@@ -389,16 +407,21 @@ async def add_vote(session: AsyncSession, *, user_id: int, event_track_id: int) 
         return VoteResult.ALREADY_VOTED
 
     # Checked under the per-user lock above, so parallel taps cannot slip past it.
-    if await votes_used(session, user_id=user_id, event_id=event.id) >= settings.max_votes_per_event:
+    cap = settings.max_votes_per_event if value == LIKE else settings.max_dislikes_per_event
+    if await votes_used(session, user_id=user_id, event_id=event.id, value=value) >= cap:
         return VoteResult.LIMIT
 
-    vote = TrackVote(event_track_id=event_track_id, user_id=user_id)
+    vote = TrackVote(event_track_id=event_track_id, user_id=user_id, value=value)
     try:
         async with session.begin_nested():
             session.add(vote)
             await session.flush()
     except IntegrityError:
         return VoteResult.ALREADY_VOTED
+    if value == DISLIKE:
+        # A dislike earns nothing: otherwise wanting a track gone would pay.
+        event_track.dislikes_count += 1
+        return VoteResult.VOTED
     event_track.votes_count += 1
 
     # Points for the first few likes only.
@@ -440,9 +463,26 @@ async def user_interactions(
         select(TrackVote.event_track_id).where(
             TrackVote.user_id == user_id,
             TrackVote.event_track_id.in_(event_track_ids),
+            TrackVote.value == LIKE,
         )
     )
     return set(requested.scalars()), set(voted.scalars())
+
+
+async def user_dislikes(
+    session: AsyncSession, *, user_id: int, event_track_ids: list[int]
+) -> set[int]:
+    """Which of these tracks the user put «В розыск»."""
+    if not event_track_ids:
+        return set()
+    rows = await session.execute(
+        select(TrackVote.event_track_id).where(
+            TrackVote.user_id == user_id,
+            TrackVote.event_track_id.in_(event_track_ids),
+            TrackVote.value == DISLIKE,
+        )
+    )
+    return set(rows.scalars())
 
 
 class BoostResult:

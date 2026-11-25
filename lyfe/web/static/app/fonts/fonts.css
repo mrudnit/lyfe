@@ -97,3 +97,11 @@
   src: url(/static/app/fonts/SpaceMono-Regular.woff2) format('woff2'); }
 @font-face { font-family: 'Space Mono'; font-weight: 700; font-display: swap;
   src: url(/static/app/fonts/SpaceMono-Bold.woff2) format('woff2'); }
+
+/* Vice City home (docs/lyfe-gta-style.md v2), fonts from the video-editor pack, all OFL:
+   Sweet Mavka Script (neon title, shipped unmodified: Reserved Font Name),
+   Unbounded (headings, buttons, numbers: already declared above), Geologica (text). */
+@font-face { font-family: 'Sweet Mavka Script'; font-weight: 400; font-display: swap;
+  src: url(/static/app/fonts/SweetMavkaScript.ttf) format('truetype'); }
+@font-face { font-family: 'Geologica'; font-weight: 100 900; font-display: swap;
+  src: url(/static/app/fonts/Geologica-Variable.woff2) format('woff2'); }

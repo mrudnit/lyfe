@@ -26,7 +26,7 @@ from sqlalchemy import delete, func, select, text  # noqa: E402
 from lyfe.config import get_settings  # noqa: E402
 from lyfe.core import pass_token  # noqa: E402
 from lyfe.core.security import hash_password  # noqa: E402
-from lyfe.core.services import season_service  # noqa: E402
+from lyfe.core.services import gang_service, hack_service, season_service  # noqa: E402
 from lyfe.db import SessionFactory  # noqa: E402
 from lyfe.models import (  # noqa: E402
     AdminRole, AdminUser, Event, EventStatus, GameSession, PointTransaction, User, Venue,
@@ -76,6 +76,21 @@ async def db(sql: str, **params):
             return None
 
 
+SAVED_EVENTS: list = []
+
+
+async def restore_events() -> None:
+    """Give the real local events back the status they had before the check."""
+    if not SAVED_EVENTS:
+        return
+    async with SessionFactory() as s:
+        await s.execute(text("UPDATE events SET status = 'ENDED' WHERE slug = 'e2e-party'"))
+        for event_id, status in SAVED_EVENTS:
+            await s.execute(text("UPDATE events SET status = :st WHERE id = :id"), {"st": status, "id": event_id})
+        await s.commit()
+    print(f"restored {len(SAVED_EVENTS)} local event(s)")
+
+
 async def setup() -> int:
     async with SessionFactory() as s:
         # clean previous runs
@@ -83,7 +98,13 @@ async def setup() -> int:
         await s.execute(delete(PointTransaction).where(PointTransaction.user_id.in_(ids)))
         await s.execute(text("DELETE FROM users WHERE tg_user_id >= :b"), {"b": TG_BASE})
         await s.execute(text("DELETE FROM admin_users WHERE login = 'e2e_admin'"))
-        # every other event out of the way, one fresh party two days ahead
+        await s.execute(text("DELETE FROM gangs WHERE event_id IN (SELECT id FROM events WHERE slug = 'e2e-party')"))
+        # gangs whose test members were just deleted would keep their names taken
+        await s.execute(text("DELETE FROM gangs g WHERE NOT EXISTS (SELECT 1 FROM gang_members m WHERE m.gang_id = g.id)"))
+        # every other event out of the way, one fresh party two days ahead; their
+        # statuses are remembered and put back when the check ends (restore_events)
+        SAVED_EVENTS.extend((await s.execute(text(
+            "SELECT id, status FROM events WHERE slug <> 'e2e-party' AND status <> 'ENDED'"))).all())
         await s.execute(text("UPDATE events SET status = 'ENDED' WHERE slug <> 'e2e-party'"))
         venue = await s.scalar(select(Venue).limit(1))
         event = await s.scalar(select(Event).where(Event.slug == "e2e-party"))
@@ -160,6 +181,10 @@ async def main() -> None:
     check("3 tracks max", r["status"] == "ADDED")
     r = (await c.post("/api/app/request", headers=guest(4), json={"manual": "Queen - Bohemian Rhapsody"})).json()
     check("4th track → LIMIT_REACHED", r["status"] == "LIMIT_REACHED", r)
+    # enough tracks on the night to hit the like and dislike caps (5 each)
+    for t in ["Kavinsky - Nightcall", "Jan Hammer - Miami Vice Theme"]:
+        r = (await c.post("/api/app/request", headers=guest(2), json={"manual": t})).json()
+        check(f"extra track for the caps: {t}", r["status"] == "ADDED", r)
 
     print("\n[top + votes]")
     top = (await c.get("/api/app/top", headers=guest(5))).json()
@@ -179,6 +204,26 @@ async def main() -> None:
     results = await asyncio.gather(*(c.post(f"/api/app/vote/{i}", headers=guest(6)) for i in others * 3))
     statuses = [x.json()["status"] for x in results]
     check(f"parallel likes on every track: exactly {cap} go through", statuses.count("VOTED") == cap, statuses)
+
+    print("\n[dislikes «В розыск» — own cap, no points, one reaction per track]")
+    check("dislike own track → OWN_TRACK", (await c.post(f"/api/app/dislike/{first['id']}", headers=guest(1))).json()["status"] == "OWN_TRACK")
+    check("liked track can't be disliked too → ALREADY_VOTED", (await c.post(f"/api/app/dislike/{first['id']}", headers=guest(5))).json()["status"] == "ALREADY_VOTED")
+    target = others[0]
+    score_before = next(i for i in (await c.get("/api/app/top", headers=guest(7))).json()["items"] if i["id"] == target)["score"]
+    pts_before = (await c.get("/api/app/me", headers=guest(7))).json()["user"]["points"]
+    check("dislike", (await c.post(f"/api/app/dislike/{target}", headers=guest(7))).json()["status"] == "VOTED")
+    row = next(i for i in (await c.get("/api/app/top", headers=guest(7))).json()["items"] if i["id"] == target)
+    check("dislike takes 1 off the score and is marked", row["score"] == score_before - 1 and row["disliked"] and row["dislikes"] >= 1, (score_before, row))
+    check("dislike earns nothing", (await c.get("/api/app/me", headers=guest(7))).json()["user"]["points"] == pts_before)
+    check("dislike again → ALREADY_VOTED", (await c.post(f"/api/app/dislike/{target}", headers=guest(7))).json()["status"] == "ALREADY_VOTED")
+    check("like after dislike → ALREADY_VOTED", (await c.post(f"/api/app/vote/{target}", headers=guest(7))).json()["status"] == "ALREADY_VOTED")
+    dcap = settings.max_dislikes_per_event
+    results = await asyncio.gather(*(c.post(f"/api/app/dislike/{i}", headers=guest(8)) for i in others * 3))
+    statuses = [x.json()["status"] for x in results]
+    check(f"parallel dislikes on every track: exactly {min(dcap, len(others))} go through", statuses.count("VOTED") == min(dcap, len(others)), statuses)
+    me8 = (await c.get("/api/app/me", headers=guest(8))).json()
+    check("/me shows dislikes used and the cap", me8["tonight"]["dislikes_used"] == min(dcap, len(others)) and me8["rules"]["dislikes_max"] == dcap, me8["tonight"])
+    check("likes stay free after dislikes (own caps)", me8["tonight"]["votes_used"] == 0)
 
     print("\n[boost — own track only, incl. 12 parallel taps]")
     check("boost someone else's track → NOT_OWN", (await c.post(f"/api/app/boost/{first['id']}", headers=guest(5))).json()["status"] == "NOT_OWN")
@@ -309,6 +354,121 @@ async def main() -> None:
     check("reject toggles", (await adm.post(f"/api/tracks/{board['tracks'][-1]['id']}/reject")).json()["changed"])
     check("DJ API needs login", (await c.get("/api/board")).status_code == 401)
 
+    print("\n[Банда — up to 5, one gang per person, races, leaving]")
+    g0 = (await c.get("/api/app/gang", headers=guest(11))).json()
+    check("gang screen: no gang yet, 5 max, top 2 free", g0["gang"] is None and g0["max"] == 5 and g0["free_places"] == 2 and g0["hack"]["open"], g0)
+    check("link in the name → BAD_NAME", (await c.post("/api/app/gang/create", headers=guest(11), json={"name": "t.me/spam"})).json()["status"] == "BAD_NAME")
+    check("one letter → BAD_NAME", (await c.post("/api/app/gang/create", headers=guest(11), json={"name": "Я"})).json()["status"] == "BAD_NAME")
+    r = (await c.post("/api/app/gang/create", headers=guest(11), json={"name": "  Ночные   Лисы "})).json()
+    check("create gang, name tidied, leader", r["status"] == "CREATED" and r["gang"]["gang"]["name"] == "Ночные Лисы" and r["gang"]["gang"]["my_role"] == "leader", r)
+    code = r["gang"]["gang"]["code"]
+    check("invite link carries the code", r["gang"]["gang"]["link"].endswith("startapp=gang_" + code), r["gang"]["gang"]["link"])
+    check("same name in other case → NAME_TAKEN", (await c.post("/api/app/gang/create", headers=guest(12), json={"name": "ночные лисы"})).json()["status"] == "NAME_TAKEN")
+    check("second gang for the leader → ALREADY_IN_GANG", (await c.post("/api/app/gang/create", headers=guest(11), json={"name": "Другая"})).json()["status"] == "ALREADY_IN_GANG")
+    check("unknown code → NOT_FOUND", (await c.post("/api/app/gang/join", headers=guest(12), json={"code": "NOPE1234"})).json()["status"] == "NOT_FOUND")
+    check("own link → ALREADY_HERE", (await c.post("/api/app/gang/join", headers=guest(11), json={"code": "gang_" + code})).json()["status"] == "ALREADY_HERE")
+    for n in range(12, 20):
+        await c.get("/api/app/me", headers=guest(n))
+    results = await asyncio.gather(*(c.post("/api/app/gang/join", headers=guest(n), json={"code": code}) for n in range(12, 20)))
+    st = [x.json()["status"] for x in results]
+    check("8 friends open the link at once: exactly 4 get in, 4 → FULL", st.count("JOINED") == 4 and st.count("FULL") == 4, st)
+    gv = (await c.get("/api/app/gang", headers=guest(11))).json()["gang"]
+    roles = [m["role"] for m in gv["members"]]
+    check("5 members, every role once, in order", roles == ["leader", "driver", "hacker", "muscle", "scout"], roles)
+    joined = [n for n, x in zip(range(12, 20), st) if x == "JOINED"]
+    outsider = [n for n, x in zip(range(12, 20), st) if x == "FULL"][0]
+    r = (await c.post("/api/app/gang/create", headers=guest(20), json={"name": "Бетонные Пальмы"})).json()
+    check("second gang", r["status"] == "CREATED", r)
+    code2 = r["gang"]["gang"]["code"]
+    check("member of one gang can't join another → ALREADY_IN_GANG", (await c.post("/api/app/gang/join", headers=guest(joined[0]), json={"code": code2})).json()["status"] == "ALREADY_IN_GANG")
+    results = await asyncio.gather(*(c.post("/api/app/gang/create", headers=guest(21), json={"name": f"Банда {i}"}) for i in range(4)))
+    st = [x.json()["status"] for x in results]
+    check("4 parallel creates by one person → one gang", st.count("CREATED") == 1 and st.count("ALREADY_IN_GANG") == 3, st)
+    driver = next(int(m["name"][3:]) for m in gv["members"] if m["role"] == "driver")
+    check("driver leaves", (await c.post("/api/app/gang/leave", headers=guest(driver))).json()["status"] == "LEFT")
+    r = (await c.post("/api/app/gang/join", headers=guest(outsider), json={"code": code})).json()
+    check("freed place taken, the freed role handed out", r["status"] == "JOINED" and any(m["role"] == "driver" and m["me"] for m in r["gang"]["gang"]["members"]), r["gang"]["gang"])
+    r = (await c.post("/api/app/gang/leave", headers=guest(11))).json()
+    check("leader leaves", r["status"] == "LEFT" and r["gang"]["gang"] is None, r)
+    gv = (await c.get("/api/app/gang", headers=guest(joined[1]))).json()["gang"]
+    check("the next one in becomes leader, still 4", len(gv["members"]) == 4 and gv["members"][0]["role"] == "leader", gv["members"])
+    check("not in a gang → leave NOT_IN_GANG", (await c.post("/api/app/gang/leave", headers=guest(11))).json()["status"] == "NOT_IN_GANG")
+    check("ex-leader can join back", (await c.post("/api/app/gang/join", headers=guest(11), json={"code": code})).json()["status"] == "JOINED")
+    r = (await c.post("/api/app/gang/create", headers=guest(22), json={"name": "Одиночки"})).json()
+    check("lone gang leaves → gang gone", (await c.post("/api/app/gang/leave", headers=guest(22))).json()["status"] == "LEFT"
+          and (await c.post("/api/app/gang/join", headers=guest(23), json={"code": r["gang"]["gang"]["code"]})).json()["status"] == "NOT_FOUND")
+    saved_until = gang_service.settings.gang_changes_until
+    gang_service.settings.gang_changes_until = "2020-01-01T00:00:00+00:00"
+    try:
+        async with SessionFactory() as s:
+            u = await s.scalar(select(User).where(User.tg_user_id == TG_BASE + 23))
+            locked = (await gang_service.join_gang(s, user=u, code=code)).status
+            await s.rollback()
+    finally:
+        gang_service.settings.gang_changes_until = saved_until
+    check("after the lock date nobody joins → LOCKED", locked == "LOCKED", locked)
+
+    print("\n[Взлом — the server replays every tap]")
+    def perfect(lock):
+        target = lock["start"] + lock["width"] / 2
+        t = (target if lock["dir"] == 1 else 360 - target) / lock["speed"]
+        return t if t >= 0.3 else t + 360 / lock["speed"]     # a human waits for the next turn
+    def wrong(lock):
+        target = lock["start"] + lock["width"] + 40
+        return (target if lock["dir"] == 1 else 360 - target) / lock["speed"]
+    h = (await c.post("/api/app/hack/start", headers=guest(joined[1]))).json()
+    check("start: 10 locks, each narrower and faster", h["status"] == "OK" and len(h["locks"]) == 10
+          and h["locks"][0]["width"] > h["locks"][-1]["width"] and h["locks"][0]["speed"] < h["locks"][-1]["speed"], h.get("locks", [])[:2])
+    taps = [perfect(l) for l in h["locks"]]
+    r = (await c.post(f"/api/app/hack/{h['id']}/finish", headers=guest(joined[1]), json={"taps": taps})).json()
+    check("perfect taps sent too fast → no loot", r["status"] == "OK" and r["score"] == 0, r)
+    check("same run twice → NOT_FOUND", (await c.post(f"/api/app/hack/{h['id']}/finish", headers=guest(joined[1]), json={"taps": taps})).json()["status"] == "NOT_FOUND")
+    h = (await c.post("/api/app/hack/start", headers=guest(joined[1]))).json()
+    taps = [perfect(l) for l in h["locks"]]
+    check("someone else's run → NOT_FOUND", (await c.post(f"/api/app/hack/{h['id']}/finish", headers=guest(joined[2]), json={"taps": taps})).json()["status"] == "NOT_FOUND")
+    await asyncio.sleep(sum(taps) + 0.3)
+    r = (await c.post(f"/api/app/hack/{h['id']}/finish", headers=guest(joined[1]), json={"taps": taps})).json()
+    check("all 10 locks → $ 5 500", r["levels"] == 10 and r["score"] == hack_service.loot_for(10) == 5500, r)
+    h = (await c.post("/api/app/hack/start", headers=guest(joined[2]))).json()
+    taps = [perfect(l) for l in h["locks"][:2]] + [wrong(h["locks"][2])] + [perfect(l) for l in h["locks"][3:]]
+    await asyncio.sleep(sum(taps[:3]) + 0.3)
+    r = (await c.post(f"/api/app/hack/{h['id']}/finish", headers=guest(joined[2]), json={"taps": taps})).json()
+    check("miss on lock 3 → WASTED after 2, $ 300", r["levels"] == 2 and r["score"] == 300, r)
+    h = (await c.post("/api/app/hack/start", headers=guest(joined[2]))).json()
+    r = (await c.post(f"/api/app/hack/{h['id']}/finish", headers=guest(joined[2]), json={"taps": ["x", None]})).json()
+    check("garbage taps → nothing, best kept", r["score"] == 0 and r["best"] == 300, r)
+    h = (await c.post("/api/app/hack/start", headers=guest(20))).json()
+    t2 = [perfect(l) for l in h["locks"][:1]] + [wrong(h["locks"][1])]
+    await asyncio.sleep(sum(t2) + 0.3)
+    r = (await c.post(f"/api/app/hack/{h['id']}/finish", headers=guest(20), json={"taps": t2})).json()
+    check("other gang: 1 lock, $ 100", r["score"] == 100, r)
+    gv = (await c.get("/api/app/gang", headers=guest(20))).json()
+    names = [(b["name"], b["loot"]) for b in gv["board"]]
+    check("rating: gang loot = sum of members' best runs", names[:2] == [("Ночные Лисы", 5800), ("Бетонные Пальмы", 100)], names)
+    check("my gang is marked in the rating", any(b["mine"] and b["name"] == "Бетонные Пальмы" for b in gv["board"]), gv["board"])
+    saved_attempts = hack_service.settings.hack_attempts_per_day
+    hack_service.settings.hack_attempts_per_day = 0
+    try:
+        async with SessionFactory() as s:
+            u = await s.scalar(select(User).where(User.tg_user_id == TG_BASE + 20))
+            ev = await s.get(Event, event_id)
+            no = await hack_service.start(s, user=u, event=ev)
+            await s.rollback()
+    finally:
+        hack_service.settings.hack_attempts_per_day = saved_attempts
+    check("attempts for the day used up → NO_ATTEMPTS", no == "NO_ATTEMPTS", no)
+
+    print("\n[top 2 gangs get in free]")
+    async with SessionFactory() as s:
+        ev = await s.get(Event, event_id)
+        won = await gang_service.award_free_entries(s, event=ev)
+        again = await gang_service.award_free_entries(s, event=ev)
+        await s.commit()
+    check("both top gangs, every member marked once (5 + 1)", len(won) == 6 and again == [], [(u.name, g, p) for u, g, p in won])
+    check("FREE ENTRY for a member of the first gang", (await c.get("/api/app/me", headers=guest(joined[3]))).json()["free_entry"].startswith("Банда «Ночные Лисы» #1 · LYFE "))
+    check("FREE ENTRY for the second gang", (await c.get("/api/app/pass", headers=guest(20))).json()["free_entry"].startswith("Банда «Бетонные Пальмы» #2 · LYFE "))
+    check("nobody else", (await c.get("/api/app/me", headers=guest(21))).json()["free_entry"] is None)
+
     print("\n[ledger integrity]")
     rows = await db("""
         SELECT u.tg_user_id, coalesce(sum(pt.delta), 0) FROM users u
@@ -325,6 +485,8 @@ async def main() -> None:
     me5 = (await c.get("/api/app/me", headers=guest(5))).json()
     check("closed in /me", me5["season"]["game"]["open"] is False, me5["season"]["game"])
     check("start after close → CLOSED", (await c.post("/api/app/game/start", headers=guest(5))).json()["status"] == "CLOSED")
+    check("Взлом closes too → CLOSED", (await c.post("/api/app/hack/start", headers=guest(20))).json()["status"] == "CLOSED")
+    check("gang screen says the game is closed", (await c.get("/api/app/gang", headers=guest(20))).json()["hack"]["open"] is False)
 
     print("\n[between parties]")
     await db("UPDATE events SET status='ENDED', starts_at=now() - interval '1 day' WHERE id=:id", id=event_id)
@@ -347,5 +509,12 @@ async def main() -> None:
     sys.exit(1 if failed else 0)
 
 
+async def run() -> None:
+    try:
+        await main()
+    finally:
+        await restore_events()
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(run())
