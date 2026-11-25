@@ -759,7 +759,10 @@ async def _gang_json(session: AsyncSession, user: User, event: Event | None) -> 
         "waiting": season_service.is_waiting(event),
         "closes_at": closes.isoformat() if closes else None,
         "best": await hack_service.best(session, user_id=user.id, event_id=event.id),
-        "attempts_left": max(0, settings.hack_attempts_per_day - await hack_service.attempts_today(session, user_id=user.id)),
+        "attempts_left": (left := await hack_service.attempts_left(session, user_id=user.id, event_id=event.id))[0],
+        "attempts_total_left": left[1],
+        "per_day": settings.hack_attempts_per_day,
+        "total": settings.hack_attempts_total,
         "levels": hack_service.LEVELS,
         "loot_step": hack_service.LOOT_STEP,
     }

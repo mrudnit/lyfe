@@ -23,6 +23,7 @@ be finished faster than its own taps.
 import random
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -140,16 +141,33 @@ def closes_at(event: Event | None) -> datetime | None:
     return season_service.closes_at(event) if event is not None else None
 
 
-async def attempts_today(session: AsyncSession, *, user_id: int) -> int:
-    since = datetime.now(timezone.utc) - timedelta(hours=24)
-    return int(
-        await session.scalar(
-            select(func.count(GameSession.id)).where(
-                GameSession.user_id == user_id, GameSession.kind == KIND, GameSession.started_at >= since
-            )
-        )
-        or 0
+CLUB_TZ = ZoneInfo("Europe/Bratislava")
+
+
+def day_start(now: datetime | None = None) -> datetime:
+    """Midnight of today in the club's time zone: the daily runs reset then."""
+    local = (now or datetime.now(timezone.utc)).astimezone(CLUB_TZ)
+    return local.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+async def _runs(session: AsyncSession, *, user_id: int, event_id: int, since: datetime | None = None) -> int:
+    q = select(func.count(GameSession.id)).where(
+        GameSession.user_id == user_id, GameSession.event_id == event_id, GameSession.kind == KIND
     )
+    if since is not None:
+        q = q.where(GameSession.started_at >= since)
+    return int(await session.scalar(q) or 0)
+
+
+async def attempts_today(session: AsyncSession, *, user_id: int, event_id: int) -> int:
+    return await _runs(session, user_id=user_id, event_id=event_id, since=day_start())
+
+
+async def attempts_left(session: AsyncSession, *, user_id: int, event_id: int) -> tuple[int, int]:
+    """(runs left today, runs left for the whole party). Today never exceeds the total."""
+    total = max(0, settings.hack_attempts_total - await _runs(session, user_id=user_id, event_id=event_id))
+    today = max(0, settings.hack_attempts_per_day - await attempts_today(session, user_id=user_id, event_id=event_id))
+    return min(today, total), total
 
 
 async def best(session: AsyncSession, *, user_id: int, event_id: int) -> int:
@@ -181,11 +199,20 @@ def best_runs_subquery(event_id: int):
 
 
 async def start(session: AsyncSession, *, user: User, event: Event | None) -> GameSession | str:
-    """A new run, or why not: "CLOSED" or "NO_ATTEMPTS"."""
+    """A new run, or why not: "CLOSED", "NO_GANG", "NO_ATTEMPTS" (none left
+    today) or "NO_ATTEMPTS_LEFT" (all runs for the party used).
+    Only people in a gang play: the loot only counts for a gang."""
     if not is_open(event):
         return "CLOSED"
+    from lyfe.core.services import gang_service
+
+    if await gang_service.membership(session, user_id=user.id, event_id=event.id) is None:
+        return "NO_GANG"
     await session.execute(select(User.id).where(User.id == user.id).with_for_update())
-    if await attempts_today(session, user_id=user.id) >= settings.hack_attempts_per_day:
+    today, total = await attempts_left(session, user_id=user.id, event_id=event.id)
+    if total <= 0:
+        return "NO_ATTEMPTS_LEFT"
+    if today <= 0:
         return "NO_ATTEMPTS"
     game = GameSession(
         event_id=event.id,

@@ -65,7 +65,11 @@ class Settings(BaseSettings):
     gang_changes_until: str = "2026-12-01T00:00:00+01:00"
     # The two gangs with the most loot get in free (scripts/award_game.py).
     gang_free_entry_places: int = 2
-    hack_attempts_per_day: int = 20
+    # «Взлом»: 20 runs per person for the whole party, at most 3 a day (club
+    # calendar day), so nobody burns them all in one evening. Announced 25.11,
+    # play until 03.12: 9 days, 20 / 9 rounded up = 3 a day.
+    hack_attempts_total: int = 20
+    hack_attempts_per_day: int = 3
 
     # Mini App. The public https address of the web service, e.g.
     # https://lyfe-web-production.up.railway.app — the bot opens <url>/app.
