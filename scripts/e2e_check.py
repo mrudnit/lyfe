@@ -436,6 +436,9 @@ async def main() -> None:
     check("after the lock date nobody joins → LOCKED", locked == "LOCKED", locked)
 
     print("\n[Взлом — the server replays every tap]")
+    r = (await c.post("/api/app/hack/start", headers=guest(22))).json()
+    check("no gang → can't play (NO_GANG), no attempt used", r["status"] == "NO_GANG"
+          and (await c.get("/api/app/gang", headers=guest(22))).json()["hack"]["attempts_left"] == hack_service.settings.hack_attempts_per_day, r)
     def perfect(lock):
         target = lock["start"] + lock["width"] / 2
         t = (target if lock["dir"] == 1 else 360 - target) / lock["speed"]
@@ -477,8 +480,15 @@ async def main() -> None:
     names = [(b["name"], b["loot"]) for b in gv["board"]]
     check("rating: gang loot = sum of members' best runs", names[:2] == [("Ночные Лисы", best1 + two), ("Бетонные Пальмы", one)], names)
     check("my gang is marked in the rating", any(b["mine"] and b["name"] == "Бетонные Пальмы" for b in gv["board"]), gv["board"])
-    saved_attempts = hack_service.settings.hack_attempts_per_day
-    hack_service.settings.hack_attempts_per_day = 0
+    # joined[2] has played 2 of 3 today: one more, then the day is over
+    gl = (await c.get("/api/app/gang", headers=guest(joined[2]))).json()["hack"]
+    check("2 runs played → 1 left today, 18 of 20 for the party", gl["attempts_left"] == 1 and gl["attempts_total_left"] == 18
+          and gl["per_day"] == 3 and gl["total"] == 20, gl)
+    results = await asyncio.gather(*(c.post("/api/app/hack/start", headers=guest(joined[2])) for _ in range(5)))
+    st = [x.json()["status"] for x in results]
+    check("5 parallel starts with 1 left today → 1 OK, 4 NO_ATTEMPTS", st.count("OK") == 1 and st.count("NO_ATTEMPTS") == 4, st)
+    saved_total = hack_service.settings.hack_attempts_total
+    hack_service.settings.hack_attempts_total = 1
     try:
         async with SessionFactory() as s:
             u = await s.scalar(select(User).where(User.tg_user_id == TG_BASE + 20))
@@ -486,8 +496,8 @@ async def main() -> None:
             no = await hack_service.start(s, user=u, event=ev)
             await s.rollback()
     finally:
-        hack_service.settings.hack_attempts_per_day = saved_attempts
-    check("attempts for the day used up → NO_ATTEMPTS", no == "NO_ATTEMPTS", no)
+        hack_service.settings.hack_attempts_total = saved_total
+    check("all runs for the party used → NO_ATTEMPTS_LEFT", no == "NO_ATTEMPTS_LEFT", no)
 
     print("\n[top 2 gangs get in free]")
     async with SessionFactory() as s:

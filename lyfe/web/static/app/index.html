@@ -1146,8 +1146,8 @@ const GTA = {
     g_BAD_NAME: 'Название: от 2 до 24 знаков, без ссылок.', g_NAME_TAKEN: 'Такое название уже занято.', g_NO_EVENT: 'Банды собираются под вечеринку. Ждём дату.', g_NOT_IN_GANG: 'Ты не в банде.',
     hack_lock: 'замок из {n}', hack_bull: 'В центр.', hack_quick: 'С первого круга.', hack_hint: 'Жми, когда стрелка в зелёном', hack_btn: 'Взломать', hack_open: 'Замок {n} вскрыт. +$ {x}', hack_win: 'МИССИЯ ВЫПОЛНЕНА',
     hack_win_s: 'Все {n} замков вскрыты', hack_wasted_s: 'Сигналка сработала. Ещё заход?', hack_timeout: 'Долго возился. Замок закрылся.', hack_again: 'Ещё раз', hack_to_gang: 'В банду',
-    hack_best: 'Рекорд: $ {b}', hack_new_best: 'Новый рекорд', hack_closed: 'Взлом закрыт. Банды уже посчитаны.', hack_waiting: 'Взлом откроется, как только объявим следующую вечеринку.', hack_no_att: 'На сегодня попытки кончились. Приходи завтра.',
-    hack_left: 'Попыток на сегодня: {n}', hack_got: 'Добыча: $ {x}', hack_exit_q: 'Бросить взлом? Добыча этой попытки сгорит.', hack_exit: 'Бросить',
+    hack_best: 'Рекорд: $ {b}', hack_new_best: 'Новый рекорд', hack_closed: 'Взлом закрыт. Банды уже посчитаны.', hack_waiting: 'Взлом откроется, как только объявим следующую вечеринку.', hack_no_att: 'На сегодня попытки кончились. Завтра будут новые.', hack_no_gang: 'Взламывают только бандой. Создай свою, вступи по ссылке или найди банду выше.',
+    hack_left: 'Попыток сегодня: {n} из {d}. Всего осталось {t} из {all}', hack_no_left: 'Все попытки потрачены. В банде считается твой лучший взлом.', hack_got: 'Добыча: $ {x}', hack_exit_q: 'Бросить взлом? Добыча этой попытки сгорит.', hack_exit: 'Бросить',
     presents: 'Миссия', ticket: 'Пропуск', live: 'В деле',
     free_text: 'Ты в топ-5 прошлого сезона ({c}), вход бесплатный. Покажи LYFE PASS на входе.',
     radio_lyfe: 'Радио LYFE', fire: 'Огонь', radio_all: 'Весь топ', radio_empty: 'Треков пока нет',
@@ -1214,8 +1214,8 @@ const GTA = {
     g_BAD_NAME: 'Назва: від 2 до 24 знаків, без посилань.', g_NAME_TAKEN: 'Така назва вже зайнята.', g_NO_EVENT: 'Банди збираються під вечірку. Чекаємо дату.', g_NOT_IN_GANG: 'Ти не в банді.',
     hack_lock: 'замок з {n}', hack_bull: 'У центр.', hack_quick: 'З першого кола.', hack_hint: 'Тисни, коли стрілка в зеленому', hack_btn: 'Зламати', hack_open: 'Замок {n} зламано. +$ {x}', hack_win: 'МІСІЮ ВИКОНАНО',
     hack_win_s: 'Усі {n} замків зламано', hack_wasted_s: 'Сигналка спрацювала. Ще захід?', hack_timeout: 'Довго возився. Замок закрився.', hack_again: 'Ще раз', hack_to_gang: 'У банду',
-    hack_best: 'Рекорд: $ {b}', hack_new_best: 'Новий рекорд', hack_closed: 'Злам закрито. Банди вже пораховано.', hack_waiting: 'Злам відкриється, щойно оголосимо наступну вечірку.', hack_no_att: 'На сьогодні спроби скінчились. Приходь завтра.',
-    hack_left: 'Спроб на сьогодні: {n}', hack_got: 'Здобич: $ {x}', hack_exit_q: 'Кинути злам? Здобич цієї спроби згорить.', hack_exit: 'Кинути',
+    hack_best: 'Рекорд: $ {b}', hack_new_best: 'Новий рекорд', hack_closed: 'Злам закрито. Банди вже пораховано.', hack_waiting: 'Злам відкриється, щойно оголосимо наступну вечірку.', hack_no_att: 'На сьогодні спроби скінчились. Завтра будуть нові.', hack_no_gang: 'Зламують лише бандою. Створи свою, вступи за посиланням або знайди банду вище.',
+    hack_left: 'Спроб сьогодні: {n} з {d}. Усього лишилось {t} з {all}', hack_no_left: 'Усі спроби витрачено. У банді рахується твій найкращий злам.', hack_got: 'Здобич: $ {x}', hack_exit_q: 'Кинути злам? Здобич цієї спроби згорить.', hack_exit: 'Кинути',
     presents: 'Місія', ticket: 'Пропуск', live: 'У справі',
     free_text: 'Ти в топ-5 минулого сезону ({c}), вхід безкоштовний. Покажи LYFE PASS на вході.',
     radio_lyfe: 'Радіо LYFE', fire: 'Вогонь', radio_all: 'Весь топ', radio_empty: 'Треків поки немає',
@@ -2205,7 +2205,7 @@ function drawGang() {
       <span class="pos num">${b.place}</span><span class="n">${esc(b.name)}${b.crew && b.crew.length ? `<small>${esc(b.crew.join(', '))}</small>` : ''}</span><b class="num">$ ${fmtMoney(b.loot)}</b></li>`).join('')}</ol>`
     : `<p class="vnote">${esc(L('gang_board_empty'))}</p>`;
   const hackInfo = g.hack.open
-    ? `<p class="vnote">${esc(L('hack_best', { b: fmtMoney(g.hack.best) }))}. ${esc(L('hack_left', { n: g.hack.attempts_left }))}</p>`
+    ? `<p class="vnote">${esc(L('hack_best', { b: fmtMoney(g.hack.best) }))}. ${esc(g.hack.attempts_total_left ? L('hack_left', { n: g.hack.attempts_left, d: g.hack.per_day, t: g.hack.attempts_total_left, all: g.hack.total }) : L('hack_no_left'))}</p>`
     : `<p class="vnote">${esc(L(g.hack.waiting ? 'hack_waiting' : 'hack_closed'))}</p>`;
   const lock = g.locked ? L('gang_locked') : L('gang_until', { d: fmtDate(g.changes_until) });
   let body;
@@ -2229,7 +2229,7 @@ function drawGang() {
         : `<p class="vnote">${esc(L('gang_open_empty'))}</p>`}
       </section>`}
       <p class="vnote">${esc(lock)}</p>
-      ${g.hack.open ? `<button class="vbtn wide" id="ghack" style="margin-top:18px">${esc(L('gang_hack'))}</button>` : ''}${hackInfo}
+      <p class="vnote">${esc(L(g.hack.open ? 'hack_no_gang' : g.hack.waiting ? 'hack_waiting' : 'hack_closed'))}</p>
       <h2 class="vh">${esc(L('gang_board_h'))}</h2>${board}${prize}`;
   } else {
     const gang = g.gang;
@@ -2322,7 +2322,7 @@ async function startHack() {
   haptic('light');
   let res;
   try { res = await api('/api/app/hack/start', { method: 'POST' }); } catch (e) { return; }
-  if (res.status !== 'OK') { toast(L(res.status === 'NO_ATTEMPTS' ? 'hack_no_att' : S.gang && S.gang.hack.waiting ? 'hack_waiting' : 'hack_closed')); haptic('warning'); return; }
+  if (res.status !== 'OK') { toast(L(res.status === 'NO_ATTEMPTS_LEFT' ? 'hack_no_left' : res.status === 'NO_ATTEMPTS' ? 'hack_no_att' : res.status === 'NO_GANG' ? 'hack_no_gang' : S.gang && S.gang.hack.waiting ? 'hack_waiting' : 'hack_closed')); haptic('warning'); return; }
   const el = document.createElement('div');
   el.className = 'hack';
   el.innerHTML = `<div class="hack-sky"></div>
