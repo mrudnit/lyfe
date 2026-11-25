@@ -5,6 +5,7 @@ used in the dark, one-handed, next to a mixer, by someone who has about two
 seconds to spare. So it is server-rendered, has no build step, and keeps working
 when the venue's wifi does not.
 """
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -42,6 +43,15 @@ ALLOWED_ROLES = (AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.DJ, AdminRole
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # The bot's real @username comes from Telegram, not from BOT_USERNAME:
+    # a stale or missing variable made invite links say «user doesn't exist».
+    try:
+        me = await asyncio.wait_for(notifier.get_bot().get_me(), timeout=10)
+        if me.username:
+            settings.bot_username = me.username
+            logger.info("Bot username from Telegram: @%s", me.username)
+    except Exception as exc:  # noqa: BLE001 - keep serving with the configured name
+        logger.warning("Could not read the bot username from Telegram (%s); using %r", exc, settings.bot_username)
     yield
     await notifier.close()
 
