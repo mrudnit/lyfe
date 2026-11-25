@@ -69,7 +69,10 @@ async def board(session: AsyncSession, *, event_id: int, limit: int = 200) -> li
         .order_by(
             # Guaranteed plays sit on top — that is what was paid for.
             EventTrack.is_priority.desc(),
-            (EventTrack.requests_count + EventTrack.votes_count + EventTrack.boost_points).desc(),
+            (
+                EventTrack.requests_count + EventTrack.votes_count
+                - EventTrack.dislikes_count + EventTrack.boost_points
+            ).desc(),
             EventTrack.id.asc(),
         )
         .limit(limit)

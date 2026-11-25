@@ -138,7 +138,17 @@ async def _recount(session, keeper: EventTrack) -> None:
     )
     keeper.votes_count = int(
         await session.scalar(
-            select(func.count(TrackVote.id)).where(TrackVote.event_track_id == keeper.id)
+            select(func.count(TrackVote.id)).where(
+                TrackVote.event_track_id == keeper.id, TrackVote.value == 1
+            )
+        )
+        or 0
+    )
+    keeper.dislikes_count = int(
+        await session.scalar(
+            select(func.count(TrackVote.id)).where(
+                TrackVote.event_track_id == keeper.id, TrackVote.value == -1
+            )
         )
         or 0
     )

@@ -3,6 +3,7 @@ from lyfe.models.admin import AdminAction, AdminRole, AdminUser
 from lyfe.models.attendance import Attendance, CheckinMethod
 from lyfe.models.base import Base
 from lyfe.models.event import Event, EventStatus
+from lyfe.models.gang import Gang, GangMember, GangRole
 from lyfe.models.geo import City, Venue
 from lyfe.models.music import (
     EventTrack,
@@ -33,6 +34,9 @@ __all__ = [
     "Event",
     "EventStatus",
     "EventTrack",
+    "Gang",
+    "GangMember",
+    "GangRole",
     "GameSession",
     "PointTransaction",
     "PointsReason",

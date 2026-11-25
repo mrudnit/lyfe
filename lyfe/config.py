@@ -48,13 +48,24 @@ class Settings(BaseSettings):
     max_paid_votes_per_event: int = 3
     # Likes per person per night. Without a cap one person could like every
     # track in TOP and the chart would stop meaning anything.
-    max_votes_per_event: int = 3
+    max_votes_per_event: int = 5
+    # Dislikes («В розыск») on other people's tracks, per person per night. A dislike
+    # takes one point of score off the track and earns nothing.
+    max_dislikes_per_event: int = 5
     points_attendance: int = 10
     cost_priority_track: int = 40
     # BOOST: spend points to lift a track in TOP REQUESTS, one point = one place
     # of score. Capped per night so a full wallet cannot buy the whole chart.
     cost_boost: int = 5
-    max_boosts_per_event: int = 2      # BOOST only on your own track, twice a night
+    max_boosts_per_event: int = 1      # BOOST only on your own track, once a night
+
+    # Банда and the «Взлом» game (docs/lyfe-gta-style.md)
+    max_gang_size: int = 5
+    # After this moment nobody creates, joins or leaves a gang (ISO, with zone).
+    gang_changes_until: str = "2026-12-01T00:00:00+01:00"
+    # The two gangs with the most loot get in free (scripts/award_game.py).
+    gang_free_entry_places: int = 2
+    hack_attempts_per_day: int = 20
 
     # Mini App. The public https address of the web service, e.g.
     # https://lyfe-web-production.up.railway.app — the bot opens <url>/app.

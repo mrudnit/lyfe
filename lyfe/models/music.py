@@ -17,6 +17,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    SmallInteger,
     String,
     UniqueConstraint,
 )
@@ -79,6 +80,10 @@ class EventTrack(PKMixin, TimestampMixin, Base):
     # Denormalised counters — read on every TOP screen, so we keep them here.
     requests_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     votes_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # «В розыск»: dislikes from other guests, each takes one point off the score.
+    dislikes_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
     # Score bought with LYFE POINTS through BOOST. Kept apart from votes so the
     # DJ can always tell organic demand from paid demand.
     boost_points: Mapped[int] = mapped_column(
@@ -98,7 +103,7 @@ class EventTrack(PKMixin, TimestampMixin, Base):
 
     @property
     def score(self) -> int:
-        return self.requests_count + self.votes_count + self.boost_points
+        return self.requests_count + self.votes_count - self.dislikes_count + self.boost_points
 
 
 class TrackRequest(PKMixin, TimestampMixin, Base):
@@ -121,7 +126,8 @@ class TrackRequest(PKMixin, TimestampMixin, Base):
 
 
 class TrackVote(PKMixin, TimestampMixin, Base):
-    """A like on someone else's request. This IS the voting system."""
+    """A like (+1) or a dislike (−1, «В розыск») on someone else's request.
+    One reaction per person per track. This IS the voting system."""
 
     __tablename__ = "track_votes"
     __table_args__ = (UniqueConstraint("event_track_id", "user_id", name="uq_track_vote_user"),)
@@ -130,3 +136,5 @@ class TrackVote(PKMixin, TimestampMixin, Base):
         ForeignKey("event_tracks.id", ondelete="CASCADE"), index=True
     )
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    # +1 like («Огонь»), −1 dislike («В розыск»)
+    value: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=1, server_default="1")

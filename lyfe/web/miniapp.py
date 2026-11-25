@@ -19,6 +19,7 @@ from fastapi import APIRouter, Body, Depends, Header, HTTPException
 from fastapi.responses import HTMLResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from lyfe.config import get_settings
 from lyfe.core import pass_token, telegram_auth, track_resolver
@@ -29,12 +30,15 @@ from lyfe.core.services import (
     season_service,
     user_service,
 )
+from lyfe.core.services import gang_service, hack_service
 from lyfe.core.services.request_service import AddResult
 from lyfe.db import SessionFactory
 from lyfe.models import (
     Attendance,
     Event,
     EventTrack,
+    Gang,
+    GangRole,
     PointTransaction,
     RequestSource,
     Reward,
@@ -205,6 +209,9 @@ async def me(user: User = Depends(current_user), session: AsyncSession = Depends
                 session, user_id=user.id, event_id=event.id
             ),
             "votes_used": await request_service.votes_used(session, user_id=user.id, event_id=event.id),
+            "dislikes_used": await request_service.votes_used(
+                session, user_id=user.id, event_id=event.id, value=request_service.DISLIKE
+            ),
             "own": [
                 {"position": position, "name": name}
                 for position, name in await request_service.user_track_positions(
@@ -231,6 +238,7 @@ async def me(user: User = Depends(current_user), session: AsyncSession = Depends
             "requests_max": settings.max_requests_per_user_per_event,
             "boosts_max": settings.max_boosts_per_event,
             "votes_max": settings.max_votes_per_event,
+            "dislikes_max": settings.max_dislikes_per_event,
             "cost_boost": settings.cost_boost,
             "cost_priority": settings.cost_priority_track,
             "points_request": settings.points_music_request,
@@ -307,6 +315,9 @@ async def top(
     requested, voted = await request_service.user_interactions(
         session, user_id=user.id, event_track_ids=[r.id for r in rows]
     )
+    disliked = await request_service.user_dislikes(
+        session, user_id=user.id, event_track_ids=[r.id for r in rows]
+    )
 
     items = [
         {
@@ -318,11 +329,13 @@ async def top(
             "score": row.score,
             "requests": row.requests_count,
             "votes": row.votes_count,
+            "dislikes": row.dislikes_count,
             "boosts": row.boost_points,
             "status": row.status,
             "priority": row.is_priority,
             "mine": row.id in requested,
             "voted": row.id in voted,
+            "disliked": row.id in disliked,
         }
         for index, row in enumerate(rows, start=1)
     ]
@@ -342,6 +355,22 @@ async def vote(
     session: AsyncSession = Depends(get_session),
 ):
     result = await request_service.add_vote(session, user_id=user.id, event_track_id=event_track_id)
+    return {
+        "status": result,
+        "points": await user_service.get_points_balance(session, user.id),
+    }
+
+
+@router.post("/api/app/dislike/{event_track_id}")
+async def dislike(
+    event_track_id: int,
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """«В розыск»: −1 to someone else's track. Same rules as a like, its own cap, no points."""
+    result = await request_service.add_vote(
+        session, user_id=user.id, event_track_id=event_track_id, value=request_service.DISLIKE
+    )
     return {
         "status": result,
         "points": await user_service.get_points_balance(session, user.id),
@@ -699,6 +728,128 @@ async def game_finish(
             - await season_service.attempts_used(session, user_id=user.id, event_id=event.id),
         ),
     }
+
+
+# --------------------------------------------------------------------------
+# Банда and «Взлом» (docs/lyfe-gta-style.md)
+# --------------------------------------------------------------------------
+
+
+async def _gang_json(session: AsyncSession, user: User, event: Event | None) -> dict:
+    """Everything the Банда screen draws: my gang, the rating, my runs, the rules."""
+    base = {
+        "event": _event_json(event) if event is not None else None,
+        "max": settings.max_gang_size,
+        "roles": list(GangRole.ORDER[: settings.max_gang_size]),
+        "locked": gang_service.is_locked(),
+        "changes_until": gang_service.changes_until().isoformat(),
+        "free_places": settings.gang_free_entry_places,
+        "hack": {"open": False},
+        "gang": None,
+        "board": [],
+        "gangs_total": 0,
+    }
+    if event is None:
+        return base
+    closes = hack_service.closes_at(event)
+    base["hack"] = {
+        "open": hack_service.is_open(event),
+        "closes_at": closes.isoformat() if closes else None,
+        "best": await hack_service.best(session, user_id=user.id, event_id=event.id),
+        "attempts_left": max(0, settings.hack_attempts_per_day - await hack_service.attempts_today(session, user_id=user.id)),
+        "levels": hack_service.LEVELS,
+        "loot_step": hack_service.LOOT_STEP,
+    }
+    board = await gang_service.ranking(session, event_id=event.id, limit=None)
+    base["gangs_total"] = len(board)
+    mine = await gang_service.membership(session, user_id=user.id, event_id=event.id)
+    if mine is not None:
+        gang = await session.get(Gang, mine.gang_id)
+        crew = []
+        for member, person in await gang_service.members(session, gang_id=gang.id):
+            crew.append({
+                "name": person.name,
+                "role": member.role,
+                "best": await hack_service.best(session, user_id=person.id, event_id=event.id),
+                "me": person.id == user.id,
+            })
+        row = next((r for r in board if r["id"] == gang.id), None)
+        base["gang"] = {
+            "name": gang.name,
+            "code": gang.invite_code,
+            "link": gang_service.invite_link(gang),
+            "members": crew,
+            "loot": row["loot"] if row else 0,
+            "place": row["place"] if row else None,
+            "my_role": mine.role,
+        }
+    my_id = base["gang"] and mine.gang_id
+    base["board"] = [
+        {"name": r["name"], "loot": r["loot"], "size": r["size"], "place": r["place"], "mine": r["id"] == my_id}
+        for r in board[:10]
+    ]
+    if my_id and not any(r["mine"] for r in base["board"]):
+        r = next(r for r in board if r["id"] == my_id)
+        base["board"].append({"name": r["name"], "loot": r["loot"], "size": r["size"], "place": r["place"], "mine": True})
+    return base
+
+
+@router.get("/api/app/gang")
+async def gang_view(user: User = Depends(current_user), session: AsyncSession = Depends(get_session)):
+    return await _gang_json(session, user, await event_service.get_season_anchor(session))
+
+
+@router.post("/api/app/gang/create")
+async def gang_create(payload: dict = Body(...), user: User = Depends(current_user), session: AsyncSession = Depends(get_session)):
+    event = await event_service.get_season_anchor(session)
+    out = await gang_service.create_gang(session, user=user, event=event, name=str(payload.get("name") or ""))
+    return {"status": out.status, "gang": await _gang_json(session, user, event)}
+
+
+@router.post("/api/app/gang/join")
+async def gang_join(payload: dict = Body(...), user: User = Depends(current_user), session: AsyncSession = Depends(get_session)):
+    out = await gang_service.join_gang(session, user=user, code=str(payload.get("code") or ""))
+    event = (
+        await session.get(Event, out.gang.event_id, options=[joinedload(Event.venue), joinedload(Event.city)])
+        if out.gang else await event_service.get_season_anchor(session)
+    )
+    return {"status": out.status, "name": out.gang.name if out.gang else None, "gang": await _gang_json(session, user, event)}
+
+
+@router.post("/api/app/gang/leave")
+async def gang_leave(user: User = Depends(current_user), session: AsyncSession = Depends(get_session)):
+    event = await event_service.get_season_anchor(session)
+    out = await gang_service.leave_gang(session, user=user, event=event)
+    return {"status": out.status, "gang": await _gang_json(session, user, event)}
+
+
+@router.post("/api/app/hack/start")
+async def hack_start(user: User = Depends(current_user), session: AsyncSession = Depends(get_session)):
+    event = await event_service.get_season_anchor(session)
+    game = await hack_service.start(session, user=user, event=event)
+    if isinstance(game, str):
+        return {"status": game}
+    return {
+        "status": "OK",
+        "id": game.id,
+        "max_tap": hack_service.MAX_TAP,
+        "locks": [lock.__dict__ for lock in hack_service.locks(game.seed)],
+        "loot_step": hack_service.LOOT_STEP,
+    }
+
+
+@router.post("/api/app/hack/{game_id}/finish")
+async def hack_finish(
+    game_id: int,
+    payload: dict = Body(...),
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    taps = payload.get("taps") if isinstance(payload.get("taps"), list) else []
+    out = await hack_service.finish(session, user=user, game_id=game_id, taps=taps)
+    if out.status != "DONE":
+        return {"status": out.status}
+    return {"status": "OK", "levels": out.levels, "score": out.score, "best": out.best}
 
 
 # --------------------------------------------------------------------------

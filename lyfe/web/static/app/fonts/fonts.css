@@ -80,3 +80,28 @@
   src: url(/static/app/fonts/onest-latin.woff2) format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+
+/* Grand Theft Lyfe (docs/lyfe-gta-style.md), all SIL OFL, subset to Latin + Cyrillic.
+   Big Shoulders Display has no Cyrillic: Russian/Ukrainian headings fall through
+   to Fira Sans Extra Condensed, which matches its width and weight. Space Mono
+   is only for numbers and $; Cyrillic text next to them falls to IBM Plex Sans. */
+@font-face { font-family: 'Big Shoulders Display'; font-weight: 100 900; font-display: swap;
+  src: url(/static/app/fonts/BigShouldersDisplay.woff2) format('woff2'); }
+@font-face { font-family: 'LYFE Cyr Display'; font-weight: 800; font-display: swap;
+  src: url(/static/app/fonts/FiraSansExtraCondensed-ExtraBold.woff2) format('woff2'); }
+@font-face { font-family: 'LYFE Cyr Display'; font-weight: 900; font-display: swap;
+  src: url(/static/app/fonts/FiraSansExtraCondensed-Black.woff2) format('woff2'); }
+@font-face { font-family: 'IBM Plex Sans'; font-weight: 100 700; font-stretch: 85% 100%; font-display: swap;
+  src: url(/static/app/fonts/IBMPlexSans.woff2) format('woff2'); }
+@font-face { font-family: 'Space Mono'; font-weight: 400; font-display: swap;
+  src: url(/static/app/fonts/SpaceMono-Regular.woff2) format('woff2'); }
+@font-face { font-family: 'Space Mono'; font-weight: 700; font-display: swap;
+  src: url(/static/app/fonts/SpaceMono-Bold.woff2) format('woff2'); }
+
+/* Vice City home (docs/lyfe-gta-style.md v2), fonts from the video-editor pack, all OFL:
+   Sweet Mavka Script (neon title, shipped unmodified: Reserved Font Name),
+   Unbounded (headings, buttons, numbers: already declared above), Geologica (text). */
+@font-face { font-family: 'Sweet Mavka Script'; font-weight: 400; font-display: swap;
+  src: url(/static/app/fonts/SweetMavkaScript.ttf) format('truetype'); }
+@font-face { font-family: 'Geologica'; font-weight: 100 900; font-display: swap;
+  src: url(/static/app/fonts/Geologica-Variable.woff2) format('woff2'); }
